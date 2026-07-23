@@ -1,0 +1,16 @@
+name: 민원 자동 유입
+on:
+  schedule:
+    - cron: '*/20 * * * *'   # 20분마다 1건 (조절 가능)
+  workflow_dispatch:
+jobs:
+  inflow:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: 20}
+      - run: node scripts/inflow.mjs
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
