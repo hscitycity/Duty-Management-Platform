@@ -16,3 +16,6 @@ GIS건물통합정보.zip
 
 # === 로컬 작업 지침 (원격 미포함) ===
 CLAUDE.md
+
+# === 개인 Claude Code 설정 (git 미추적) ===
+.claude/settings.local.json
