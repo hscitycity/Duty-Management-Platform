@@ -3,6 +3,7 @@ api key.txt
 
 # === 대용량 원본 데이터 (GitHub 100MB 초과 / 저장소 비대상) ===
 *.zip
+*.csv
 GIS건물통합정보.zip
 토지특성정보.zip
 부동산개발업공간정보.zip
