@@ -6,7 +6,7 @@ module.exports = async (req, res) => {
   const q = ((req.query && req.query.q) || '화성시').slice(0, 40);
   const kind = (req.query && req.query.kind) === 'blog' ? 'blog' : 'news';
   try {
-    const r = await fetch('https://openapi.naver.com/v1/search/' + kind + '.json?query=' + encodeURIComponent(q) + '&display=30&sort=date', {
+    const r = await fetch('https://openapi.naver.com/v1/search/' + kind + '.json?query=' + encodeURIComponent(q) + '&display=100&sort=date', {
       headers: { 'X-Naver-Client-Id': CID, 'X-Naver-Client-Secret': CSEC }
     });
     const text = await r.text();
