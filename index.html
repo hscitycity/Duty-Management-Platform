@@ -297,6 +297,45 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
 .crew-near{animation:tkPulse 1.1s ease-out infinite;}
 @keyframes tkPulse{0%{box-shadow:0 0 0 0 rgba(240,123,39,.55)}70%{box-shadow:0 0 0 16px rgba(240,123,39,0)}100%{box-shadow:0 0 0 0 rgba(240,123,39,0)}}
 @media (prefers-reduced-motion: reduce){.crew-mk{transition:none;} .crew-near{animation:none;}}
+/* ── S-02 신고 흐름 재배치: 지도에서 시작하고, 조작은 하단 시트에서 한 손으로 ── */
+#citizen{display:none; max-width:none; margin:0; position:relative;}
+#citWrap{position:relative; height:calc(100vh - var(--hdr-h, 96px)); min-height:460px; border-radius:16px; overflow:hidden; border:1.5px solid var(--line);}
+@media(min-width:900px){#citWrap{max-width:420px; margin:0 auto;}}
+#citMap{position:absolute; inset:0; width:100%; height:100%; min-height:0; max-height:none; border:none; border-radius:0; z-index:0;}
+/* 핀 고정 + 지도 이동 — 화면 한가운데 핀은 고정, 지도를 움직여 위치를 맞춘다 */
+#citCross{position:absolute; left:50%; top:calc(50% - 84px); transform:translate(-50%,-100%); z-index:600; display:none; pointer-events:none;
+  font-size:38px; filter:drop-shadow(0 3px 5px rgba(0,0,0,.4));}
+#citCross.on{display:block;}
+#citTop{position:absolute; left:12px; right:12px; top:12px; z-index:620; background:rgba(255,255,255,.96);
+  border:1.5px solid var(--hs-blue-line); border-radius:12px; padding:10px 14px; font-size:14px; font-weight:700;
+  color:var(--hs-blue-dark); box-shadow:0 2px 8px rgba(0,0,0,.12); display:none;}
+#citTop.on{display:block;}
+#citTop .sub{display:block; font-size:12px; font-weight:400; color:var(--muted); margin-top:2px;}
+/* 좌하단 신고 진입 — 엄지가 닿는 자리 */
+#citStart{position:absolute; left:16px; bottom:calc(20px + env(safe-area-inset-bottom,0px)); z-index:640;
+  height:56px; padding:0 22px; border-radius:12px; background:var(--hs-orange); color:#fff;
+  font-size:17px; font-weight:800; box-shadow:0 4px 14px rgba(240,123,39,.45);}
+#citNear{position:absolute; right:16px; bottom:calc(20px + env(safe-area-inset-bottom,0px)); z-index:640;
+  height:48px; padding:0 16px; border-radius:12px; background:rgba(255,255,255,.96); color:var(--hs-blue-dark);
+  font-size:14px; font-weight:700; border:1.5px solid var(--hs-blue-line); box-shadow:0 2px 8px rgba(0,0,0,.16);}
+/* 하단 시트 */
+#citSheet{position:absolute; left:0; right:0; bottom:0; z-index:700; background:#fff; border-radius:16px 16px 0 0;
+  box-shadow:0 -6px 24px rgba(16,32,64,.18); padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));
+  max-height:82%; overflow-y:auto; transform:translateY(101%); transition:transform .28s ease;}
+#citSheet.on{transform:translateY(0);}
+#citSheet .grip{width:40px; height:4px; border-radius:4px; background:#D4DCE8; margin:0 auto 12px;}
+#citSheet h3{font-size:17px; font-weight:800; color:var(--hs-blue-dark); margin-bottom:4px;}
+#citSheet .desc{font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:12px;}
+/* 야간 다발 5종 + 그 밖 — 원형 컬러 아이콘 */
+.cit-types{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px;}
+.cit-type{background:transparent; display:flex; flex-direction:column; align-items:center; gap:8px; padding:4px;}
+.cit-type .ic{width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-size:26px; color:#fff; box-shadow:0 2px 8px rgba(0,0,0,.18);}
+.cit-type .nm{font-size:13px; font-weight:700; color:var(--ink); text-align:center; line-height:1.35;}
+.cit-type.on .ic{outline:3px solid var(--hs-orange); outline-offset:3px;}
+.cit-act{display:flex; gap:8px; margin-top:16px;}
+.cit-act button{flex:1; height:48px; border-radius:12px; font-size:16px; font-weight:700;}
+@media (prefers-reduced-motion: reduce){#citSheet{transition:none;}}
 </style>
 </head>
 <body>
@@ -521,47 +560,15 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   </div>
 </div>
 <div id="citizen">
-  <div class="card">
-    <h2>🏠 화성시 24시간 민원접수창구 <span class="sub">야간·휴일에도 바로 접수됩니다</span></h2>
-    <div class="steps"><span id="st1" class="on">1. 위치 선택</span><span id="st2">2. 신고 유형</span><span id="st3">3. 확인·접수</span></div>
-    <div id="citStep1">
-      <p style="font-size:16px; font-weight:600">지도에서 민원 발생 위치를 누르시거나, 현재 계신 곳이면 아래 버튼을 눌러주세요.</p>
-      <div class="row" style="margin-top:10px"><button class="btn-o" style="font-size:17px" onclick="citMyLoc()">📍 현재 위치로 신고하기</button></div>
-      <div id="citMap" style="margin-top:10px"></div>
-      <div style="display:flex; gap:8px; margin-top:10px">
-        <input id="citAdrKw" placeholder="또는 주소로 찾기 (예: 동탄역로 122)" style="flex:1" onkeydown="if(event.key==='Enter')jusoCit()">
-        <button class="btn-g" style="min-height:44px;padding:8px 14px" onclick="jusoCit()">🔎 검색</button>
-      </div>
-      <div id="citAdrRes" style="display:none; margin-top:8px"></div>
-      <div class="locbox" id="citLocBox" style="display:none"></div>
-      <div class="row"><button class="btn-p" id="citNext1" onclick="citGoStep(2)" disabled style="opacity:.5">다음 (유형 선택)</button></div>
-    </div>
-    <div id="citStep2" style="display:none">
-      <p style="font-size:16px; font-weight:600">어떤 불편을 신고하시나요?</p>
-      <div class="catgrid" id="citCats"></div>
-      <div id="citSubWrap" style="display:none">
-        <p style="font-size:15.5px; font-weight:600; margin-top:16px; color:var(--hs-blue-dark)">어떤 시설물인가요?</p>
-        <div class="catgrid" id="citSubs"></div>
-      </div>
-      <div id="citEtcWrap" style="display:none; margin-top:14px">
-        <label style="font-size:14px; font-weight:600; color:var(--muted)">내용을 직접 적어주세요</label>
-        <textarea id="citEtcText" style="margin-top:6px; min-height:80px" placeholder="예) 공원 벤치가 부서져 있어요"></textarea>
-      </div>
-      <div class="row"><button class="btn-g" onclick="citGoStep(1)">← 위치 다시 선택</button><button class="btn-p" id="citNext2" onclick="citGoStep(3)" disabled style="opacity:.5">다음 (확인)</button></div>
-    </div>
-    <div id="citStep3" style="display:none">
-      <p style="font-size:16px; font-weight:600">아래 내용으로 접수할까요?</p>
-      <div class="confirm" id="citConfirm"></div>
-      <label style="font-size:14px; font-weight:600; color:var(--muted); display:block; margin-top:12px">추가 설명 (선택)</label>
-      <input id="citExtra" placeholder="예) 이틀째 그대로예요" style="margin-top:6px">
-      <label style="font-size:14px; font-weight:600; color:var(--muted); display:block; margin-top:12px">사진 첨부 (선택)</label>
-      <div class="row" style="margin-top:6px"><label class="btn-g" style="text-align:center; line-height:24px">📷 사진 선택/촬영<input type="file" id="citPhoto" accept="image/*" capture="environment" style="display:none" onchange="citPhotoPick(this)"></label></div>
-      <img id="citPhotoPrev" style="display:none; max-width:100%; max-height:220px; border-radius:12px; margin-top:8px; border:1.5px solid var(--line)">
-      <div class="row"><button class="btn-g" onclick="citGoStep(2)">← 유형 다시 선택</button><button class="btn-o" onclick="citSubmit()">신고 접수</button></div>
-    </div>
-    <div id="citDone" style="display:none"></div>
-    <p class="hint">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
+  <div id="citWrap">
+    <div id="citMap"></div>
+    <div id="citCross">📍</div>
+    <div id="citTop"></div>
+    <button id="citStart" onclick="citFlow('type')">🚨 신고하기</button>
+    <button id="citNear" onclick="citNearby()">👀 근처 신고</button>
+    <div id="citSheet"><div class="grip"></div><div id="citSheetBody"></div></div>
   </div>
+  <p class="hint" style="margin-top:10px">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
 </div>
 <div id="track"></div>
 <div id="road" style="display:none"></div>
@@ -573,7 +580,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0209';
+const BUILD_VER = 'v0906-0212';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1588,13 +1595,21 @@ function initCitMap(){
   citMap = L.map('citMap').setView([37.185,126.92],10.2);
   L.tileLayer('https://api.vworld.kr/req/wmts/1.0.0/'+VWORLD_KEY+'/Base/{z}/{y}/{x}.png',{maxZoom:19,attribution:'&copy; VWorld 국토교통부'}).addTo(citMap);
   L.geoJSON(GEO.gu,{style:f=>({color:GU_FILL[f.properties.gu],weight:2.5,fillColor:GU_FILL[f.properties.gu],fillOpacity:0.05}), interactive:false}).addTo(citMap);
-  citMap.on('click', e=>{ try{ citPick(e.latlng, pointInGu(e.latlng.lat, e.latlng.lng)); }catch(err){ toast('위치 지정 오류: '+err.message); } });
+  /* S-02: 핀 고정 + 지도 이동 — 지도를 움직이면 가운데 핀 위치가 곧 신고 위치가 된다 */
+  citMap.on('move', ()=>{ if(citStage === 'loc') citLocSync(); });
   const b=GEO.bounds; citMap.fitBounds([[b[1],b[0]],[b[3],b[2]]],{padding:[6,6]});
-  addLocate(citMap); addFsCtl(citMap);
+  addLocate(citMap);
   setTimeout(()=>citMap.invalidateSize(),80);
+  citFlow('home');
 }
 function citPick(latlng,gu){
   if(outOfCity(latlng)) return;
+  /* S-02: 마커를 꽂는 대신 지도를 옮긴다(가운데 고정 핀 방식) */
+  if(citMap){
+    citMap.setView(latlng, Math.max(citMap.getZoom(), 16));
+    if(citStage !== 'loc') citFlow('loc'); else citLocSync();
+    return;
+  }
   cit.ll=[latlng.lat,latlng.lng];
   if(!gu){ /* 폴리곤 밖/현재위치 → 최근접 읍면동으로 관할 추정 */
     const n = nearestEmd(latlng.lat,latlng.lng);
@@ -1607,9 +1622,10 @@ function citPick(latlng,gu){
   citMarker.on('dragend', e=>{ const p=e.target.getLatLng(); citPick(p, pointInGu(p.lat,p.lng)); });
   citMap.setView(latlng, Math.max(citMap.getZoom(), 16));
   const box=document.getElementById('citLocBox');
+  if(!box) return;                      /* S-02: 옛 3단계 화면 요소 — 새 구조에서는 없다 */
   box.style.display='block';
   box.innerHTML='📍 선택한 위치: <b>'+(cit.gu!=="미상"?cit.gu+' ':'')+cit.near+' 인근</b> <span style="color:var(--muted);font-size:13px">(좌표 '+latlng.lat.toFixed(4)+', '+latlng.lng.toFixed(4)+')</span>';
-  const nb=document.getElementById('citNext1'); nb.disabled=false; nb.style.opacity='1';
+  const nb=document.getElementById('citNext1'); if(nb){ nb.disabled=false; nb.style.opacity='1'; }
 }
 async function citMyLoc(){
   /* 1) 보안 컨텍스트 확인: file://로 열면 브라우저가 위치를 원천 차단 */
@@ -1661,7 +1677,9 @@ function citAskLoc(){
   }, {enableHighAccuracy:true, timeout:8000});
 }
 function citRenderCats(){
-  document.getElementById('citCats').innerHTML = FIELDS.map((c,i)=>
+  const host = document.getElementById('citCats');
+  if(!host) return;                     /* '그 밖' 화면이 열려 있을 때만 존재한다 */
+  host.innerHTML = FIELDS.map((c,i)=>
     '<button class="catbtn" id="cb'+i+'" onclick="citCat('+i+')"><span class="ico">'+c.ico+'</span>'+c.f+'</button>').join("");
 }
 function citCat(i){
@@ -1688,7 +1706,7 @@ function citSub(k){
 function citCheck2(){
   let ok=false;
   if(cit.field){ ok = cit.field.f==="기타" ? true : !!cit.sub; }
-  const nb=document.getElementById('citNext2'); nb.disabled=!ok; nb.style.opacity=ok?'1':'.5';
+  const nb=document.getElementById('citNext2'); if(nb){ nb.disabled=!ok; nb.style.opacity=ok?'1':'.5'; }
 }
 function citTypeLabel(){
   if(!cit.field) return "";
@@ -1716,23 +1734,9 @@ function citPhotoPick(inp){
   };
   rd.readAsDataURL(f);
 }
+/* S-02: 3단계 카드 화면은 하단 시트로 대체됐다. 남은 호출을 새 흐름으로 넘긴다. */
 function citGoStep(n){
-  if(n===3){
-    if(cit.field.f==="기타" || cit.sub==="기타(직접 작성)"){
-      cit.etc = document.getElementById('citEtcText').value.trim();
-      if(!cit.etc){ toast("내용을 적어주세요"); return; }
-    }
-    document.getElementById('citConfirm').innerHTML =
-      '📍 <b>위치</b>: '+(cit.gu!=="미상"?cit.gu+' ':'')+cit.near+' 인근<br>'+
-      '📋 <b>유형</b>: '+citTypeLabel()+(cit.etc?'<br>✏️ <b>내용</b>: '+cit.etc:'');
-  }
-  [1,2,3].forEach(k=>{
-    document.getElementById('citStep'+k).style.display = k===n?'block':'none';
-    const s=document.getElementById('st'+k);
-    s.className = k<n?'ok':(k===n?'on':'');
-  });
-  document.getElementById('citDone').style.display='none';
-  if(n===1 && citMap) setTimeout(()=>citMap.invalidateSize(),50);
+  citFlow(n===1 ? 'loc' : (n===2 ? 'type' : 'confirm'));
 }
 function citSubmit(){
   const extra=document.getElementById('citExtra').value.trim();
@@ -1748,10 +1752,8 @@ function citSubmit(){
     field:field, sub:sub, sum:sum, req:"현장 확인 및 조치 요청", urg:"일반", st:"신규접수", src:"시민접수", pin:cit.ll,
     photo:cit.photo, log:[nowHM()+" 24시간 민원접수창구 등록"+(cit.photo?" (사진 첨부)":"")]};
   assignXY(it); items.push(it); sbPush(it); renderMap(); renderList();
-  document.getElementById('citStep3').style.display='none';
-  ["st1","st2","st3"].forEach(id=>document.getElementById(id).className='ok');
-  const done=document.getElementById('citDone');
-  done.style.display='block';
+  const done=document.getElementById('citSheetBody');
+  citStage='done'; citCross(false); citBtns(false);
   done.innerHTML='<div class="confirm" style="border-color:var(--hs-orange);background:var(--hs-orange-bg)">'+
     '✅ <b style="font-size:17px">접수되었습니다 — 접수번호 제'+String(it.id).padStart(4,"0")+'호</b><br>'+
     '당직 근무자가 확인 후 처리하며, 아래에서 진행 상황을 바로 보실 수 있습니다.</div>'+
@@ -1762,15 +1764,8 @@ function citSubmit(){
 }
 function citReset(){
   cit={ll:null,gu:null,near:"",field:null,sub:null,etc:"",photo:null};
-  if(citMarker){ citMap.removeLayer(citMarker); citMarker=null; }
-  document.getElementById('citLocBox').style.display='none';
-  const nb=document.getElementById('citNext1'); nb.disabled=true; nb.style.opacity='.5';
-  document.getElementById('citEtcText').value=''; document.getElementById('citExtra').value='';
-  const pv=document.getElementById('citPhotoPrev'); pv.style.display='none'; pv.src='';
-  document.getElementById('citPhoto').value='';
-  document.getElementById('citSubWrap').style.display='none';
-  document.getElementById('citEtcWrap').style.display='none';
-  citRenderCats(); citGoStep(1);
+  if(citMarker && citMap){ citMap.removeLayer(citMarker); citMarker=null; }
+  citFlow('home');
 }
 
 /* ── 실시간 기상: 기상청 실황+특보(공공데이터포털) + Open-Meteo(예보 보조) ── */
@@ -2357,7 +2352,10 @@ async function pickJusoCit(i){
   citMap.setView(ll, approx ? 13 : 17);
   if(approx) toast('정확한 좌표를 찾지 못해 관할 중심에 표시했습니다 — 핀을 끌어 위치를 맞춰주세요');
   cit.near = j.roadAddr;
-  document.getElementById('citLocBox').innerHTML = '📍 선택한 위치: <b>'+(gu!=="미상"?gu+' ':'')+j.roadAddr+'</b>';
+  const lb = document.getElementById('citLocBox');
+  if(lb) lb.innerHTML = '📍 선택한 위치: <b>'+(gu!=="미상"?gu+' ':'')+j.roadAddr+'</b>';
+  const ln = document.getElementById('citLocNm');
+  if(ln) ln.textContent = j.roadAddr;
 }
 
 /* ── 에어코리아 대기질 (경기 실시간 → 화성 측정소) — 기상청과 동일 키 시도 ── */
@@ -3914,6 +3912,164 @@ async function sbPush(it){
 }
 
 /* ── 공통 ── */
+/* ══════════ S-02 신고 흐름 재배치 ══════════
+   지도에서 시작 → 좌하단 버튼으로 진입 → 유형(야간 다발 5종 + 그 밖) 한 단계 →
+   위치 확인(핀 고정 + 지도 이동) → 확인·접수 → 처리 현황 화면.
+   기존 8분야 2계층은 '그 밖' 경로에서 그대로 쓴다. */
+const NIGHT5 = [
+  {key:'불법주정차',           field:'교통·도로', sub:'불법주정차',        ico:'🚗', bg:'#1D4994'},
+  {key:'도로 파손',            field:'교통·도로', sub:'포트홀(도로파손)',  ico:'🕳️', bg:'#D63B1F'},
+  {key:'가로등·보안등',        field:'교통·도로', sub:'가로등·보안등 고장', ico:'💡', bg:'#F5A623'},
+  {key:'쓰레기 무단투기',      field:'환경',      sub:'쓰레기 무단투기',   ico:'🗑️', bg:'#1D8348'},
+  {key:'밤 소음',              field:'환경',      sub:'생활소음',          ico:'🔊', bg:'#7C3AED'}
+];
+let citNearLayer = null;
+function citSheet(on){
+  const el = document.getElementById('citSheet');
+  if(el) el.classList.toggle('on', !!on);
+}
+function citTop(html){
+  const el = document.getElementById('citTop');
+  if(!el) return;
+  el.innerHTML = html || '';
+  el.classList.toggle('on', !!html);
+}
+function citCross(on){
+  const el = document.getElementById('citCross');
+  if(el) el.classList.toggle('on', !!on);
+}
+function citBtns(on){
+  const a = document.getElementById('citStart'), b = document.getElementById('citNear');
+  if(a) a.style.display = on ? 'block' : 'none';
+  if(b) b.style.display = on ? 'block' : 'none';
+}
+/* 화면 단계 — home / type / etc / loc / confirm / done */
+let citStage = 'home';
+function citFlow(stage){
+  citStage = stage;
+  const body = document.getElementById('citSheetBody');
+  if(!body) return;
+  citBtns(stage === 'home');
+  citCross(stage === 'loc');
+  if(stage === 'home'){ citSheet(false); citTop(''); return; }
+
+  if(stage === 'type'){
+    citTop('');
+    body.innerHTML = '<h3>어떤 불편을 신고하시나요?</h3>' +
+      '<p class="desc">밤에 가장 많이 들어오는 다섯 가지입니다. 없으면 “그 밖”을 눌러 주세요.</p>' +
+      '<div class="cit-types">' +
+      NIGHT5.map((t,i)=>'<button class="cit-type" onclick="citPickType(' + i + ')" aria-label="' + t.key + ' 신고">' +
+        '<span class="ic" style="background:' + t.bg + '">' + t.ico + '</span><span class="nm">' + t.key + '</span></button>').join('') +
+      '<button class="cit-type" onclick="citFlow(\'etc\')" aria-label="그 밖의 신고">' +
+      '<span class="ic" style="background:#64748B">➕</span><span class="nm">그 밖</span></button></div>' +
+      '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'home\')">닫기</button></div>';
+    citSheet(true);
+    return;
+  }
+  if(stage === 'etc'){
+    /* 기존 8분야 2계층 유지 */
+    body.innerHTML = '<h3>그 밖의 신고</h3><p class="desc">분야를 고르시면 세부 유형이 나옵니다.</p>' +
+      '<div class="catgrid" id="citCats"></div>' +
+      '<div id="citSubWrap" style="display:none"><p style="font-size:14px;font-weight:700;margin-top:14px;color:var(--hs-blue-dark)">세부 유형을 선택해 주세요</p>' +
+      '<div class="catgrid" id="citSubs"></div></div>' +
+      '<div id="citEtcWrap" style="display:none;margin-top:12px">' +
+      '<label style="font-size:13px;font-weight:700;color:var(--muted)">내용을 직접 적어주세요</label>' +
+      '<textarea id="citEtcText" style="margin-top:6px;min-height:76px" placeholder="예) 공원 벤치가 부서져 있어요"></textarea></div>' +
+      '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'type\')">← 뒤로</button>' +
+      '<button class="btn-p" id="citNext2" onclick="citEtcNext()" disabled style="opacity:.5">다음</button></div>';
+    citRenderCats();
+    citSheet(true);
+    return;
+  }
+  if(stage === 'loc'){
+    citTop('📍 어디에서 보셨나요?<span class="sub">지도를 움직여 가운데 핀을 맞춰 주세요</span>');
+    body.innerHTML = '<h3 id="citLocNm">위치를 확인하고 있습니다…</h3>' +
+      '<p class="desc" id="citLocSub">지도를 움직이면 이 자리에 주소가 나옵니다.</p>' +
+      '<div style="display:flex;gap:8px"><button class="btn-g" style="flex:1;min-height:48px" onclick="citMyLoc()">📍 현재 위치</button>' +
+      '<input id="citAdrKw" placeholder="주소로 찾기" style="flex:1.4" onkeydown="if(event.key===\'Enter\')jusoCit()"></div>' +
+      '<div id="citAdrRes" style="display:none;margin-top:8px"></div>' +
+      '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'type\')">← 뒤로</button>' +
+      '<button class="btn-p" onclick="citLocConfirm()">이 위치로</button></div>';
+    citSheet(true);
+    citLocSync();
+    return;
+  }
+  if(stage === 'confirm'){
+    citTop('');
+    body.innerHTML = '<h3>이 내용으로 접수할까요?</h3>' +
+      '<div class="confirm" style="font-size:15px;line-height:1.8">📍 <b>' + (cit.gu !== '미상' ? cit.gu + ' ' : '') + cit.near + ' 인근</b><br>' +
+      '📋 <b>' + citTypeLabel() + '</b>' + (cit.etc ? '<br>✏️ ' + cit.etc : '') + '</div>' +
+      '<label style="font-size:13px;font-weight:700;color:var(--muted);display:block;margin-top:12px">추가 설명 (선택)</label>' +
+      '<input id="citExtra" placeholder="예) 이틀째 그대로예요" style="margin-top:6px">' +
+      '<div style="margin-top:12px"><label class="btn-g" style="display:block;text-align:center;line-height:32px;min-height:48px">📷 사진 첨부 (선택)' +
+      '<input type="file" id="citPhoto" accept="image/*" capture="environment" style="display:none" onchange="citPhotoPick(this)"></label>' +
+      '<img id="citPhotoPrev" style="display:none;max-width:100%;max-height:180px;border-radius:12px;margin-top:8px;border:1.5px solid var(--line)"></div>' +
+      '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'loc\')">← 위치 수정</button>' +
+      '<button class="btn-o" onclick="citSubmit()">신고 접수</button></div>';
+    citSheet(true);
+    return;
+  }
+}
+function citPickType(i){
+  const t = NIGHT5[i];
+  cit.field = FIELDS.find(f=>f.f === t.field);
+  cit.sub = t.sub; cit.etc = '';
+  citFlow('loc');
+}
+function citEtcNext(){
+  if(cit.field && (cit.field.f === '기타' || cit.sub === '기타(직접 작성)')){
+    const v = document.getElementById('citEtcText');
+    cit.etc = v ? v.value.trim() : '';
+    if(!cit.etc){ toast('내용을 적어주세요'); return; }
+  }
+  citFlow('loc');
+}
+/* 핀 고정 + 지도 이동 — 지도 중심이 곧 신고 위치 */
+function citLocSync(){
+  if(!citMap) return;
+  const c = citMap.getCenter();
+  cit.ll = [c.lat, c.lng];
+  cit.gu = pointInGu(c.lat, c.lng) || '미상';
+  if(cit.gu === '미상'){
+    const n = nearestEmd(c.lat, c.lng);
+    for(const g in GU_KEYS){ if(GU_KEYS[g].some(k=>n.includes(k))){ cit.gu = g; break; } }
+  }
+  cit.near = nearestEmd(c.lat, c.lng);
+  const nm = document.getElementById('citLocNm'), sub = document.getElementById('citLocSub');
+  if(nm) nm.textContent = (cit.gu !== '미상' ? cit.gu + ' ' : '') + cit.near + ' 인근';
+  if(sub) sub.textContent = '맞으면 “이 위치로”를 눌러 주세요.';
+}
+function citLocConfirm(){
+  if(!cit.ll){ toast('위치를 확인하지 못했습니다'); return; }
+  if(outOfCity({lat:cit.ll[0], lng:cit.ll[1]})) return;
+  citFlow('confirm');
+}
+/* 근처 신고 보기 — 중복 신고를 줄이고, 신고 전에 상황을 확인한다 */
+function citNearby(){
+  if(!citMap) return;
+  if(citNearLayer){ citMap.removeLayer(citNearLayer); citNearLayer = null; citTop(''); toast('근처 신고 표시를 껐습니다'); return; }
+  const c = citMap.getCenter();
+  const near = realItems().filter(i=>i.st !== '완료' && (i.ll || i.pin))
+    .map(i=>({it:i, d:distM(c.lat, c.lng, (i.ll||i.pin)[0], (i.ll||i.pin)[1])}))
+    .filter(x=>x.d < 3000).sort((a,b)=>a.d - b.d).slice(0, 30);
+  citNearLayer = L.layerGroup().addTo(citMap);
+  for(const x of near){
+    /* 시민 화면이므로 요약만 — 담당자·연락처는 표시하지 않는다 */
+    L.circleMarker(x.it.ll || x.it.pin, {radius:8, color:'#fff', weight:2, fillColor:x.it.urg === '긴급' ? '#D63B1F' : '#F5A623', fillOpacity:.9})
+      .bindPopup('<b>' + x.it.sub + '</b><br>' + x.it.st + ' · ' + Math.round(x.d) + 'm 거리<br>' +
+        '<span style="font-size:12px;color:#64748B">이미 접수된 건입니다</span>')
+      .addTo(citNearLayer);
+  }
+  citTop('👀 근처 접수된 신고 ' + near.length + '건<span class="sub">같은 건이면 다시 신고하지 않으셔도 됩니다 · 버튼을 다시 누르면 꺼집니다</span>');
+  if(!near.length) toast('반경 3km 안에 접수된 신고가 없습니다');
+}
+function distM(a, b, c, d){
+  const R = 6371000, t = Math.PI/180;
+  const dx = (c - a) * t, dy = (d - b) * t;
+  const h = Math.sin(dx/2)**2 + Math.cos(a*t)*Math.cos(c*t)*Math.sin(dy/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
 /* ══════════ S-03 처리 현황 추적 ══════════
    당직 화면의 출동 애니메이션이 진행 상태를 TRACK 에 발행하고, 시민 화면은 그것만 읽는다.
    시민에게 나가는 값은 trackPublic() 이 거르는 것뿐 —
@@ -4325,7 +4481,6 @@ setTimeout(loadJournal, 0);
 spStep('res'); initMap(); spStep('map'); renderMap(); renderList();
 if(restored){ toast("💾 저장된 접수 데이터 "+items.length+"건 복원 (이 PC 누적분)"); const last=[...items].sort((a,b)=>b.id-a.id)[0]; if(last) selectItem(last.id); } else { selectItem(3); }
 spStep('db'); sbInit().finally(()=>spStep('done'));   // ☁️ Supabase complaints 실시간 연동 (호출 누락돼 있던 버그 — DB가 민원 원천, 성공 시 시드 대체)
-citRenderCats();
 renderStaff();
 applyHash();   // D-02: 주소(#cit #duty #dash #road)로 첫 화면 결정
 loadWeather(); loadFeed(); loadAir(); loadRoadWx();
