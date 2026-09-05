@@ -401,6 +401,46 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
 .item.other{opacity:.42;}
 .badge.b-dept{background:#EEF1F4; color:var(--muted); font-weight:700;}
 .sc-sum{font-size:12px; color:var(--muted); margin-bottom:8px; line-height:1.6;}
+/* ══════════ S-07 · S-08 지휘 계통 (HUD) ══════════ */
+#cmd{display:none; padding-bottom:32px;}
+.hud{background:linear-gradient(160deg,#0B2145 0%,#143567 100%); border:1px solid rgba(56,189,248,.35);
+  border-radius:16px; padding:16px 24px; color:#EAF2FB; box-shadow:0 0 24px rgba(56,189,248,.12) inset;}
+.hud h3{font-size:17px; font-weight:800; color:#38bdf8; margin-bottom:12px; display:flex; align-items:center; gap:8px;}
+.hud .kv{display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:12px;}
+.hud .kv > div{background:rgba(56,189,248,.08); border:1px solid rgba(56,189,248,.22); border-radius:8px; padding:12px;}
+.hud .kv .k{font-size:12px; color:#8FB2E0;}
+.hud .kv .v{font-size:22px; font-weight:800; color:#fff; line-height:1.3;}
+.hud .v em{font-size:13px; font-style:normal; color:#38bdf8;}
+.cmd-grid{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-top:16px;}
+@media(max-width:1000px){.cmd-grid{grid-template-columns:1fr;}}
+.cmd-card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 24px;}
+.cmd-card h4{font-size:17px; font-weight:800; color:var(--hs-blue-dark); margin-bottom:4px;}
+.cmd-card .tot{font-size:30px; font-weight:800; color:var(--hs-blue); line-height:1.2;}
+.cmd-card .tot small{font-size:12px; color:var(--muted); font-weight:600;}
+.cmd-dept{display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid var(--line);}
+.cmd-dept:last-of-type{border-bottom:none;}
+.cmd-dept .nm{flex:1; font-size:13px; font-weight:600;}
+.cmd-dept .n{width:40px; text-align:center; font-size:17px; font-weight:800;}
+/* 증감 버튼 40px 정사각 — 슬라이더를 쓰지 않는다(조정 단계를 감추지 않기 위해) */
+.cmd-step{width:40px; height:40px; border-radius:8px; background:var(--hs-blue-bg); color:var(--hs-blue-dark);
+  font-size:22px; font-weight:800; line-height:1;}
+.cmd-step:hover{background:var(--hs-blue-line);}
+.cmd-warn{border-radius:8px; padding:12px; font-size:13px; line-height:1.6; margin-top:12px;}
+.cmd-warn.over{background:var(--st-new-bg); color:#B3261E; border:1px solid #E5B4AE;}
+.cmd-warn.under{background:#FFF3CD; color:#9A6700; border:1px solid #E5D08A;}
+.cmd-warn.ok{background:#DFF0E3; color:#1D8348; border:1px solid #B7DCC0;}
+.ack{display:flex; align-items:center; gap:8px; font-size:13px; padding:8px 0; border-bottom:1px solid var(--line);}
+.ack .t{margin-left:auto; font-size:12px; color:var(--muted);}
+.ack .st{font-size:12px; font-weight:800; border-radius:4px; padding:2px 8px;}
+.ack .st.y{background:#DFF0E3; color:#1D8348;} .ack .st.n{background:var(--st-new-bg); color:var(--st-new);}
+.rule-row{display:flex; align-items:center; gap:12px; padding:8px 0; border-bottom:1px solid var(--line);}
+.rule-row label{flex:1; font-size:13px; font-weight:600;}
+.rule-row input{width:110px;}
+.rule-state{display:inline-block; font-size:12px; font-weight:800; border-radius:4px; padding:2px 8px;}
+.rule-state.draft{background:#EEF1F4; color:var(--muted);}
+.rule-state.review{background:#FFF3CD; color:#9A6700;}
+.rule-state.passed{background:#E1EBFA; color:#1D4994;}
+.rule-state.live{background:#DFF0E3; color:#1D8348;}
 </style>
 </head>
 <body>
@@ -415,6 +455,7 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
     <button id="tabDash" onclick="setMode('dash')">종합현황 대시보드</button>
     <button id="tabCit" onclick="setMode('cit')">화성시 24시간 민원접수창구</button>
     <button id="tabRoad" onclick="setMode('road')">신속기동단 작업판</button>
+    <button id="tabCmd" onclick="setMode('cmd')">조치지시</button>
   </div>
   <a class="btn-g" href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener"
      title="화성시 스마트행정지원시스템 — 내부망(행정망) 전용이라 외부에서는 열리지 않습니다"
@@ -648,6 +689,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   <button id="dbWork" onclick="dutySheet('r')">🧑‍💼 업무 처리</button>
   <button id="dbMap" onclick="dutySheet(null)">🗺️ 지도</button>
 </div>
+<div id="cmd"></div>
 <div id="track"></div>
 <div id="road" style="display:none"></div>
 <footer>화성특례시 당직 업무 플랫폼 프로토타입 · AI공모전 출품용 데모 — 데이터는 예시이며 실제 접수되지 않습니다.<br>인계 문자·연락처는 데모용으로 일부 마스킹되어 있습니다.</footer>
@@ -658,7 +700,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0216';
+const BUILD_VER = 'v0906-0220';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1668,6 +1710,7 @@ function openReport(){
 "□ 상황접수현황 (자동 집계)\n · 총 "+items.length+"건 — "+Object.entries(byCat).map(([k,v])=>k+" "+v+"건").join(", ")+"\n"+
 " · 처리: 완료 "+items.filter(i=>i.st==="완료").length+"건 / 처리중 "+items.filter(i=>i.st==="처리중").length+"건 / 신규접수 "+items.filter(i=>i.st==="신규접수").length+"건\n\n"+
 "□ 유선·시민 민원 내역\n"+lines.join("\n")+"\n\n"+
+(holdReportLines().length ? "□ 상신 보류 건 (자동 반영)\n"+holdReportLines().join("\n")+"\n\n" : "")+
 "□ 행사·인파 밀집 (출처: 화성시 문화관광포털 tour.hscity.go.kr 웹크롤링)\n"+(function(){const a=FESTIVALS.filter(f=>festStatus(f)==="live");const b=FESTIVALS.filter(f=>festStatus(f)==="soon");let s="";if(a.length)s+=a.map(f=>" · [진행중] "+f.n+" ("+f.p+") — 운집예상 "+f.crowd.toLocaleString()+"명·인파관리 "+f.grade).join("\n")+"\n";if(b.length)s+=b.map(f=>" · [D-7] "+f.n+" "+f.d+" ("+f.p+")").join("\n")+"\n";return s||" · 금일 해당 없음\n";})()+"\n□ 유관기관 이상유무\n · 동탄경찰서·서부경찰서·평택해양경찰서: 이상없음 (버튼 체크 자동기록)\n\n"+
 "재난안전상황실장 / 당직사령  (전자결재 연계 예정)";
   showModal('<h2>📄 일일보고 자동 생성</h2><pre class="report">'+rep+'</pre>'+
@@ -4009,6 +4052,451 @@ async function sbPush(it){
 }
 
 /* ── 공통 ── */
+/* ══════════ S-08 급증 탐지 규칙 ══════════
+   규칙은 코드가 아니라 데이터다. 화면에서 조정하고, 정책협의체 심의를 거쳐 시행한다.
+   초안은 실제 동작에 영향을 주지 않는다 — 시행 중인 규칙만 탐지에 쓰인다. */
+const RULE_DEFAULT = {
+  반경_m: 1000,
+  시간창_시간: 3,
+  최소_건수: 3,          /* 탐지 — 부서 알림 */
+  상신_건수: 6,          /* 상신 — 시장 조치지시 상신 */
+  평소대비_배수: 2.5,
+  특보_가중: 0.7,        /* 특보 발효 시 임계치에 곱한다(낮아짐) */
+  재발동_억제_시간: 6,   /* 같은 지역 재발동 억제 */
+  행사_예외: true,
+  상태: 'live',          /* draft | review | passed | live */
+  시행일: '',
+  심의번호: '',
+  개정자: '',
+  개정시각: ''
+};
+let RULES_CUR = Object.assign({}, RULE_DEFAULT);   /* 시행 중 */
+let RULES_DRAFT = Object.assign({}, RULE_DEFAULT, {상태:'draft'});
+let RULE_HIST = [];
+try{
+  const a = localStorage.getItem('hs_rule_cur');   if(a) RULES_CUR = Object.assign({}, RULE_DEFAULT, JSON.parse(a));
+  const b = localStorage.getItem('hs_rule_draft'); if(b) RULES_DRAFT = Object.assign({}, RULE_DEFAULT, JSON.parse(b));
+  const c = localStorage.getItem('hs_rule_hist');  if(c) RULE_HIST = JSON.parse(c);
+}catch(e){}
+function ruleSave(){
+  try{
+    localStorage.setItem('hs_rule_cur', JSON.stringify(RULES_CUR));
+    localStorage.setItem('hs_rule_draft', JSON.stringify(RULES_DRAFT));
+    localStorage.setItem('hs_rule_hist', JSON.stringify(RULE_HIST.slice(-50)));
+  }catch(e){}
+}
+/* 특보 발효 여부 — 가중 규칙에 쓴다 */
+function warnActive(){ return !!(typeof WX !== 'undefined' && WX && WX.warn); }
+function ruleThresholds(R){
+  const w = warnActive() ? R.특보_가중 : 1;
+  return {detect: Math.max(2, Math.round(R.최소_건수 * w)), report: Math.max(2, Math.round(R.상신_건수 * w))};
+}
+
+/* ══════════ 급증 탐지 ══════════
+   같은 지역·같은 시간창에 유사 민원이 몰렸는지 본다. 모든 민원이 올라가지 않는다. */
+function detectSurges(R, list){
+  R = R || RULES_CUR;
+  const src = (list || realItems()).filter(i=>i.ll || i.pin);
+  const th = ruleThresholds(R);
+  const now = Date.now();
+  const win = R.시간창_시간 * 3600 * 1000;
+  const used = {}, out = [];
+  for(const seed of src){
+    const sll = seed.ll || seed.pin;
+    const near = src.filter(i=>{
+      const ll = i.ll || i.pin;
+      if(distM(sll[0], sll[1], ll[0], ll[1]) > R.반경_m) return false;
+      return (now - itemStart(i).getTime()) <= win;
+    });
+    if(near.length < th.detect) continue;
+    const key = near.map(i=>i.id).sort((a,b)=>a-b).join(',');
+    if(used[key]) continue;
+    used[key] = 1;
+    /* 행사 예외 — 인파 행사 반경 안이면 제외 */
+    if(R.행사_예외 && typeof FESTIVALS !== 'undefined' && Array.isArray(FESTIVALS) &&
+       FESTIVALS.some(f=>f.ll && distM(sll[0], sll[1], f.ll[0], f.ll[1]) < R.반경_m)) continue;
+    /* 평소 대비 배수 — 누적 이력의 시간당 평균과 비교 */
+    const base = Math.max(0.4, (HIST.length + src.length) / (7 * 24));
+    const rate = near.length / R.시간창_시간;
+    const mult = rate / base;
+    if(mult < R.평소대비_배수) continue;
+    out.push({
+      key: key, seed: seed, list: near, cnt: near.length,
+      emd: emdOf(seed) || seed.gu, radius: R.반경_m, hours: R.시간창_시간,
+      mult: Math.round(mult * 10) / 10, warn: warnActive(),
+      report: near.length >= th.report
+    });
+  }
+  return out.sort((a,b)=>b.cnt - a.cnt);
+}
+/* 개정 전 과거 데이터 검증 — 바꾼 값을 누적 민원에 적용해 최근 30일이면 몇 회 발동인지 */
+function ruleBacktest(R){
+  const pool = realItems().concat(HIST.map((h,i)=>({
+    id: -1000 - i, time: h.time, gu: h.gu, loc: (h.gu || '') + ' ' + (h.sub || ''), field: h.field, sub: h.sub,
+    sum: h.sum, urg: h.urg, st: '완료', log: [],
+    pin: (GEO.cent && GEO.cent[h.gu]) ? GEO.cent[h.gu] : null
+  })).filter(x=>x.pin));
+  const n = detectSurges(R, pool).length;
+  const per30 = Math.round(n * (30 / 7));   /* 누적 이력은 약 7일치 */
+  let verdict;
+  if(per30 > 60) verdict = '너무 잦습니다 — 경보에 무뎌질 우려가 있습니다.';
+  else if(per30 < 2) verdict = '너무 드뭅니다 — 실제 급증을 놓칠 위험이 있습니다.';
+  else verdict = '적정 범위로 보입니다.';
+  return {count: n, per30: per30, verdict: verdict};
+}
+
+/* ══════════ S-09 보류 기록·재상신 ══════════
+   사유 없이 보류할 수 없다. 보류 사유는 선택형이고, '오탐'은 규칙 개정 자료로 자동 전달된다. */
+const HOLD_REASONS = [
+  {k:'담당부서 자체 처리', auto:false},
+  {k:'이미 조치 중',      auto:false},
+  {k:'현장 확인 필요',    auto:false},
+  {k:'기상 호전 예상',    auto:false},
+  {k:'가용 인력 부족',    auto:false},
+  {k:'오탐',              auto:true}   /* 탐지 규칙 개정 자료로 자동 전달 */
+];
+let HOLDS = [];
+try{ const v = localStorage.getItem('hs_holds'); if(v) HOLDS = JSON.parse(v); }catch(e){}
+function holdsSave(){ try{ localStorage.setItem('hs_holds', JSON.stringify(HOLDS.slice(-40))); }catch(e){} }
+let FALSE_POSITIVES = [];
+try{ const v = localStorage.getItem('hs_fp'); if(v) FALSE_POSITIVES = JSON.parse(v); }catch(e){}
+
+function holdOf(key){ return HOLDS.find(h=>h.key === key && !h.closed); }
+function holdOpen(key){
+  const su = detectSurges().find(x=>x.key === key);
+  if(!su){ toast('해당 급증 건을 찾지 못했습니다'); return; }
+  showModal('<h2>⏸️ 상신 보류</h2>' +
+    '<p style="font-size:14px;line-height:1.8">' + su.emd + ' · ' + su.cnt + '건 (평소 대비 ' + su.mult + '배)<br>' +
+    '<span style="font-size:13px;color:var(--muted)">사유 없이는 보류할 수 없습니다. 아래에서 골라 주세요.</span></p>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">보류 사유</label>' +
+    '<select id="hdWhy" style="margin-top:6px">' + HOLD_REASONS.map(r=>'<option>' + r.k + '</option>').join('') + '</select>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">메모 (선택)</label>' +
+    '<input id="hdMemo" placeholder="예) 담당부서가 이미 현장 출동" style="margin-top:6px">' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">재검토 시점</label>' +
+    '<select id="hdAfter" style="margin-top:6px"><option value="1">1시간 뒤</option><option value="3" selected>3시간 뒤</option>' +
+    '<option value="6">6시간 뒤</option><option value="12">12시간 뒤</option></select>' +
+    '<div class="row"><button class="btn-o" onclick="holdSave(\'' + key + '\')">보류 기록</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function holdSave(key){
+  const su = detectSurges().find(x=>x.key === key);
+  if(!su){ toast('해당 급증 건을 찾지 못했습니다'); return; }
+  const why = document.getElementById('hdWhy').value;
+  const memo = document.getElementById('hdMemo').value.trim();
+  const after = Number(document.getElementById('hdAfter').value);
+  const h = {
+    key: key, at: new Date().toISOString(), hm: nowHM(), by: meLabel(),
+    why: why, memo: memo, after: after, reviewAt: Date.now() + after * 3600 * 1000,
+    emd: su.emd, cnt0: su.cnt, mult0: su.mult, radius: su.radius, hours: su.hours,
+    ids: su.list.map(i=>i.id), resub: 0, closed: false, closeWhy: ''
+  };
+  HOLDS.unshift(h); holdsSave();
+  /* 오탐은 규칙 개정 자료로 자동 전달 */
+  if(why === '오탐'){
+    FALSE_POSITIVES.push({at: h.at, emd: h.emd, cnt: h.cnt0, mult: h.mult0, radius: h.radius, hours: h.hours});
+    try{ localStorage.setItem('hs_fp', JSON.stringify(FALSE_POSITIVES.slice(-100))); }catch(e){}
+    toast('오탐으로 기록했습니다 — 탐지 규칙 개정 자료로 전달됩니다');
+  } else {
+    toast(why + '(으)로 보류했습니다 — ' + after + '시간 뒤 재검토');
+  }
+  for(const it of su.list){
+    it.log.push(nowHM() + ' 상신 보류: ' + why + (memo ? ' (' + memo + ')' : '') + ' · ' + meLabel());
+    sbPush(it);
+  }
+  closeModal(); renderList(); renderCmd();
+}
+/* 자동 재상신 조건 — 인명 관련 신고는 억제를 무시하고 즉시 */
+function holdCheck(){
+  let changed = false;
+  for(const h of HOLDS){
+    if(h.closed) continue;
+    const cur = detectSurges().find(x=>x.emd === h.emd);
+    const now = Date.now();
+    const life = cur && cur.list.some(i=>/인명|부상|다쳤|매몰|고립|실종|사람이/.test([i.sum, i.req].join(' ')));
+    const grow = cur && cur.cnt > h.cnt0;
+    const time = now >= h.reviewAt;
+    const wx   = warnActive() && !h.warn0;
+    if(!(life || grow || time || wx)) continue;
+    h.resub = (h.resub || 0) + 1;
+    h.lastWhy = life ? '인명 관련 신고 접수 — 즉시 재상신(억제 무시)'
+              : (grow ? '추가 접수 증가 (' + h.cnt0 + '→' + cur.cnt + '건)'
+              : (wx ? '기상 특보 상승' : '재검토 시점 도래'));
+    h.reviewAt = now + 3 * 3600 * 1000;
+    changed = true;
+    toast('⏫ 재상신: ' + h.emd + ' — ' + h.lastWhy);
+    if(h.resub >= 2) toast('재상신 2회 미결 — 부시장 병행 통보');
+  }
+  if(changed){ holdsSave(); if(curMode === 'cmd') renderCmd(); }
+}
+setInterval(holdCheck, 60000);
+function holdClose(key){
+  const h = holdOf(key);
+  if(!h) return;
+  const why = prompt('종결 사유를 적어 주세요', '상황 해소');
+  if(why === null) return;
+  h.closed = true; h.closeWhy = why; h.closedAt = new Date().toLocaleString('ko-KR');
+  holdsSave(); renderCmd();
+  toast('보류 건을 종결했습니다');
+}
+function cmdHoldList(){
+  const live = HOLDS.filter(h=>!h.closed);
+  if(!live.length) return '';
+  return '<div class="cmd-card" style="margin-top:16px"><h4>⏸️ 보류 중 ' + live.length + '건 <span style="font-size:12px;color:var(--muted);font-weight:600">— 일일보고에 자동 반영</span></h4>' +
+    live.slice(0, 6).map(h=>{
+      const cur = detectSurges().find(x=>x.emd === h.emd);
+      const add = cur ? Math.max(0, cur.cnt - h.cnt0) : 0;
+      return '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line);font-size:13px;line-height:1.7">' +
+        '<b>' + h.emd + '</b> · 상신 근거 ' + h.cnt0 + '건(평소 대비 ' + h.mult0 + '배 · 반경 ' + h.radius + 'm · ' + h.hours + '시간)<br>' +
+        '보류 ' + h.hm + ' · ' + h.by + ' · <b>' + h.why + '</b>' + (h.memo ? ' — ' + h.memo : '') + '<br>' +
+        '재검토 ' + new Date(h.reviewAt).toLocaleTimeString('ko-KR', {hour:'2-digit', minute:'2-digit'}) +
+        ' · 경과 추가 접수 <b>' + add + '건</b>' +
+        (h.resub ? ' · <span class="badge b-urg">재상신 ' + h.resub + '회</span>' + (h.resub >= 2 ? ' <span class="badge b-urg">부시장 병행 통보</span>' : '') : '') +
+        (h.lastWhy ? '<br><span style="color:var(--muted)">최근 재상신 사유: ' + h.lastWhy + '</span>' : '') +
+        '<div class="row"><button class="btn-g" style="min-height:32px;padding:2px 12px;font-size:12px" onclick="cmdPick(\'' + h.key + '\')">다시 검토</button>' +
+        '<button class="btn-g" style="min-height:32px;padding:2px 12px;font-size:12px" onclick="holdClose(\'' + h.key + '\')">종결</button></div></div>';
+    }).join('') + '</div>';
+}
+/* 보류 건은 일일보고에 자동 반영 */
+function holdReportLines(){
+  return HOLDS.filter(h=>!h.closed).map(h=>
+    '· ' + h.emd + ' 급증 ' + h.cnt0 + '건 상신 보류(' + h.why + ') — ' + h.hm + ' ' + h.by +
+    (h.resub ? ' · 재상신 ' + h.resub + '회' : ''));
+}
+
+/* ══════════ S-07 시장 조치지시 ══════════
+   용어는 '조치지시'로 통일한다(군 용어 사용 금지).
+   모든 민원이 올라가지 않는다 — 급증 탐지가 상신 임계치를 넘은 건만 상신된다. */
+const ACT_TYPES = [
+  {k:'일반민원',  ico:'📋', desc:'평시 절차로 처리. 담당부서 순차 대응',
+   depts:{'도로과':2, '자원순환과':2, '환경지도과':1, '읍면동':2}},
+  {k:'긴급민원',  ico:'🚨', desc:'즉시 현장 대응. 당직·기동단 우선 투입',
+   depts:{'도로과':4, '재난대응과':3, '안전정책과':2, '읍면동':4, '신속기동단':4}},
+  {k:'선제조치',  ico:'🛡️', desc:'추가 피해 예방. 순찰·통제·사전 조치',
+   depts:{'재난대응과':4, '안전정책과':3, '도로과':3, '읍면동':6, '신속기동단':3}}
+];
+/* 가용 총원 기준 — 과다(비번 소집·초과근무)·과소(대응 지연) 양방향 경고 */
+const CREW_BAND = {min:6, max:24};
+let cmdSel = null;      /* 선택한 급증 건 */
+let cmdType = 1;        /* 조치 유형 index */
+let cmdDepts = null;    /* 부서별 인원 (조정 중) */
+let ORDERS = [];        /* 하달 이력 */
+try{ const v = localStorage.getItem('hs_orders'); if(v) ORDERS = JSON.parse(v); }catch(e){}
+function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(-40))); }catch(e){} }
+
+function cmdTotal(){ return Object.values(cmdDepts || {}).reduce((a,b)=>a + b, 0); }
+function cmdStep(dept, d){
+  if(!cmdDepts) return;
+  cmdDepts[dept] = Math.max(0, (cmdDepts[dept] || 0) + d);
+  renderCmd();
+}
+function cmdPickType(i){
+  cmdType = i;
+  cmdDepts = Object.assign({}, ACT_TYPES[i].depts);
+  renderCmd();
+}
+function cmdPick(key){
+  const su = detectSurges().find(x=>x.key === key);
+  cmdSel = su || null;
+  if(!cmdDepts) cmdDepts = Object.assign({}, ACT_TYPES[cmdType].depts);
+  renderCmd();
+}
+function renderCmd(){
+  const host = document.getElementById('cmd');
+  if(!host) return;
+  const surges = detectSurges();
+  const th = ruleThresholds(RULES_CUR);
+  const upto = surges.filter(x=>x.report);
+  if(!cmdSel && upto.length) cmdSel = upto[0];
+  if(cmdSel && !surges.some(x=>x.key === cmdSel.key)) cmdSel = upto[0] || null;
+  if(!cmdDepts) cmdDepts = Object.assign({}, ACT_TYPES[cmdType].depts);
+
+  const head =
+    '<div class="rd-head"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🧭 조치지시</h2>' +
+    '<span style="font-size:13px;color:var(--muted)">동일 지역 유사 민원 급증이 상신 기준(' + th.report + '건)을 넘은 건만 올라옵니다</span>' +
+    '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="openRules()">⚙️ 탐지 규칙</button>' +
+    '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:13px" onclick="renderCmd()">↻ 새로고침</button></div>';
+
+  if(!upto.length){
+    host.innerHTML = head +
+      '<div class="hud"><h3>📡 급증 탐지 대기</h3>' +
+      '<p style="font-size:14px;line-height:1.8;color:#A9C4E8">지금은 상신 기준을 넘은 급증이 없습니다. ' +
+      '탐지 ' + th.detect + '건(부서 알림) · 상신 ' + th.report + '건(시장 조치지시) 기준으로 계속 보고 있습니다.' +
+      (surges.length ? '<br>현재 탐지된 지역 <b style="color:#38bdf8">' + surges.length + '곳</b> — 부서 알림 단계입니다.' : '') +
+      '</p></div>' + cmdHoldList();
+    return;
+  }
+  const su = cmdSel;
+  const t = ACT_TYPES[cmdType];
+  const tot = cmdTotal();
+  const band = tot > CREW_BAND.max ? 'over' : (tot < CREW_BAND.min ? 'under' : 'ok');
+  const bandMsg = band === 'over'
+    ? '⚠️ 총원 ' + tot + '명 — 가용 인원을 넘습니다. 비번 소집·초과근무가 필요합니다.'
+    : (band === 'under' ? '⚠️ 총원 ' + tot + '명 — 대응이 지연될 수 있습니다. 인원을 늘려 주세요.'
+                        : '✅ 총원 ' + tot + '명 — 가용 범위 안입니다.');
+
+  host.innerHTML = head +
+    /* 탐지 근거 — HUD */
+    '<div class="hud"><h3>📡 탐지 근거</h3><div class="kv">' +
+    '<div><div class="k">지역</div><div class="v" style="font-size:17px">' + su.emd + '</div></div>' +
+    '<div><div class="k">접수 건수</div><div class="v">' + su.cnt + '<em> 건</em></div></div>' +
+    '<div><div class="k">시간창</div><div class="v">' + su.hours + '<em> 시간</em></div></div>' +
+    '<div><div class="k">반경</div><div class="v">' + su.radius + '<em> m</em></div></div>' +
+    '<div><div class="k">평소 대비</div><div class="v">' + su.mult + '<em> 배</em></div></div>' +
+    '<div><div class="k">기상 특보</div><div class="v" style="font-size:17px">' + (su.warn ? (WX && WX.warn ? WX.warn : '발효 중') : '없음') + '</div></div>' +
+    '</div>' +
+    (upto.length > 1 ? '<div style="margin-top:12px;font-size:13px;color:#8FB2E0">다른 상신 건: ' +
+      upto.filter(x=>x.key !== su.key).map(x=>'<a href="#" onclick="cmdPick(\'' + x.key + '\');return false" style="color:#38bdf8;font-weight:700;margin-right:12px">' + x.emd + ' ' + x.cnt + '건</a>').join('') + '</div>' : '') +
+    '</div>' +
+
+    /* 조치 유형 3분류 — 각 카드에 총원이 미리 계산돼 있다 */
+    '<div class="cmd-grid">' + ACT_TYPES.map((a,i)=>{
+      const sum = Object.values(i === cmdType ? cmdDepts : a.depts).reduce((x,y)=>x + y, 0);
+      return '<div class="cmd-card" style="' + (i === cmdType ? 'border:2px solid var(--hs-orange)' : '') + '">' +
+        '<h4>' + a.ico + ' ' + a.k + '</h4>' +
+        '<p style="font-size:13px;color:var(--muted);line-height:1.6">' + a.desc + '</p>' +
+        '<div class="tot" style="margin-top:12px">' + sum + '<small> 명</small></div>' +
+        (i === cmdType
+          ? Object.keys(cmdDepts).map(d=>'<div class="cmd-dept"><span class="nm">' + d + '</span>' +
+              '<button class="cmd-step" aria-label="' + d + ' 인원 줄이기" onclick="cmdStep(\'' + d + '\',-1)">−</button>' +
+              '<span class="n">' + cmdDepts[d] + '</span>' +
+              '<button class="cmd-step" aria-label="' + d + ' 인원 늘리기" onclick="cmdStep(\'' + d + '\',1)">+</button></div>').join('') +
+            '<div class="cmd-warn ' + band + '">' + bandMsg + '</div>' +
+            '<div class="row"><button class="btn-o" onclick="cmdIssue()">📣 조치지시 하달</button></div>' +
+            '<div class="row"><button class="btn-g" onclick="holdOpen(\'' + su.key + '\')">보류</button></div>'
+          : '<div class="row"><button class="btn-g" onclick="cmdPickType(' + i + ')">이 유형으로</button></div>') +
+        '</div>';
+    }).join('') + '</div>' +
+
+    cmdOrderList() + cmdHoldList();
+}
+/* 하달 — 부서별 수신확인이 시각과 함께 표시되고, 미수신은 자동 재통보 */
+function cmdIssue(){
+  if(!cmdSel){ toast('상신된 급증 건이 없습니다'); return; }
+  const o = {
+    id: 'O' + Date.now(), at: new Date().toISOString(), hm: nowHM(),
+    type: ACT_TYPES[cmdType].k, emd: cmdSel.emd, cnt: cmdSel.cnt, mult: cmdSel.mult,
+    depts: Object.assign({}, cmdDepts), total: cmdTotal(),
+    ack: Object.keys(cmdDepts).reduce((a,d)=>{ a[d] = null; return a; }, {}),
+    retry: 0
+  };
+  ORDERS.unshift(o); ordersSave();
+  for(const it of cmdSel.list){
+    it.log.push(nowHM() + ' 시장 조치지시 하달 (' + o.type + ' · ' + o.total + '명)');
+    sbPush(it);
+  }
+  renderList(); renderCmd();
+  toast(o.type + ' 조치지시를 하달했습니다 — 총원 ' + o.total + '명');
+  /* 데모: 부서별 수신확인이 순차로 들어온다. 15초까지 미수신이면 자동 재통보 */
+  const ds = Object.keys(o.depts);
+  ds.forEach((d,i)=>{
+    if(i === ds.length - 1) return;   /* 마지막 한 곳은 미수신으로 남겨 재통보 동작을 보인다 */
+    setTimeout(()=>{
+      const cur = ORDERS.find(x=>x.id === o.id);
+      if(!cur) return;
+      cur.ack[d] = nowHM(); ordersSave();
+      if(curMode === 'cmd') renderCmd();
+    }, 1500 + i * 1800);
+  });
+  setTimeout(()=>cmdRetry(o.id), 15000);
+}
+function cmdRetry(id){
+  const o = ORDERS.find(x=>x.id === id);
+  if(!o) return;
+  const miss = Object.keys(o.ack).filter(d=>!o.ack[d]);
+  if(!miss.length) return;
+  o.retry = (o.retry || 0) + 1; ordersSave();
+  toast('미수신 ' + miss.length + '곳 자동 재통보 (' + miss.join(', ') + ')');
+  if(curMode === 'cmd') renderCmd();
+  if(o.retry < 3) setTimeout(()=>cmdRetry(id), 20000);
+}
+function cmdOrderList(){
+  if(!ORDERS.length) return '';
+  return '<div class="cmd-card" style="margin-top:16px"><h4>📣 하달 이력 · 수신확인</h4>' +
+    ORDERS.slice(0, 5).map(o=>
+      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">' +
+      '<div style="font-size:13px;font-weight:700">' + o.hm + ' · ' + o.type + ' · ' + o.emd + ' (' + o.cnt + '건) · 총원 ' + o.total + '명' +
+      (o.retry ? ' <span class="badge b-urg">재통보 ' + o.retry + '회</span>' : '') + '</div>' +
+      Object.keys(o.ack).map(d=>'<div class="ack"><span>' + d + '</span>' +
+        '<span class="st ' + (o.ack[d] ? 'y' : 'n') + '">' + (o.ack[d] ? '수신확인' : '미수신') + '</span>' +
+        '<span class="t">' + (o.ack[d] || '—') + '</span></div>').join('') + '</div>').join('') + '</div>';
+}
+
+/* ══════════ S-08 규칙 설정 화면 ══════════ */
+function ruleField(k, label, unit, step){
+  return '<div class="rule-row"><label>' + label + '</label>' +
+    '<input id="rf_' + k + '" type="number" step="' + (step || 1) + '" value="' + RULES_DRAFT[k] + '">' +
+    '<span style="font-size:12px;color:var(--muted);width:44px">' + (unit || '') + '</span></div>';
+}
+function openRules(){
+  const bt = ruleBacktest(RULES_DRAFT);
+  const stLabel = {draft:'초안', review:'심의 상정', passed:'의결', live:'시행 중'};
+  showModal('<h2>⚙️ 급증 탐지 규칙</h2>' +
+    '<p style="font-size:13px;color:var(--muted);line-height:1.7">규칙은 코드가 아니라 데이터입니다. 여기서 조정하고 정책협의체 심의를 거쳐 시행합니다. ' +
+    '<b>초안은 실제 동작에 영향을 주지 않습니다.</b></p>' +
+    '<div style="margin-top:12px;font-size:13px">시행 중 규칙 <span class="rule-state live">시행 중</span> — ' +
+    '탐지 ' + RULES_CUR.최소_건수 + '건 / 상신 ' + RULES_CUR.상신_건수 + '건 · 반경 ' + RULES_CUR.반경_m + 'm · ' + RULES_CUR.시간창_시간 + '시간' +
+    (RULES_CUR.심의번호 ? ' · 심의 ' + RULES_CUR.심의번호 : '') + '</div>' +
+    '<h3 style="font-size:15px;font-weight:800;margin-top:16px;color:var(--hs-blue-dark)">개정안 <span class="rule-state ' + RULES_DRAFT.상태 + '">' + stLabel[RULES_DRAFT.상태] + '</span></h3>' +
+    ruleField('반경_m', '반경', 'm', 100) +
+    ruleField('시간창_시간', '시간창', '시간', 1) +
+    ruleField('최소_건수', '탐지 최소 건수 (부서 알림)', '건', 1) +
+    ruleField('상신_건수', '시장 상신 건수', '건', 1) +
+    ruleField('평소대비_배수', '평소 대비 배수', '배', 0.1) +
+    ruleField('특보_가중', '특보 가중 (임계치 배율)', '', 0.1) +
+    ruleField('재발동_억제_시간', '재발동 억제', '시간', 1) +
+    '<div class="rule-row"><label>행사 예외 (인파 행사 반경 제외)</label>' +
+    '<input type="checkbox" id="rf_행사_예외" style="width:auto"' + (RULES_DRAFT.행사_예외 ? ' checked' : '') + '></div>' +
+    (FALSE_POSITIVES.length ? '<div class="cmd-warn under">🔎 <b>오탐 기록 ' + FALSE_POSITIVES.length + '건</b>이 개정 자료로 쌓여 있습니다 — ' +
+      '평균 ' + (FALSE_POSITIVES.reduce((a,b)=>a+b.cnt,0)/FALSE_POSITIVES.length).toFixed(1) + '건 규모에서 오탐이 났습니다. 최소 건수 상향을 검토해 보세요.</div>' : '') +
+    '<div id="rbt" class="cmd-warn ' + (bt.per30 > 60 ? 'over' : (bt.per30 < 2 ? 'under' : 'ok')) + '">' +
+    '📊 <b>개정 전 검증</b> — 이 값으로 누적 민원을 다시 보면 <b>최근 30일 기준 약 ' + bt.per30 + '회</b> 발동합니다.<br>' + bt.verdict + '</div>' +
+    '<div class="row"><button class="btn-g" onclick="ruleApplyDraft(\'recalc\')">다시 계산</button>' +
+    '<button class="btn-g" onclick="ruleApplyDraft(\'review\')">심의 상정</button>' +
+    '<button class="btn-o" onclick="ruleApplyDraft(\'live\')">의결·시행</button></div>' +
+    (RULE_HIST.length ? '<h3 style="font-size:15px;font-weight:800;margin-top:16px;color:var(--hs-blue-dark)">개정 이력</h3>' +
+      RULE_HIST.slice(-6).reverse().map(h=>'<div style="font-size:12px;color:var(--muted);padding:6px 0;border-bottom:1px solid var(--line)">' +
+      h.at + ' · ' + h.who + ' · ' + h.what + (h.no ? ' · 심의 ' + h.no : '') + '</div>').join('') : '') +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
+}
+function ruleRead(){
+  const d = Object.assign({}, RULES_DRAFT);
+  for(const k of ['반경_m','시간창_시간','최소_건수','상신_건수','평소대비_배수','특보_가중','재발동_억제_시간']){
+    const el = document.getElementById('rf_' + k);
+    if(el) d[k] = Number(el.value);
+  }
+  const cb = document.getElementById('rf_행사_예외');
+  if(cb) d.행사_예외 = cb.checked;
+  return d;
+}
+function ruleApplyDraft(act){
+  const d = ruleRead();
+  if(d.상신_건수 < d.최소_건수){ toast('상신 건수는 탐지 건수보다 작을 수 없습니다'); return; }
+  if(act === 'recalc'){ RULES_DRAFT = d; ruleSave(); closeModal(); openRules(); return; }
+  if(act === 'review'){
+    d.상태 = 'review';
+    RULES_DRAFT = d; ruleSave();
+    RULE_HIST.push({at: new Date().toLocaleString('ko-KR'), who: meLabel(), what: '심의 상정 (탐지 ' + d.최소_건수 + '/상신 ' + d.상신_건수 + ')', no: ''});
+    ruleSave(); closeModal(); openRules();
+    toast('개정안을 심의에 상정했습니다 — 아직 동작에 영향은 없습니다');
+    return;
+  }
+  /* 의결·시행 */
+  const no = prompt('심의번호를 입력해 주세요 (예: 2026-정책협의체-07)', RULES_DRAFT.심의번호 || '');
+  if(no === null) return;
+  d.상태 = 'live';
+  d.심의번호 = no;
+  d.시행일 = new Date().toISOString().slice(0, 10);
+  d.개정자 = meLabel();
+  d.개정시각 = new Date().toLocaleString('ko-KR');
+  const before = '탐지 ' + RULES_CUR.최소_건수 + '/상신 ' + RULES_CUR.상신_건수 + ' · 반경 ' + RULES_CUR.반경_m + 'm';
+  const after  = '탐지 ' + d.최소_건수 + '/상신 ' + d.상신_건수 + ' · 반경 ' + d.반경_m + 'm';
+  RULES_CUR = d;
+  RULES_DRAFT = Object.assign({}, d, {상태:'draft'});
+  RULE_HIST.push({at: d.개정시각, who: d.개정자, what: '시행: ' + before + ' → ' + after, no: no});
+  ruleSave(); closeModal(); renderCmd();
+  toast('개정 규칙을 시행합니다 (' + d.시행일 + ' · 심의 ' + no + ')');
+}
+
 /* ══════════ S-11 소속 기반 범위 분리 (D-09 포함) ══════════
    접속하면 자기 소속 범위가 이미 걸려 있다. 범위 밖은 아예 보이지 않고,
    읍면동은 '관내 전체'(타 부서 건은 흐리게 + 부서명 배지)와 '우리가 처리한 건'을 탭으로 나눈다. */
@@ -4630,7 +5118,7 @@ function roadOpen(id){
   setTimeout(()=>selectItem(id), 60);
 }
 /* ── D-02 주소 기반 화면 분기 — 주소는 하나(#cit #duty #dash #road). QR은 #cit ── */
-const MODES = ["duty","dash","cit","road","track"];
+const MODES = ["duty","dash","cit","road","track","cmd"];
 let curMode = "duty";
 function modeFromHash(){
   const h = (location.hash||"").replace("#","").split("?")[0];
@@ -4652,6 +5140,7 @@ function setMode(m, fromHash){
   document.body.setAttribute("data-mode", m);
   document.getElementById("road").style.display = m==="road"?"block":"none";
   document.getElementById("track").style.display = m==="track"?"block":"none";
+  document.getElementById("cmd").style.display = m==="cmd"?"block":"none";
   document.getElementById("duty").style.display = m==="duty"?"block":"none";
   document.getElementById("dash").style.display = m==="dash"?"block":"none";
   document.getElementById("citizen").style.display = m==="cit"?"block":"none";
@@ -4659,8 +5148,10 @@ function setMode(m, fromHash){
   document.getElementById("tabDash").className = m==="dash"?"on":"";
   document.getElementById("tabCit").className = m==="cit"?"on":"";
   const tr=document.getElementById("tabRoad"); if(tr) tr.className = m==="road"?"on":"";
+  const tc=document.getElementById("tabCmd"); if(tc) tc.className = m==="cmd"?"on":"";
   if(m==="road") renderRoad();
   if(m==="track") renderTrack();
+  if(m==="cmd") renderCmd();
   if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
   if(m==="cit") initCitMap();
   if(m==="dash"){ initDashMap(); renderDash(); }
