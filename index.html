@@ -242,6 +242,28 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
   body.mapfs #mapCard > div:nth-of-type(1){right:8px; top:44px;}
   body.mapfs #mapFsBtn{top:8px; right:8px;}
 }
+/* ── S-12 신속기동단 작업판 ── */
+#road{padding-bottom:32px;}
+.rd-head{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
+.rd-cols{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; align-items:start;}
+@media(max-width:1100px){.rd-cols{grid-template-columns:1fr;}}
+.rd-col{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px;}
+.rd-col > h3{font-size:17px; font-weight:800; color:var(--hs-blue-dark); display:flex; align-items:center; gap:8px; margin-bottom:4px;}
+.rd-col > .rd-rule{font-size:12px; color:var(--muted); margin-bottom:12px;}
+.rd-card{border:1px solid var(--line); border-left:4px solid var(--hs-blue); border-radius:8px; padding:12px; margin-bottom:12px; cursor:pointer; background:#fff;}
+.rd-card:hover{background:#F7FAFF;}
+.rd-card.warn{border-left-color:var(--hs-orange); background:#FFF9F3;}
+.rd-card.over{border:2px solid var(--st-new); border-left-width:4px; background:#FDF3F2;}
+.rd-card .rd-t{font-size:15px; font-weight:700; color:var(--ink);}
+.rd-card .rd-m{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.6;}
+.rd-due{display:inline-block; font-size:12px; font-weight:800; border-radius:4px; padding:2px 8px; margin-top:8px;}
+.rd-due.ok{background:#E1EBFA; color:#1D4994;} .rd-due.warn{background:var(--hs-orange-bg); color:#B25412;}
+.rd-due.over{background:var(--st-new-bg); color:var(--st-new);}
+.rd-bundle{background:var(--hs-blue-bg); border:1.5px dashed var(--hs-blue-line); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; line-height:1.7;}
+.rd-steps{display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;}
+.rd-steps span{font-size:11px; padding:2px 7px; border-radius:999px; background:#EEF1F4; color:var(--muted);}
+.rd-steps span.on{background:var(--hs-blue); color:#fff;}
+.rd-steps span.done{background:#DFF0E3; color:#1D8348;}
 </style>
 </head>
 <body>
@@ -517,7 +539,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0204';
+const BUILD_VER = 'v0906-0206';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3848,8 +3870,147 @@ async function sbPush(it){
 }
 
 /* ── 공통 ── */
-/* S-12 신속기동단 작업판 — 내용은 이후 단계에서 채운다 */
-function renderRoad(){}
+/* ══════════ S-12 신속기동단 작업판 ══════════
+   도로교통 민원만 자동으로 걸린다. 열마다 관리 기준이 다르다 —
+   즉시=남은 시간(4시간) / 단기=작업 일정(7일) / 중장기=진행 단계(6개월+).
+   ※ 사용자 제공 분류표 입수 전이므로 아래 표가 잠정 기준이며, 유형만으로 애매하면 사진·문구로 보정한다. */
+const TRIAGE_TABLE = {
+  즉시: ['포트홀(도로파손)','신호등 고장','도로 침하','낙하 위험물','맨홀 파손','안전펜스 파손','옹벽·축대 균열','제설 요청'],
+  단기: ['가로등·보안등 고장','차선·표지판 훼손','빗물받이 막힘','가로수 가지치기','공원시설물 파손','불법주정차'],
+  중장기: []
+};
+/* 중장기로 보내는 문구 — 시설 '신설·설치' 요청은 예산·설계가 필요하다 */
+const LONG_RE = /(설치|신설|증설|이설|확장|개설|요청드립니다|만들어|놓아|세워)/;
+const URGENT_RE = /(침하|함몰|붕괴|누수 확산|통행 위험|차량 통행|2차 사고|추락|감전|전면 소등)/;
+const TRIAGE_MS = {즉시: 4*3600*1000, 단기: 7*24*3600*1000, 중장기: 180*24*3600*1000};
+const TRIAGE_META = {
+  즉시:   {ico:'🚨', rule:'남은 시간 기준 · 4시간 내 조치', unit:'시간'},
+  단기:   {ico:'🗓️', rule:'작업 일정 기준 · 7일 내 처리',  unit:'일'},
+  중장기: {ico:'🏗️', rule:'진행 단계 기준 · 6개월 이상',   unit:'단계'}
+};
+/* 도로교통 소관 여부 — 작업판에 자동으로 걸리는 조건 */
+function isRoadItem(it){
+  if(it.field === '교통·도로') return true;
+  const t = [it.sub, it.sum, it.req].filter(Boolean).join(' ');
+  return /도로|포트홀|노면|차선|표지판|신호등|가로등|보안등|맨홀|빗물받이|침하|낙하|안전펜스/.test(t);
+}
+function triage(it){
+  const t = [it.sub, it.sum, it.req].filter(Boolean).join(' ');
+  /* ① 유형표 우선 */
+  let cls = null;
+  for(const k of ['즉시','단기','중장기']) if(TRIAGE_TABLE[k].indexOf(it.sub) >= 0){ cls = k; break; }
+  /* ② 유형만으로 애매하면 문구로 보정 */
+  if(LONG_RE.test(t) && !URGENT_RE.test(t)) cls = '중장기';
+  else if(URGENT_RE.test(t) || it.urg === '긴급') cls = '즉시';
+  if(!cls) cls = '단기';
+  return cls;
+}
+/* 접수 시각(오늘 기준) → 기한 */
+function itemStart(it){
+  const d = new Date();
+  const m = String(it.time || '').match(/^(\d{1,2}):(\d{2})/);
+  if(m){ d.setHours(Number(m[1]), Number(m[2]), 0, 0); if(d > new Date()) d.setDate(d.getDate() - 1); }
+  return d;
+}
+function dueOf(it){
+  const cls = triage(it);
+  const due = new Date(itemStart(it).getTime() + TRIAGE_MS[cls]);
+  const left = due - new Date();
+  const total = TRIAGE_MS[cls];
+  return {cls: cls, due: due, left: left, state: left < 0 ? 'over' : (left < total * 0.25 ? 'warn' : 'ok')};
+}
+function leftText(d){
+  if(d.left < 0){
+    const over = -d.left;
+    return '기한 초과 ' + (over > 86400000 ? Math.floor(over/86400000) + '일' : Math.floor(over/3600000) + '시간');
+  }
+  if(d.cls === '즉시'){
+    const h = Math.floor(d.left/3600000), m = Math.floor(d.left%3600000/60000);
+    return '남은 시간 ' + (h ? h + '시간 ' : '') + m + '분';
+  }
+  if(d.cls === '단기') return '작업 기한 ' + Math.ceil(d.left/86400000) + '일 남음 (' + fmtDate(d.due) + ')';
+  return '진행 단계 관리 · 목표 ' + fmtDate(d.due);
+}
+function fmtDate(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
+
+/* 중장기 5단계 — S-04 와 공유 */
+const LONG_STEPS = ['교통분석','경찰 협의','설계','예산','공사'];
+function longStage(it){
+  try{ const v = localStorage.getItem('hs_stage_' + it.id); if(v !== null) return Math.max(0, Math.min(4, Number(v))); }catch(e){}
+  return 0;
+}
+function longStageSet(id, n){
+  try{ localStorage.setItem('hs_stage_' + id, String(n)); }catch(e){}
+  const it = items.find(i=>i.id===id);
+  if(it){ it.log.push(nowHM() + ' 중장기 진행 단계 → ' + LONG_STEPS[n]); sbPush(it); }
+  renderRoad(); toast('진행 단계를 ' + LONG_STEPS[n] + '(으)로 바꿨습니다');
+}
+
+/* 작업 묶음 제안 — 같은 읍면동·같은 유형의 단기처리 건이 쌓이면 한 번에 배정 */
+const BUNDLE_MIN = 2;
+function bundleSuggest(list){
+  const g = {};
+  for(const it of list){
+    if(triage(it) !== '단기') continue;
+    const key = (emdOf(it) || it.gu || '관내') + '|' + it.sub;
+    (g[key] = g[key] || []).push(it);
+  }
+  return Object.keys(g).filter(k=>g[k].length >= BUNDLE_MIN).map(k=>({key:k, org:k.split('|')[0], sub:k.split('|')[1], list:g[k]}));
+}
+function bundleAssign(key){
+  const list = bundleSuggest(roadItems()).find(b=>b.key === key);
+  if(!list){ toast('묶을 대상이 바뀌었습니다 — 목록을 다시 확인해 주세요'); renderRoad(); return; }
+  for(const it of list.list){
+    it.log.push(nowHM() + ' 작업 묶음 배정 (' + list.org + ' · ' + list.sub + ' ' + list.list.length + '건 일괄)');
+    if(it.st === '신규접수') it.st = '처리중';
+    sbPush(it);
+  }
+  renderList(); renderMap(); renderRoad();
+  toast(list.org + ' ' + list.sub + ' ' + list.list.length + '건을 한 번에 배정했습니다');
+}
+function roadItems(){ return realItems().filter(i=>i.st !== '완료' && isRoadItem(i)); }
+
+function renderRoad(){
+  const host = document.getElementById('road');
+  if(!host) return;
+  const list = roadItems();
+  const bundles = bundleSuggest(list);
+  const cols = ['즉시','단기','중장기'].map(cls=>{
+    const rows = list.filter(i=>triage(i) === cls)
+      .map(i=>({it:i, d:dueOf(i)}))
+      .sort((a,b)=>a.d.left - b.d.left);   /* 기한 임박·초과가 맨 위 */
+    const cards = rows.map(r=>{
+      const a = deptOf(r.it);
+      const steps = cls === '중장기'
+        ? '<div class="rd-steps">' + LONG_STEPS.map((nm,i)=>'<span class="' + (i < longStage(r.it) ? 'done' : (i === longStage(r.it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>' +
+          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px" onclick="event.stopPropagation();longStageSet(' + r.it.id + ',' + Math.min(4, longStage(r.it)+1) + ')">다음 단계로</button>'
+        : '';
+      return '<div class="rd-card ' + r.d.state + '" onclick="roadOpen(' + r.it.id + ')">' +
+        '<div class="rd-t">' + (r.it.urg === '긴급' ? '🚨 ' : '') + r.it.sub + '</div>' +
+        '<div class="rd-m">' + r.it.loc + '<br>' + r.it.sum + '<br>🛠️ ' + a.actor.org + ' · #' + String(r.it.id).padStart(3,'0') + '</div>' +
+        '<span class="rd-due ' + r.d.state + '">' + leftText(r.d) + '</span>' + steps + '</div>';
+    }).join('') || '<p style="font-size:13px;color:var(--muted)">해당 건이 없습니다.</p>';
+    const m = TRIAGE_META[cls];
+    const over = rows.filter(r=>r.d.state === 'over').length, warn = rows.filter(r=>r.d.state === 'warn').length;
+    return '<div class="rd-col"><h3>' + m.ico + ' ' + cls + '처리 <span style="margin-left:auto;font-size:13px;color:var(--muted)">' + rows.length + '건</span></h3>' +
+      '<div class="rd-rule">' + m.rule +
+      (over ? ' · <b style="color:var(--st-new)">초과 ' + over + '건</b>' : '') +
+      (warn ? ' · <b style="color:var(--hs-orange)">임박 ' + warn + '건</b>' : '') + '</div>' + cards + '</div>';
+  }).join('');
+
+  host.innerHTML =
+    '<div class="rd-head"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🚚 신속기동단 작업판</h2>' +
+    '<span style="font-size:13px;color:var(--muted)">도로교통 민원 ' + list.length + '건 · 처리구분별 관리</span>' +
+    '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="renderRoad()">↻ 새로고침</button></div>' +
+    (bundles.length ? bundles.map(b=>
+      '<div class="rd-bundle">📦 <b>작업 묶음 제안</b> — ' + b.org + ' · ' + b.sub + ' <b>' + b.list.length + '건</b>이 모였습니다. 한 번에 배정하면 출동이 한 번으로 줄어듭니다.' +
+      '<button class="btn-o" style="min-height:32px;padding:4px 14px;font-size:13px;margin-left:12px" onclick="bundleAssign(\'' + b.key + '\')">한 번에 배정</button></div>').join('') : '') +
+    '<div class="rd-cols">' + cols + '</div>';
+}
+function roadOpen(id){
+  setMode('duty');
+  setTimeout(()=>selectItem(id), 60);
+}
 /* ── D-02 주소 기반 화면 분기 — 주소는 하나(#cit #duty #dash #road). QR은 #cit ── */
 const MODES = ["duty","dash","cit","road"];
 let curMode = "duty";
