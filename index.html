@@ -391,6 +391,16 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
   .btn-p, .btn-o, .btn-g{min-height:48px;}
   .catbtn{min-height:60px;}
 }
+/* ── S-11 소속 기반 범위 분리 ── */
+#meChip{display:flex; align-items:center; gap:8px; height:32px; padding:0 12px; border-radius:8px;
+  background:var(--hs-blue-bg); color:var(--hs-blue-dark); font-size:13px; font-weight:700; border:1.5px solid var(--hs-blue-line);}
+.sc-tabs{display:flex; gap:8px; margin-bottom:12px;}
+.sc-tabs button{flex:1; height:36px; border-radius:8px; font-size:13px; font-weight:700;
+  background:#EEF1F4; color:var(--muted);}
+.sc-tabs button.on{background:var(--hs-blue); color:#fff;}
+.item.other{opacity:.42;}
+.badge.b-dept{background:#EEF1F4; color:var(--muted); font-weight:700;}
+.sc-sum{font-size:12px; color:var(--muted); margin-bottom:8px; line-height:1.6;}
 </style>
 </head>
 <body>
@@ -410,6 +420,7 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
      title="화성시 스마트행정지원시스템 — 내부망(행정망) 전용이라 외부에서는 열리지 않습니다"
      style="display:flex;align-items:center;gap:7px;text-decoration:none;">🏢 행정조직도
      <span style="font-size:11px;background:#EEF2F7;color:#64748B;padding:2px 7px;border-radius:999px;">내부망</span></a>
+  <button id="meChip" onclick="openMe()" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">👤 <span id="meChipTxt">소속 확인</span></button>
   <div class="duty">
     <b>당직자 김주무관</b> · 시청 당직실<br><span id="clock"></span>
   </div>
@@ -449,6 +460,11 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div class="stat"><div class="n" id="sHand" style="color:#9A6700">0</div><div class="l">처리중</div></div>
           <div class="stat"><div class="n" id="sDone" style="color:var(--st-done)">0</div><div class="l">완료</div></div>
         </div>
+        <div class="sc-tabs" id="scTabs" style="display:none">
+          <button id="scTabAll" onclick="scopeTab('all')">우리 관내 전체</button>
+          <button id="scTabMine" onclick="scopeTab('mine')">우리가 처리한 건</button>
+        </div>
+        <div class="sc-sum" id="scSum"></div>
         <div class="list-scroll" id="list"></div>
       </div>
       <div class="card" style="margin-top:14px" id="staffCard">
@@ -642,7 +658,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0213';
+const BUILD_VER = 'v0906-0216';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -731,7 +747,8 @@ let DEPT_DB = null, deptDbP = null, DEPT_IDX = null;
 function deptDbLoad(){
   if(!deptDbP){
     deptDbP = fetch('data/dept_assign.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
-      .then(j=>{ DEPT_DB = j; buildDeptIndex(j); return j; })
+      .then(j=>{ DEPT_DB = j; buildDeptIndex(j); for(const k in DEPT_CACHE) delete DEPT_CACHE[k];
+        if(typeof renderList === 'function'){ renderList(); renderMap(); } return j; })
       .catch(e=>{ console.warn('[S-06] 부서배정 근거데이터 로드 실패 — 당직 매뉴얼 소관부서로 대체', e); return null; });
   }
   return deptDbP;
@@ -922,10 +939,16 @@ function assignDept(it){
 function deptOverrideGet(id){
   try{ const v = localStorage.getItem('hs_dept_ov_' + id); return v ? JSON.parse(v) : null; }catch(e){ return null; }
 }
+/* 목록·지도·집계가 매 렌더마다 부르므로 결과를 캐시한다(분장사무 1,892건 대조 반복 방지) */
+const DEPT_CACHE = {};
+function deptCacheKey(it){ return it.id + '|' + it.sub + '|' + it.loc + '|' + it.sum + '|' + it.urg; }
 function deptOf(it){
+  const ck = deptCacheKey(it);
+  if(DEPT_CACHE[ck] && !deptOverrideGet(it.id)) return DEPT_CACHE[ck];
   const base = assignDept(it);
   const ov = deptOverrideGet(it.id);
   if(ov){ base.actor = {org: ov.org, basis: ov.basis || '담당자 지정'}; base.overridden = ov; base.confidence = 1; }
+  else DEPT_CACHE[ck] = base;
   return base;
 }
 function deptEdit(id){
@@ -976,6 +999,7 @@ function saveDeptCfg(){
     야간_읍면동처리: document.getElementById('srNight').checked
   };
   SMALL_REPAIR = Object.assign(SMALL_REPAIR, v);
+  for(const k in DEPT_CACHE) delete DEPT_CACHE[k];
   try{ localStorage.setItem('hs_small_repair', JSON.stringify(SMALL_REPAIR)); }catch(e){}
   closeModal(); renderList(); if(selId) selectItem(selId);
   toast('소규모 보수 기준을 저장했습니다 — 이후 배정부터 반영');
@@ -1226,7 +1250,7 @@ function renderMap(){
   const hasSel = selId!=null && items.some(i=>i.id===selId && i.st!=="완료");
   const banner = document.getElementById('selBanner');
   if(banner) banner.style.display = hasSel ? 'block' : 'none';
-  for(const it of items){
+  for(const it of scopeItems()){   // S-11: 소속 범위 밖 민원은 지도에도 올리지 않는다
     const c = pinColor(it);
     const pulse = it.st==='신규접수' ? ' pulse' : '';
     const sel = it.id===selId ? ' sel' : '';
@@ -1266,12 +1290,13 @@ function progBar(st){
 }
 function renderList(){
   const l = document.getElementById("list");
-  const sorted = [...items].filter(i=>i.st!=="완료").sort((a,b)=>{ const ua=a.urg==="긴급"?1:0, ub=b.urg==="긴급"?1:0; if(ua!==ub) return ub-ua; return b.id-a.id; });
+  const sorted = [...scopeItems()].filter(i=>i.st!=="완료").sort((a,b)=>{ const ua=a.urg==="긴급"?1:0, ub=b.urg==="긴급"?1:0; if(ua!==ub) return ub-ua; return b.id-a.id; });
   l.innerHTML = sorted.map(it=>
-    '<div class="item'+(it.id===selId?" sel":"")+(it.st==="신규접수"?" blink":"")+'" style="border-left-color:'+URG_BORDER[it.urg]+'" onclick="cardClick('+it.id+')">'+
+    '<div class="item'+(it.id===selId?" sel":"")+(it.st==="신규접수"?" blink":"")+(scopeOther(it)?" other":"")+'" style="border-left-color:'+URG_BORDER[it.urg]+'" onclick="cardClick('+it.id+')">'+
     '<div class="top"><span style="font-size:15px">'+(SRC_ICO[it.src]||"📞")+'</span>'+
     '<span class="badge '+stBadge(it)+'">'+it.st+(it.st==="신규접수"?"("+srcLabel(it)+")":"")+'</span>'+
     '<span class="badge b-cat">'+it.field+'</span>'+
+    (scopeOther(it)?'<span class="badge b-dept">'+deptOf(it).actor.org+'</span>':"")+
     (it.urg!=="일반"?'<span class="badge b-urg">'+it.urg+'</span>':"")+
     '<time>#'+String(it.id).padStart(3,"0")+'</time></div>'+
     '<div class="loc">'+it.loc+'</div>'+
@@ -1281,11 +1306,19 @@ function renderList(){
     (it.sms?'<span>📨 문자발송</span>':"")+
     (it.photo?'<span>📷 사진 1</span>':"")+'</div></div>').join("");
   document.getElementById("listCnt").innerHTML = "진행 "+sorted.length+"건" + (selId!=null && items.some(i=>i.id===selId) ? ' · <a href="#" onclick="clearSel();return false" style="color:var(--hs-orange);font-weight:700">✕ 선택해제</a>' : '');
-  document.getElementById("sTot").textContent = items.length;
-  document.getElementById("sNewCit").textContent = items.filter(i=>i.st==="신규접수" && i.src==="시민접수").length;
-  document.getElementById("sNewDuty").textContent = items.filter(i=>i.st==="신규접수" && i.src!=="시민접수").length;
-  document.getElementById("sHand").textContent = items.filter(i=>i.st==="처리중").length;
-  document.getElementById("sDone").textContent = items.filter(i=>i.st==="완료").length;
+  const sc = scopeItems();
+  document.getElementById("sTot").textContent = sc.length;
+  document.getElementById("sNewCit").textContent = sc.filter(i=>i.st==="신규접수" && i.src==="시민접수").length;
+  document.getElementById("sNewDuty").textContent = sc.filter(i=>i.st==="신규접수" && i.src!=="시민접수").length;
+  document.getElementById("sHand").textContent = sc.filter(i=>i.st==="처리중").length;
+  document.getElementById("sDone").textContent = sc.filter(i=>i.st==="완료").length;
+  /* S-11: 우리 처리·타 부서를 나눠 세고, 현재 범위 그대로 내려받게 한다 */
+  const sm = document.getElementById("scSum");
+  if(sm){
+    const mine = sc.filter(isMine).length;
+    sm.innerHTML = '범위: <b>' + meLabel() + '</b> · ' + sc.length + '건 (우리 처리 <b>' + mine + '</b> · 타 부서 ' + (sc.length - mine) + ')' +
+      ' <a href="#" onclick="scopeExport();return false" style="color:var(--hs-blue);font-weight:700">⬇ 현재 범위 내려받기</a>';
+  }
   saveState();
 }
 function clearSel(){
@@ -3166,7 +3199,8 @@ function dashDisasters(){
   return [...cur, ...past.slice().reverse()];
 }
 function dashDone(){
-  const cur = realItems().filter(i=>i.st==="완료").map(i=>({dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
+  /* S-11: 중장기 진행 건은 완료 결과보고와 섞지 않는다 */
+  const cur = scopeItems(realItems()).filter(i=>i.st==="완료" && triage(i) !== '중장기').map(i=>({dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
   return [...cur, ...HIST.slice().reverse()];
 }
 function hbar(label, v, max, col, clickType){
@@ -3174,7 +3208,7 @@ function hbar(label, v, max, col, clickType){
   return '<div class="hbar" '+(clickType?'style="cursor:pointer'+(on?';outline:2px solid var(--hs-orange);border-radius:8px':'')+'" onclick="dashClick(\''+clickType+'\',\''+label+'\')"':'')+'><span class="lb2">'+label+'</span><div class="tr"><div class="fl" style="width:'+Math.round(v/max*100)+'%'+(col?';background:'+col:'')+'"></div></div><span class="v">'+v+'</span></div>';
 }
 function renderDash(){
-  const all = [...HIST, ...realItems()];   // D-04: 시연 데이터는 통계에서 제외
+  const all = [...HIST, ...scopeItems(realItems())];   // D-04 시연 제외 · S-11 소속 범위 적용
   const done = dashDone(), dis = dashDisasters();
   const tot = all.length;
   const doneCnt = HIST.length + realItems().filter(i=>i.st==="완료").length;
@@ -3975,6 +4009,112 @@ async function sbPush(it){
 }
 
 /* ── 공통 ── */
+/* ══════════ S-11 소속 기반 범위 분리 (D-09 포함) ══════════
+   접속하면 자기 소속 범위가 이미 걸려 있다. 범위 밖은 아예 보이지 않고,
+   읍면동은 '관내 전체'(타 부서 건은 흐리게 + 부서명 배지)와 '우리가 처리한 건'을 탭으로 나눈다. */
+const ROLES = {
+  '담당자':        {scope:'own',   desc:'본인이 처리한 건'},
+  '읍면동장':      {scope:'emd',   desc:'관내 전체(타 부서 건 포함)'},
+  '부서장':        {scope:'dept',  desc:'부서 소관 전건'},
+  '신속기동단':    {scope:'road',  desc:'도로교통 전체'},
+  '시장·부시장·상황실': {scope:'all', desc:'전체'}
+};
+let ME = {role:'시장·부시장·상황실', org:'재난안전상황실', emd:'', dept:''};
+try{ const v = localStorage.getItem('hs_me'); if(v) ME = Object.assign(ME, JSON.parse(v)); }catch(e){}
+let scopeMode = 'all';   /* 읍면동 탭 — all | mine */
+
+function meScope(){ return (ROLES[ME.role] || ROLES['담당자']).scope; }
+function meLabel(){
+  const org = ME.org || (ME.emd || ME.dept || '');
+  return ME.role + (org ? ' · ' + org : '');
+}
+/* 이 건이 '우리 처리'인가 */
+function isMine(it){
+  const a = deptOf(it);
+  const org = ME.org || ME.emd || ME.dept || '';
+  if(!org) return false;
+  return a.actor.org.indexOf(org) >= 0 || org.indexOf(a.actor.org) >= 0;
+}
+/* 소속 범위 필터 — 화면에 걸리는 기본 범위 */
+function scopeItems(list){
+  const src = list || items;
+  const sc = meScope();
+  if(sc === 'all') return src;
+  if(sc === 'road') return src.filter(isRoadItem);
+  if(sc === 'own')  return src.filter(isMine);
+  if(sc === 'dept') return src.filter(i=>{
+    const a = deptOf(i);
+    return ME.dept && (a.legal.dept.indexOf(ME.dept) >= 0 || a.actor.org.indexOf(ME.dept) >= 0);
+  });
+  if(sc === 'emd'){
+    const key = (ME.emd || '').replace(/(사무소|주민센터)$/, '');
+    const inArea = src.filter(i=>key && String(i.loc || '').indexOf(key) >= 0);
+    return scopeMode === 'mine' ? inArea.filter(isMine) : inArea;
+  }
+  return src;
+}
+/* 읍면동 '관내 전체' 화면에서 타 부서가 처리하는 건 */
+function scopeOther(it){
+  return meScope() === 'emd' && scopeMode === 'all' && !isMine(it);
+}
+function scopeTab(m){
+  scopeMode = m;
+  renderList(); renderMap();
+}
+function openMe(){
+  const emdOpts = ['','매송면사무소','비봉면사무소','마도면사무소','송산면사무소','서신면사무소','팔탄면사무소','장안면사무소','우정읍사무소','향남읍사무소','남양읍사무소','봉담읍사무소','정남면사무소','동탄1동주민센터','병점1동주민센터','화산동주민센터','진안동주민센터','오산동주민센터'];
+  showModal('<h2>👤 내 소속</h2>' +
+    '<p style="font-size:14px;color:var(--muted);line-height:1.7">소속을 고르면 화면에 걸리는 범위가 바뀝니다. 범위 밖 민원은 표시되지 않습니다.</p>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">직위·역할</label>' +
+    '<select id="meRole" style="margin-top:6px">' + Object.keys(ROLES).map(r=>'<option' + (r === ME.role ? ' selected' : '') + '>' + r + '</option>').join('') + '</select>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">읍면동 (읍면동장인 경우)</label>' +
+    '<select id="meEmd" style="margin-top:6px">' + emdOpts.map(e=>'<option' + (e === ME.emd ? ' selected' : '') + '>' + (e || '(해당 없음)') + '</option>').join('') + '</select>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">부서 (부서장인 경우)</label>' +
+    '<input id="meDept" value="' + (ME.dept || '') + '" placeholder="예) 도로과" style="margin-top:6px">' +
+    '<div class="row"><button class="btn-o" onclick="saveMe()">적용</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function saveMe(){
+  const role = document.getElementById('meRole').value;
+  let emd = document.getElementById('meEmd').value;
+  if(emd === '(해당 없음)') emd = '';
+  const dept = document.getElementById('meDept').value.trim();
+  ME = {role:role, emd:emd, dept:dept, org: emd || dept || (role === '신속기동단' ? '신속기동단' : '재난안전상황실')};
+  try{ localStorage.setItem('hs_me', JSON.stringify(ME)); }catch(e){}
+  closeModal(); meApply();
+  toast(meLabel() + ' 범위로 전환했습니다');
+}
+function meApply(){
+  const t = document.getElementById('meChipTxt');
+  if(t) t.textContent = meLabel();
+  const tabs = document.getElementById('scTabs');
+  if(tabs) tabs.style.display = meScope() === 'emd' ? 'flex' : 'none';
+  const a = document.getElementById('scTabAll'), b = document.getElementById('scTabMine');
+  if(a) a.classList.toggle('on', scopeMode === 'all');
+  if(b) b.classList.toggle('on', scopeMode === 'mine');
+  if(a && ME.emd) a.textContent = '우리 ' + ME.emd.replace(/(사무소|주민센터)$/, '') + ' 전체';
+  renderMap(); renderList();
+  if(curMode === 'dash') renderDash();
+}
+/* 현재 범위 그대로 내려받기 (D-09) */
+function scopeExport(){
+  const list = scopeItems().slice().sort((a,b)=>a.id - b.id);
+  const head = ['접수번호','접수시각','관할구','위치','분야','세부유형','내용','긴급도','상태','처리구분','법적 소관','처리 주체','우리 처리'];
+  const rows = list.map(it=>{
+    const a = deptOf(it);
+    return [String(it.id).padStart(4,'0'), it.time, it.gu, it.loc, it.field, it.sub, it.sum, it.urg, it.st,
+            triage(it), a.legal.dept, a.actor.org, isMine(it) ? 'O' : ''];
+  });
+  const csv = [head].concat(rows).map(r=>r.map(v=>'"' + String(v == null ? '' : v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a2 = document.createElement('a');
+  a2.href = url; a2.download = '민원_' + meLabel().replace(/[^가-힣0-9]/g,'_') + '_' + nowHM().replace(':','') + '.csv';
+  document.body.appendChild(a2); a2.click(); a2.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 1000);
+  toast('현재 범위 ' + list.length + '건을 내려받았습니다');
+}
+
 /* ── D-08 폰 상황판: 지도 전체 + 하단 시트 ── */
 function dutySheet(which){
   const l = document.querySelector('#duty .col-l'), r = document.querySelector('#duty .col-r');
@@ -4498,7 +4638,9 @@ function modeFromHash(){
 }
 function applyHash(){
   const m = modeFromHash();
-  setMode(m || (isPhone() ? "cit" : "duty"), true);
+  /* S-11: 소속이 신속기동단이면 작업판이 기본 화면 */
+  const dflt = isPhone() ? "cit" : (meScope() === 'road' ? "road" : "duty");
+  setMode(m || dflt, true);
 }
 function isPhone(){ return window.matchMedia && window.matchMedia("(max-width: 700px)").matches; }
 window.addEventListener("hashchange", applyHash);
@@ -4563,7 +4705,8 @@ spStep('res'); initMap(); spStep('map'); renderMap(); renderList();
 if(restored){ toast("💾 저장된 접수 데이터 "+items.length+"건 복원 (이 PC 누적분)"); const last=[...items].sort((a,b)=>b.id-a.id)[0]; if(last) selectItem(last.id); } else { selectItem(3); }
 spStep('db'); sbInit().finally(()=>spStep('done'));   // ☁️ Supabase complaints 실시간 연동 (호출 누락돼 있던 버그 — DB가 민원 원천, 성공 시 시드 대체)
 renderStaff();
-applyHash();   // D-02: 주소(#cit #duty #dash #road)로 첫 화면 결정
+meApply();     // S-11: 소속 범위를 화면에 먼저 건다
+applyHash();   // D-02: 주소(#cit #duty #dash #road #track)로 첫 화면 결정
 loadWeather(); loadFeed(); loadAir(); loadRoadWx();
 setInterval(loadWeather, 10*60*1000); setInterval(loadAir, 15*60*1000);
 setInterval(renderStaff, 5*60*1000);   // 근무대 전환(주간↔야간) 자동 반영
