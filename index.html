@@ -517,7 +517,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0157';
+const BUILD_VER = 'v0906-0204';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -597,6 +597,283 @@ const RULES = {
   "기타":{dept:"시청 당직실 ☎5189-2000 — 매뉴얼 검색 후 소관부서 확인",
     steps:["매뉴얼 검색으로 소관부서 확인","익일 소관부서 인계 목록 등록"]}
 };
+/* ══════════ S-06 AI 담당부서 지정 ══════════
+   근거 3종: ①행정기구 조례 별표 8 본청 분장사무 1,892건 ②사무위임 규칙 별표 1~3 재위임 사무
+             ③도로 등급별 관리청. 배정 결과는 [법적 소관]과 [처리 주체] 두 층으로 분리한다.
+   ※ 마을도로 shp 미입수 — 도로명 규칙으로 잠정 판정. shp 입수 시 roadGrade()만 교체하면 된다.
+   ※ 소규모 보수 읍면동 처리 기준 미확정 — SMALL_REPAIR 값을 화면에서 조정할 수 있게 두었다. */
+let DEPT_DB = null, deptDbP = null, DEPT_IDX = null;
+function deptDbLoad(){
+  if(!deptDbP){
+    deptDbP = fetch('data/dept_assign.json').then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); })
+      .then(j=>{ DEPT_DB = j; buildDeptIndex(j); return j; })
+      .catch(e=>{ console.warn('[S-06] 부서배정 근거데이터 로드 실패 — 당직 매뉴얼 소관부서로 대체', e); return null; });
+  }
+  return deptDbP;
+}
+/* 분장사무 1,892건을 부서별 색인으로 — 접수 유형·요약과 대조해 점수를 낸다 */
+function buildDeptIndex(db){
+  DEPT_IDX = [];
+  for(const dept of Object.keys(db.본청_분장사무 || {})){
+    for(const task of db.본청_분장사무[dept]) DEPT_IDX.push({dept: deptShort(dept), task: task});
+  }
+}
+/* '자치행정국행정지원과'처럼 국·실이 붙은 표기에서 실제 과 이름만 남긴다 */
+function deptShort(name){
+  /* 근거데이터의 부서 키는 '국·실 + 첫 과'가 붙어 있다(예: 안전건설실안전정책과) — 국·실을 떼어낸다 */
+  const m = String(name).match(/^[가-힣]{2,6}(?:국|실)([가-힣]{2,8})$/);
+  return m ? m[1] : String(name);
+}
+/* 조정 가능한 값 — 확정 기준 입수 전까지의 잠정치 (S-06 설정 화면에서 변경) */
+let SMALL_REPAIR = {
+  포트홀_개소: 2,
+  파손면적_m2: 10,
+  추정비용_만원: 300,
+  야간_읍면동처리: true
+};
+try{ const sv = localStorage.getItem('hs_small_repair'); if(sv) SMALL_REPAIR = Object.assign(SMALL_REPAIR, JSON.parse(sv)); }catch(e){}
+
+/* 도로 등급 판정 — 마을도로 shp 입수 전 도로명 규칙 잠정판정 */
+const ROAD_PAT = [
+  {grade:'고속국도', re:/(고속국도|고속도로|경부고속|서해안고속|평택제천|수도권제2순환)/},
+  {grade:'일반국도', re:/(국도)/},
+  {grade:'지방도·국가지원지방도', re:/(지방도|국지도)/},
+  {grade:'마을도로·이면도로·농로', re:/(마을길|농로|이면도로|[가-힣]{2,4}리\s)/},
+  {grade:'시도', re:/(대로|[가-힣]{2,6}로\s|시도)/}
+];
+function roadGrade(it){
+  const t = [it.loc, it.sum, it.req].filter(Boolean).join(' ') + ' ';
+  for(const r of ROAD_PAT){ if(r.re.test(t)) return r.grade; }
+  return '시도';
+}
+function roadAuthority(grade){
+  const rows = (DEPT_DB && DEPT_DB.도로등급_관리청) || [];
+  return rows.find(r=>r.등급 === grade) || null;
+}
+/* 읍면동장 재위임 사무 해당 여부 — 사무위임 규칙 별표 2·3 */
+function emdDelegated(deptName, emdName){
+  if(!DEPT_DB) return null;
+  /* 읍·면이면 별표 2(읍장·면장), 동이면 별표 3(동장) 을 본다 */
+  const who = /사무소$/.test(String(emdName || '')) ? '읍장·면장' : '동장';
+  const tbl = (DEPT_DB.재위임사무 || {})[who] || {};
+  for(const d of Object.keys(tbl)) if(deptShort(d) === deptName) return {who: who, dept: deptShort(d)};
+  return null;
+}
+/* 신고 세부유형 → 소관 부서 후보. 후보 안에서만 분장사무 1,892건을 대조한다.
+   (후보가 없으면 전 부서 대조로 폴백) */
+const SUB_DEPT = {
+  '불법주정차':['주차물류과','교통정책과'], '포트홀(도로파손)':['도로과','건설과'],
+  '신호등 고장':['교통정책과','도로과'], '차선·표지판 훼손':['교통정책과','도로과'],
+  '가로등·보안등 고장':['도로과','안전정책과'], '제설 요청':['도로과','건설과','재난대응과'],
+  '쓰레기 무단투기':['자원순환과','환경지도과'], '불법소각':['환경지도과','기후환경정책과'],
+  '생활소음':['환경지도과'], '악취':['환경지도과','기후환경정책과'], '비산먼지':['환경지도과','기후환경정책과'],
+  '폐기물 방치':['자원순환과','환경지도과'], '수질오염':['물환경생태과','환경지도과'],
+  '공사장 소음·먼지':['환경지도과','건축과'], '공사장 안전관리':['건축과','안전정책과'],
+  '빈집 안전':['주택정책과','건축과'], '건축물 안전 불편':['건축과','공동주택과'],
+  '상수도 누수':['물환경생태과','건설과'], '하수도 막힘':['물환경생태과','건설과'],
+  '맨홀 파손':['물환경생태과','도로과'], '빗물받이 막힘':['물환경생태과','도로과'], '단수 신고':['물환경생태과'],
+  '공원시설물 파손':['공원녹지사업소','도시정책과'], '가로수 가지치기':['공원녹지사업소','도로과'],
+  '고라니':['동물보호과','자원순환과'], '고양이':['동물보호과'], '강아지':['동물보호과'],
+  '도로 침하':['도로과','건설과','안전정책과'], '낙하 위험물':['안전정책과','재난대응과'],
+  '옹벽·축대 균열':['건설과','안전정책과'], '안전펜스 파손':['안전정책과','도로과'],
+  '재난 위험 신고':['재난대응과','안전정책과']
+};
+const FIELD_DEPT = {
+  '교통·도로':['도로과','교통정책과','주차물류과','건설과'],
+  '환경':['환경지도과','자원순환과','기후환경정책과','물환경생태과'],
+  '주택·건축':['건축과','주택정책과','공동주택과'],
+  '상하수도':['물환경생태과','건설과'],
+  '공원·녹지':['공원녹지사업소','도시정책과','도로과'],
+  '동물사체 처리':['동물보호과','자원순환과'],
+  '안전·재난':['재난대응과','안전정책과'],
+  '기타':[]
+};
+function deptCandidates(it){
+  const a = SUB_DEPT[it.sub] || [];
+  const b = FIELD_DEPT[it.field] || [];
+  const out = [];
+  for(const d of a.concat(b)) if(out.indexOf(d) < 0) out.push(d);
+  /* 별표 8 에 실재하는 부서만 — 목록에 없는 이름을 배정하지 않는다 */
+  if(DEPT_IDX) return out.filter(d=>DEPT_IDX.some(r=>r.dept === d));
+  return out;
+}
+const KW_STOP = ['신고','요청','확인','민원','발생','현장','조치','바랍니다','있습니다','대한','관한'];
+function kwOf(t){
+  const raw = String(t).replace(/[^가-힣A-Za-z0-9]+/g, ' ').split(' ');
+  const out = [];
+  for(const w of raw){
+    if(w.length < 2 || KW_STOP.indexOf(w) >= 0) continue;
+    out.push(w);
+    if(w.length > 3) out.push(w.slice(0, 2));
+  }
+  return out.slice(0, 24);
+}
+function emdOf(it){
+  const m = String(it.loc || '').match(/([가-힣]{2,4}(?:읍|면|동))/);
+  if(!m) return null;
+  return m[1] + (/(읍|면)$/.test(m[1]) ? '사무소' : '주민센터');
+}
+function isSmallRepair(it){
+  const t = [it.sub, it.sum].join(' ');
+  if(!/포트홀|도로파손|가로등|보안등|빗물받이|표지판|차선/.test(t)) return false;
+  const m = t.match(/([0-9]+)\s*(개소|개)/);
+  if(m && Number(m[1]) > SMALL_REPAIR.포트홀_개소) return false;
+  if(/전면|대규모|침하|붕괴|함몰/.test(t)) return false;
+  return SMALL_REPAIR.야간_읍면동처리 ? true : it.urg !== '긴급';
+}
+function cut(t, n){ t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; }
+
+/* 접수 건 → 배정 결과 {법적 소관, 처리 주체, 근거 문구, 확신도} */
+function assignDept(it){
+  const txt = [it.field, it.sub, it.sum, it.req].filter(Boolean).join(' ');
+  const isRoad = it.field === '교통·도로' || /도로|포트홀|노면|차선|신호등|가로등|보안등|표지판/.test(txt);
+  const grade = isRoad ? roadGrade(it) : null;
+  const auth = grade ? roadAuthority(grade) : null;
+
+  /* ① 시 소관이 아닌 신고(고속국도 등) — 접수 단계에서 안내·이관 */
+  if(auth && /소관 아님/.test(auth.처리 || '')){
+    return {outOfScope:true, grade:grade,
+      legal:{dept: auth.관리청, basis: '도로 등급 「'+grade+'」 · 관리청 '+auth.관리청},
+      actor:{org: auth.관리청, basis: '시 소관 아님 — 접수 후 관리청 이관 안내'},
+      confidence: 0.95};
+  }
+
+  /* ② 법적 소관 — 분장사무 문장과 키워드 대조 */
+  let legalDept = null, legalTask = null, score = 0;
+  if(DEPT_IDX){
+    const keys = kwOf(txt);
+    const cand = deptCandidates(it);
+    /* ①후보 부서 안에서 근거 문장을 찾고 ②후보에 없으면 전 부서로 넓힌다 */
+    for(const scope of [cand, null]){
+      const rows = scope && scope.length ? DEPT_IDX.filter(r=>scope.indexOf(r.dept) >= 0) : (scope ? [] : DEPT_IDX);
+      let best = null, bestSc = 0, bestKw = 0;
+      for(const row of rows){
+        let kw = 0, solid = 0;
+        for(const k of keys) if(row.task.indexOf(k) >= 0){ kw += k.length; if(k.length >= 3) solid += k.length; }
+        /* 순위 가중은 동점 정렬용 — 인용 여부는 순수 키워드 점수(kw)로만 판단한다 */
+        let sc = kw;
+        if(scope && scope.length){ const r = scope.indexOf(row.dept); if(r >= 0) sc += (scope.length - r) * 2; }
+        if(sc > bestSc){ bestSc = sc; bestKw = solid; best = row; }
+      }
+      if(best && bestKw >= 3){
+        legalDept = best.dept; legalTask = best.task;
+        score = scope && scope.length ? bestKw + 4 : bestKw;
+        break;
+      }
+      /* 근거 문장을 못 찾으면 후보 1순위를 채택하되, 엉뚱한 조문을 인용하지 않는다 */
+      if(scope && scope.length){ legalDept = scope[0]; legalTask = null; score = 8; break; }
+    }
+  }
+  if(!legalDept && auth){ legalDept = auth.처리; legalTask = '도로 등급 「'+grade+'」 관리 사무'; score = 6; }
+  if(!legalDept){
+    const r = RULES[it.field] || RULES['기타'];
+    legalDept = r.dept.split('/')[0].split('·')[0].replace(/☎[0-9\- ]*/g, '').trim();
+    legalTask = '당직 대응 매뉴얼 소관부서';
+    score = 3;
+  }
+
+  /* ③ 처리 주체 — 재위임·소규모 현장처리 기준 */
+  let actorOrg = legalDept, actorBasis = '본청 소관부서 직접 처리';
+  const emd = emdOf(it);
+  if(grade === '마을도로·이면도로·농로' && emd){
+    actorOrg = emd; actorBasis = '마을도로·이면도로 — 읍면동 현장처리';
+  } else if(isSmallRepair(it) && emd){
+    actorOrg = emd;
+    actorBasis = '소규모 보수 현장처리 기준(포트홀 ' + SMALL_REPAIR.포트홀_개소 + '개소 이하' +
+      (SMALL_REPAIR.야간_읍면동처리 ? ' · 당직 시간대' : '') + ')';
+  } else {
+    const dg = emdDelegated(legalDept, emd);
+    if(dg && emd){ actorOrg = emd; actorBasis = '사무위임 규칙 별표 — ' + dg.who + ' 재위임 사무'; }
+  }
+
+  return {outOfScope:false, grade:grade,
+    legal:{dept: legalDept, basis: legalTask ? '조례 별표 8 「' + cut(legalTask, 26) + '」'
+                                                  : '조례 별표 8 · ' + legalDept + ' 분장사무 (신고 유형별 소관 기준)'},
+    actor:{org: actorOrg, basis: actorBasis},
+    confidence: Math.max(0.35, Math.min(0.95, score / 12))};
+}
+
+/* 담당자가 바꾼 이력 — 값은 브라우저에, 사실은 처리이력에 남는다 */
+function deptOverrideGet(id){
+  try{ const v = localStorage.getItem('hs_dept_ov_' + id); return v ? JSON.parse(v) : null; }catch(e){ return null; }
+}
+function deptOf(it){
+  const base = assignDept(it);
+  const ov = deptOverrideGet(it.id);
+  if(ov){ base.actor = {org: ov.org, basis: ov.basis || '담당자 지정'}; base.overridden = ov; base.confidence = 1; }
+  return base;
+}
+function deptEdit(id){
+  const it = items.find(i=>i.id===id); if(!it) return;
+  const cur = deptOf(it);
+  showModal('<h2>🏢 처리 주체 변경</h2>' +
+    '<p style="font-size:15px;line-height:1.8">현재 처리 주체: <b>' + cur.actor.org + '</b><br>' +
+    '<span style="font-size:13px;color:var(--muted)">' + cur.actor.basis + '</span></p>' +
+    '<label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-top:12px">변경할 조직명</label>' +
+    '<input id="dpOrg" value="' + cur.actor.org + '" style="margin-top:6px">' +
+    '<label style="font-size:13px;font-weight:600;color:var(--muted);display:block;margin-top:12px">변경 사유</label>' +
+    '<input id="dpWhy" placeholder="예) 관내 도로가 아니라 구청 소관" style="margin-top:6px">' +
+    '<div class="row"><button class="btn-o" onclick="deptSave(' + id + ')">변경 저장</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function deptSave(id){
+  const it = items.find(i=>i.id===id); if(!it) return;
+  const org = document.getElementById('dpOrg').value.trim();
+  const why = document.getElementById('dpWhy').value.trim();
+  if(!org){ toast('조직명을 입력해 주세요'); return; }
+  const prev = deptOf(it).actor.org;
+  try{ localStorage.setItem('hs_dept_ov_' + id, JSON.stringify({org:org, basis:'담당자 지정' + (why ? ' — ' + why : ''), at:new Date().toISOString()})); }catch(e){}
+  it.log.push(nowHM() + ' 처리 주체 변경: ' + prev + ' → ' + org + (why ? ' (' + why + ')' : ''));
+  sbPush(it); closeModal(); renderList(); selectItem(id);
+  toast('처리 주체를 ' + org + '(으)로 변경했습니다 — 이력에 기록됨');
+}
+/* 소규모 보수 읍면동 처리 기준 — 확정 전까지 화면에서 조정한다(값은 브라우저에 저장) */
+function openDeptCfg(){
+  showModal('<h2>⚙️ 소규모 보수 처리 기준</h2>' +
+    '<p style="font-size:14px;color:var(--muted);line-height:1.7">읍면동이 현장에서 바로 처리할 범위를 정하는 값입니다. ' +
+    '확정 기준을 받기 전까지의 잠정치이며, 바꾸면 이후 배정부터 바로 반영됩니다.</p>' +
+    '<label style="font-size:13px;font-weight:600;display:block;margin-top:12px">포트홀 개소 (이하이면 읍면동 처리)</label>' +
+    '<input id="srPot" type="number" min="1" max="20" value="' + SMALL_REPAIR.포트홀_개소 + '" style="margin-top:6px">' +
+    '<label style="font-size:13px;font-weight:600;display:block;margin-top:12px">파손 면적 기준 (㎡ 이하)</label>' +
+    '<input id="srArea" type="number" min="1" max="200" value="' + SMALL_REPAIR.파손면적_m2 + '" style="margin-top:6px">' +
+    '<label style="font-size:13px;font-weight:600;display:block;margin-top:12px">추정 비용 기준 (만원 이하)</label>' +
+    '<input id="srCost" type="number" min="10" max="5000" value="' + SMALL_REPAIR.추정비용_만원 + '" style="margin-top:6px">' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:14px;font-size:14px">' +
+    '<input type="checkbox" id="srNight" style="width:auto"' + (SMALL_REPAIR.야간_읍면동처리 ? ' checked' : '') + '> 당직 시간대 소규모 건은 읍면동 우선 대응</label>' +
+    '<div class="row"><button class="btn-o" onclick="saveDeptCfg()">저장</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function saveDeptCfg(){
+  const v = {
+    포트홀_개소: Number(document.getElementById('srPot').value) || SMALL_REPAIR.포트홀_개소,
+    파손면적_m2: Number(document.getElementById('srArea').value) || SMALL_REPAIR.파손면적_m2,
+    추정비용_만원: Number(document.getElementById('srCost').value) || SMALL_REPAIR.추정비용_만원,
+    야간_읍면동처리: document.getElementById('srNight').checked
+  };
+  SMALL_REPAIR = Object.assign(SMALL_REPAIR, v);
+  try{ localStorage.setItem('hs_small_repair', JSON.stringify(SMALL_REPAIR)); }catch(e){}
+  closeModal(); renderList(); if(selId) selectItem(selId);
+  toast('소규모 보수 기준을 저장했습니다 — 이후 배정부터 반영');
+}
+
+/* 배정 결과 표시 블록 — 상세 패널·작업판 공용 */
+function deptBlock(it){
+  const a = deptOf(it);
+  if(a.outOfScope){
+    return '<div class="dept" style="border-left:3px solid var(--st-new);background:#FCE8E6">' +
+      '<b>⚠️ 시 소관이 아닌 신고</b> — ' + a.grade + '<br>' +
+      '<span style="font-size:13px">관리청 <b>' + a.legal.dept + '</b> 이관 안내 대상</span></div>';
+  }
+  const low = a.confidence < 0.5 && !a.overridden;
+  return '<div class="dept"><b>⚖️ 법적 소관</b> · <b>' + a.legal.dept + '</b>' +
+      '<div style="font-size:12px;color:var(--muted)">' + a.legal.basis + '</div></div>' +
+    '<div class="dept"><b>🛠️ 처리 주체</b> · <b>' + a.actor.org + '</b>' +
+      '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-left:8px" onclick="deptEdit(' + it.id + ')">변경</button>' +
+      '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-left:4px" onclick="openDeptCfg()" title="소규모 보수 처리 기준 조정">⚙️</button>' +
+      '<div style="font-size:12px;color:var(--muted)">' + a.actor.basis + (a.grade ? ' · 도로 등급 ' + a.grade : '') + '</div></div>' +
+    (low ? '<div class="dept" style="background:#FFF3CD;border-left:3px solid #E5B800"><b>확인 필요</b> — 배정 확신 ' + Math.round(a.confidence * 100) + '%. 담당자가 확인해 주세요.</div>' : '');
+}
+
 function needVendor(it){ return it.field==="상하수도" && ["하수도 막힘","맨홀 파손","빗물받이 막힘"].includes(it.sub) && SEWER_VENDOR[it.gu]; }
 const FIELD_KEYS = {
   "교통·도로":["주정차","주차","포트홀","도로 파","패였","신호등","표지판","차선","가로등","보안등","제설","눈 좀"],
@@ -914,7 +1191,8 @@ function selectItem(id){
     '<p style="font-size:15px;margin-top:4px">'+it.sum+' · <b>'+it.req+'</b></p>'+
     (it.photo?'<img src="'+it.photo+'" style="max-width:100%;max-height:200px;border-radius:11px;margin-top:8px;border:1.5px solid var(--line)">':"")+
     '<div class="manual"><h3>📘 대응 매뉴얼 (자동 표시) <a href="#" onclick="openManual(\''+it.sub.split("(")[0]+'\');return false" style="float:right;font-size:12.5px;font-weight:500;color:var(--hs-blue)">전문 검색 ▸</a></h3><ol>'+r.steps.map(x=>"<li>"+x+"</li>").join("")+'</ol>'+
-    '<div class="dept">담당: '+r.dept+'</div>'+vendor+'<div class="dept">🏢 담당자 확인: <a href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener" style="color:var(--hs-blue)">행정조직도(스마트행정지원시스템)</a> <span style="font-size:11.5px">내부망 전용</span></div></div>'+
+    deptBlock(it)+
+    '<div class="dept">당직 대응 소관(매뉴얼): '+r.dept+'</div>'+vendor+'<div class="dept">🏢 담당자 확인: <a href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener" style="color:var(--hs-blue)">행정조직도(스마트행정지원시스템)</a> <span style="font-size:11.5px">내부망 전용</span></div></div>'+
     '<div class="row"><button class="btn-o" onclick="openHandoff('+it.id+')">📨 담당용역업체 처리요청 문자발송</button></div>'+
     
     (it.field==="주택·건축"?'<div class="row"><a class="btn-g" style="text-align:center;line-height:24px;text-decoration:none" href="https://www.hub.go.kr" target="_blank" rel="noopener">🏢 건축물대장 조회(건축HUB)</a></div>':'')+
@@ -3600,6 +3878,7 @@ function setMode(m, fromHash){
   document.getElementById("tabCit").className = m==="cit"?"on":"";
   const tr=document.getElementById("tabRoad"); if(tr) tr.className = m==="road"?"on":"";
   if(m==="road") renderRoad();
+  if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
   if(m==="cit") initCitMap();
   if(m==="dash"){ initDashMap(); renderDash(); }
   if(m==="duty" && map) setTimeout(()=>map.invalidateSize(),50);
