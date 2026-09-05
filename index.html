@@ -218,7 +218,7 @@ footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px
 @media (prefers-reduced-motion: reduce){ #splash, #splash .sp-fill{transition:none;} }
 @media (max-width:520px){ #splash .sp-t{font-size:22px;} #splash .sp-logo{height:56px;} }
 /* ── D-M1 실시간 상황 지도: 스크롤 없는 높이 + 전체화면 토글 ── */
-#mapCard{position:relative; display:flex; flex-direction:column; height:calc(100vh - 96px); min-height:520px;}
+#mapCard{position:relative; display:flex; flex-direction:column; height:calc(100vh - var(--hdr-h, 96px)); min-height:520px;}
 #mapCard #map{flex:1 1 auto; height:auto; min-height:300px;}
 #mapCard .legend{flex:0 0 auto;}
 #mapFsBtn{position:absolute; top:12px; right:16px; z-index:1300; height:32px; padding:0 12px; font-size:13px; font-weight:700;
@@ -515,7 +515,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0139';
+const BUILD_VER = 'v0906-0140';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -698,6 +698,17 @@ function initMap(){
 }
 /* ── D-M1 지도 전체화면: 카드를 화면 전체로 펼치고 레이어 바·범례를 지도 위에 겹친다.
    Windy 기상 오버레이(#map 내부 inset:0)는 부모 크기를 따라가므로 함께 확대된다. ── */
+/* 헤더 실측 높이 + 여백을 --hdr-h 로 반영 (헤더 줄바꿈 시에도 스크롤 없음) */
+function syncHdrH(){
+  try{
+    const h = document.querySelector("header");
+    if(h) document.documentElement.style.setProperty("--hdr-h", (h.offsetHeight + 32) + "px");
+  }catch(e){}
+}
+syncHdrH();
+window.addEventListener("resize", syncHdrH);
+if(window.ResizeObserver){ try{ new ResizeObserver(syncHdrH).observe(document.querySelector("header")); }catch(e){} }
+
 let mapFsOn = false;
 function mapFsToggle(force){
   mapFsOn = (force === undefined) ? !mapFsOn : !!force;
