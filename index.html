@@ -453,6 +453,14 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
 .rp-res button.on{background:var(--hs-blue); color:#fff;}
 .rp-warn{background:#FFF3CD; border:1px solid #E5D08A; color:#9A6700; border-radius:8px; padding:12px; font-size:13px; margin-top:12px; line-height:1.6;}
 .rp-queued{background:var(--st-new-bg); border:1px solid #E5B4AE; color:#B3261E; border-radius:8px; padding:12px; font-size:13px; margin-top:12px;}
+/* ── D-06 핀 묶음 표시 ── */
+.cl-pin{background:var(--hs-blue); color:#fff; border:3px solid #fff; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; font-weight:800; box-shadow:0 2px 8px rgba(0,0,0,.35);}
+.cl-pin.urg{background:var(--st-new);}
+/* ── D-10 집계 ── */
+.d10{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:12px;}
+.d10 > div{background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px;}
+.d10 .k{font-size:12px; color:var(--muted);} .d10 .v{font-size:22px; font-weight:800; color:var(--hs-blue-dark);}
 </style>
 </head>
 <body>
@@ -660,7 +668,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   <div class="kpis" id="dKpis"></div>
   <div style="display:grid; grid-template-columns:minmax(240px,1fr) minmax(0,1.7fr) minmax(240px,1fr); gap:14px; margin-bottom:14px; align-items:start" class="dash-top">
     <div>
-      <div class="card"><h2>📊 최근 7일 접수 추이</h2><div class="cols" id="dTrend"></div></div>
+      <div class="card"><h2>⏱️ 처리시간·상습지점 <span class="sub">결과보고 기반</span></h2><div id="dOps"></div></div>
+      <div class="card" style="margin-top:14px"><h2>📊 최근 7일 접수 추이</h2><div class="cols" id="dTrend"></div></div>
       <div class="card" style="margin-top:14px"><h2>🕐 시간대별 접수 분포 <span class="sub">당직시간 피크 분석</span></h2><div id="dHour"></div></div>
       <div class="card" style="margin-top:14px"><h2>🚨 긴급도 비율</h2><div id="dUrg"></div></div>
     </div>
@@ -712,7 +721,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0222';
+const BUILD_VER = 'v0906-0224';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1172,10 +1181,10 @@ function initMap(){
   map.addControl(new PanCtl());
   map.fitBounds([[b[1],b[0]],[b[3],b[2]]], {padding:[8,8]});
   addLocate(map); addFsCtl(map);
-  addOrgMarkers(map);
   const hh = new Date().getHours();
   if(hh >= 21 || hh < 2){ toggleNight(); toast('오후 9시~새벽 2시 — 야간모드로 시작합니다'); }
-  renderFestivals(); refreshFestivals();
+  /* D-05: 기관·행사 레이어는 상황판이 실제로 열릴 때 붙인다 */
+  map.on('zoomend', ()=>{ renderMap(); });
   if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ const ll=[p.coords.latitude,p.coords.longitude]; meMarker['duty']=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me-wrap"><div class="me-ring"></div><div class="me-dot"></div></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map).bindTooltip('현재 위치'); map.setView(ll,12); }, ()=>{}, {timeout:5000}); }
 }
 /* ── D-M1 지도 전체화면: 카드를 화면 전체로 펼치고 레이어 바·범례를 지도 위에 겹친다.
@@ -1301,10 +1310,13 @@ let mkById = {};
 function renderMap(){
   if(!map) return;
   markerLayer.clearLayers();
+  mkById = {};   // D-06: 묶음/개별 전환 시 남은 마커 참조 제거
   const hasSel = selId!=null && items.some(i=>i.id===selId && i.st!=="완료");
   const banner = document.getElementById('selBanner');
   if(banner) banner.style.display = hasSel ? 'block' : 'none';
-  for(const it of scopeItems()){   // S-11: 소속 범위 밖 민원은 지도에도 올리지 않는다
+  const drawList = scopeItems().filter(i=>i.ll || i.pin);
+  if(clusterDraw(drawList)) return;   // D-06: 넓게 볼 때는 묶어서 표시
+  for(const it of drawList){   // S-11: 소속 범위 밖 민원은 지도에도 올리지 않는다
     const c = pinColor(it);
     const pulse = it.st==='신규접수' ? ' pulse' : '';
     const sel = it.id===selId ? ' sel' : '';
@@ -3271,8 +3283,7 @@ function renderDash(){
   const active = realItems().filter(i=>i.st!=="완료").length;
   const urg = all.filter(x=>x.urg==="긴급").length;
   const cit = all.filter(x=>x.src==="시민접수").length;
-  const durs = HIST.map(h=>h.dur);
-  const avg = Math.round(durs.reduce((a,b)=>a+b,0)/durs.length);
+  const avg = d10Stats().avg;   // D-10: 누적 이력 + 현장 결과보고 실측 소요시간
   document.getElementById('dKpis').innerHTML =
     '<div class="kpi"><div class="n">'+tot+'</div><div class="l">누적 접수 (7/17~)</div></div>'+
     '<div class="kpi"><div class="n" style="color:#1D8348">'+doneCnt+'</div><div class="l">처리 완료</div></div>'+
@@ -3284,6 +3295,8 @@ function renderDash(){
   const days = ["7/17","7/18","7/19","7/20","7/21","7/22","7/23"];
   const byDay = days.map(d=>HIST.filter(h=>h.dt===d).length + (d==="7/23"?items.length:0));
   const mx = Math.max(...byDay, 1);
+  const d10 = document.getElementById('dOps');
+  if(d10) d10.innerHTML = d10Html();
   document.getElementById('dTrend').innerHTML = days.map((d,i)=>
     '<div class="c" style="cursor:pointer'+(dashF&&dashF.type==="day"&&dashF.val===d?';outline:2px solid var(--hs-orange);border-radius:8px':'')+'" onclick="dashClick(\'day\',\''+d+'\')"><span class="cv">'+byDay[i]+'</span><div class="bar2" style="height:'+Math.round(byDay[i]/mx*84)+'px"></div><span class="d">'+d+'</span></div>').join("");
   /* 🕐 시간대별 접수 분포 (3시간 단위 8구간) */
@@ -4156,6 +4169,95 @@ function ruleBacktest(R){
   else if(per30 < 2) verdict = '너무 드뭅니다 — 실제 급증을 놓칠 위험이 있습니다.';
   else verdict = '적정 범위로 보입니다.';
   return {count: n, per30: per30, verdict: verdict};
+}
+
+/* ══════════ D-05 레이어 지연 로딩 ══════════
+   버튼을 누른 시점에만 해당 레이어를 만든다. 행사·기관 마커는 상황판이 실제로 열릴 때 붙인다. */
+let dutyLayersReady = false;
+function dutyLayersInit(){
+  if(dutyLayersReady || !map) return;
+  dutyLayersReady = true;
+  try{ addOrgMarkers(map); }catch(e){ console.warn('[D-05] 기관 마커 실패', e); }
+  try{ renderFestivals(); refreshFestivals(); }catch(e){ console.warn('[D-05] 행사 레이어 실패', e); }
+}
+
+/* ══════════ D-06 핀 묶음 표시(클러스터) ══════════
+   누적이 늘어도 지도가 뭉개지지 않게, 넓게 보는 배율에서는 격자로 묶어 건수만 보여준다. */
+const CLUSTER_ZOOM = 13;     /* 이 배율보다 넓게 보면 묶는다 */
+const CLUSTER_MIN = 12;      /* 이 건수 미만이면 묶지 않는다 */
+function clusterCells(list, z){
+  /* 화면 배율에 따라 격자 크기를 바꾼다 */
+  const g = z <= 10 ? 0.05 : (z <= 11 ? 0.03 : (z <= 12 ? 0.018 : 0.01));
+  const cells = {};
+  for(const it of list){
+    const ll = it.ll || it.pin;
+    if(!ll) continue;
+    const k = Math.round(ll[0]/g) + '_' + Math.round(ll[1]/g);
+    (cells[k] = cells[k] || []).push(it);
+  }
+  return Object.keys(cells).map(k=>{
+    const arr = cells[k];
+    let la = 0, ln = 0;
+    for(const it of arr){ const ll = it.ll || it.pin; la += ll[0]; ln += ll[1]; }
+    return {ll:[la/arr.length, ln/arr.length], list:arr,
+            urg: arr.some(i=>i.urg === '긴급'), cnt: arr.length};
+  });
+}
+function clusterDraw(list){
+  const z = map.getZoom();
+  if(z >= CLUSTER_ZOOM || list.length < CLUSTER_MIN) return false;
+  const cells = clusterCells(list, z);
+  /* 묶을 게 없으면(전부 1건) 평소대로 그린다 */
+  if(!cells.some(c=>c.cnt > 1)) return false;
+  for(const c of cells){
+    if(c.cnt === 1){
+      const it = c.list[0];
+      const px = 30;
+      const icon = L.divIcon({className:'', iconSize:[px,px], html:'<div class="pin" style="background:#fff;border-color:' + pinColor(it) +
+        ';display:flex;align-items:center;justify-content:center;font-size:15px">' + (it.urg === '긴급' ? '🚨' : '📢') + '</div>'});
+      mkById[it.id] = L.marker(it.ll || it.pin, {icon:icon}).addTo(markerLayer).on('click', ()=>selectItem(it.id));
+      continue;
+    }
+    const px = c.cnt >= 30 ? 52 : (c.cnt >= 10 ? 44 : 36);
+    const icon = L.divIcon({className:'', iconSize:[px,px],
+      html:'<div class="cl-pin' + (c.urg ? ' urg' : '') + '" style="width:' + px + 'px;height:' + px + 'px;font-size:' + (px/2.6).toFixed(0) + 'px">' + c.cnt + '</div>'});
+    L.marker(c.ll, {icon:icon})
+      .bindTooltip(c.cnt + '건 묶음 — 눌러서 펼치기', {direction:'top'})
+      .on('click', ()=>{ map.setView(c.ll, Math.max(map.getZoom() + 2, CLUSTER_ZOOM)); })
+      .addTo(markerLayer);
+  }
+  return true;
+}
+
+/* ══════════ D-10 처리시간·상습지점 집계 ══════════ */
+function d10Stats(){
+  const mins = reportMins();                      /* 결과보고에서 나온 실제 소요시간 */
+  const hist = HIST.map(h=>h.dur).filter(x=>x > 0);
+  const all = mins.concat(hist);
+  const avg = all.length ? Math.round(all.reduce((a,b)=>a + b, 0) / all.length) : 0;
+  const p90 = all.length ? all.slice().sort((a,b)=>a - b)[Math.floor(all.length * 0.9)] : 0;
+  /* 상습지점 — 같은 읍면동·같은 유형이 반복되는 곳 */
+  const g = {};
+  for(const it of scopeItems(realItems()).concat([])){
+    const k = (emdOf(it) || it.gu || '관내').replace(/(사무소|주민센터)$/, '') + ' · ' + it.sub;
+    g[k] = (g[k] || 0) + 1;
+  }
+  const hot = Object.keys(g).map(k=>({k:k, n:g[k]})).filter(x=>x.n >= 2).sort((a,b)=>b.n - a.n).slice(0, 6);
+  return {avg:avg, p90:p90, n:all.length, live:mins.length, hot:hot};
+}
+function d10Html(){
+  const d = d10Stats();
+  return '<div class="d10">' +
+    '<div><div class="k">평균 처리시간</div><div class="v">' + d.avg + '<span style="font-size:13px">분</span></div></div>' +
+    '<div><div class="k">상위 10% 지연</div><div class="v">' + d.p90 + '<span style="font-size:13px">분</span></div></div>' +
+    '<div><div class="k">집계 표본</div><div class="v">' + d.n + '<span style="font-size:13px">건</span></div></div>' +
+    '<div><div class="k">현장 결과보고</div><div class="v">' + d.live + '<span style="font-size:13px">건</span></div></div>' +
+    '</div>' +
+    (d.hot.length
+      ? '<div style="margin-top:12px"><div style="font-size:13px;font-weight:700;color:var(--hs-blue-dark);margin-bottom:8px">🔁 상습지점 (2건 이상 반복)</div>' +
+        d.hot.map(h=>'<div style="display:flex;gap:8px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--line)">' +
+          '<span style="flex:1">' + h.k + '</span><b>' + h.n + '건</b></div>').join('') + '</div>'
+      : '<p style="font-size:13px;color:var(--muted);margin-top:12px">반복 접수된 지점이 아직 없습니다.</p>');
 }
 
 /* ══════════ S-10 현장 결과보고 ══════════
@@ -5379,7 +5481,7 @@ function setMode(m, fromHash){
   if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
   if(m==="cit") initCitMap();
   if(m==="dash"){ initDashMap(); renderDash(); }
-  if(m==="duty" && map) setTimeout(()=>map.invalidateSize(),50);
+  if(m==="duty" && map){ dutyLayersInit(); setTimeout(()=>map.invalidateSize(),50); }
   if(m==="duty" && notifyQueue.length){
     const nid = notifyQueue.shift();
     const nit = items.find(i=>i.id===nid);
