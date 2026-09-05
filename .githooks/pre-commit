@@ -1,0 +1,5 @@
+#!/bin/sh
+# D-07: index.html 이 스테이징돼 있으면 BUILD_VER 를 커밋 시각으로 자동 갱신한다.
+git diff --cached --name-only | grep -q '^index.html$' || exit 0
+node scripts/stamp_ver.mjs || exit 1
+git add index.html

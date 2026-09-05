@@ -489,20 +489,41 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0205';
-window.onerror = function(msg, src, line, col){
+const BUILD_VER = 'v0906-0136';
+/* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
+   개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
+const DEV_MODE = (function(){
   try{
-    let b = document.getElementById('errBanner');
-    if(!b){
-      b = document.createElement('div');
-      b.id = 'errBanner';
-      b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#B3261E;color:#fff;font-size:13px;padding:8px 14px;font-family:monospace;white-space:pre-wrap';
-      document.body.appendChild(b);
+    const q = new URLSearchParams(location.search);
+    if(q.get('dev') === '1' || location.hash === '#dev'){ localStorage.setItem('hs_dev','1'); return true; }
+    if(q.get('dev') === '0'){ localStorage.removeItem('hs_dev'); return false; }
+    if(localStorage.getItem('hs_dev') === '1') return true;
+    return ['localhost','127.0.0.1','[::1]','::1'].indexOf(location.hostname) >= 0;
+  }catch(e){ return false; }
+})();
+window.__errs = [];   // 개발 모드가 아니어도 원인 추적용으로 쌓아 둔다 (콘솔에서 __errs 확인)
+let __errNoticed = false;
+function __onErr(msg, line, col){
+  try{
+    window.__errs.push({t:new Date().toISOString(), msg:String(msg), line:line, col:col, ver:BUILD_VER});
+    console.error('['+BUILD_VER+'] ', msg, line, col);
+    if(DEV_MODE){
+      let b = document.getElementById('errBanner');
+      if(!b){
+        b = document.createElement('div');
+        b.id = 'errBanner';
+        b.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:99999;background:#D63B1F;color:#fff;font-size:13px;padding:8px 16px;font-family:monospace;white-space:pre-wrap';
+        document.body.appendChild(b);
+      }
+      b.textContent = '⚠️ [개발 모드] 스크립트 오류 '+window.__errs.length+'건 (이 화면을 캡처해 주세요)\n' + msg + '\n@ line ' + line + ':' + col;
+    } else if(!__errNoticed){
+      __errNoticed = true;   // 발표 중 반복 노출 금지 — 세션당 1회 조용한 안내
+      setTimeout(()=>{ try{ toast('일부 기능에 일시적 오류가 발생했습니다 — 계속 이용하실 수 있습니다'); }catch(e){} }, 400);
     }
-    b.textContent = '⚠️ 스크립트 오류 (이 화면을 캡처해 주세요)\n' + msg + '\n@ line ' + line + ':' + col;
   }catch(e){}
-  return false;
-};
+}
+window.onerror = function(msg, src, line, col){ __onErr(msg, line, col); return false; };
+window.addEventListener('unhandledrejection', e=>{ __onErr('(처리되지 않은 Promise) '+((e.reason&&e.reason.message)||e.reason), 0, 0); });
 /* 화성특례시 당직 업무 플랫폼 — 프로토타입 로직 */
 "use strict";
 
