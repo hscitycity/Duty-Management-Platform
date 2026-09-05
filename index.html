@@ -217,6 +217,31 @@ footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px
 #splash .sp-ver{position:absolute; bottom:16px; font-size:12px; color:#5E82B8;}
 @media (prefers-reduced-motion: reduce){ #splash, #splash .sp-fill{transition:none;} }
 @media (max-width:520px){ #splash .sp-t{font-size:22px;} #splash .sp-logo{height:56px;} }
+/* ── D-M1 실시간 상황 지도: 스크롤 없는 높이 + 전체화면 토글 ── */
+#mapCard{position:relative; display:flex; flex-direction:column; height:calc(100vh - 96px); min-height:520px;}
+#mapCard #map{flex:1 1 auto; height:auto; min-height:300px;}
+#mapCard .legend{flex:0 0 auto;}
+#mapFsBtn{position:absolute; top:12px; right:16px; z-index:1300; height:32px; padding:0 12px; font-size:13px; font-weight:700;
+  background:rgba(255,255,255,.94); color:#1D4994; border:1.5px solid #C9D8EE; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.18);}
+#mapFsBtn:hover{background:#EEF3FB;}
+/* 전체화면: 레이어 바·범례를 지도 위에 겹쳐 표시 */
+body.mapfs{overflow:hidden;}
+body.mapfs #mapCard{position:fixed; inset:0; z-index:4000; height:100vh; min-height:0; border-radius:0; border:none; padding:0;}
+body.mapfs #mapCard > h2, body.mapfs #mapCard > .row, body.mapfs #mapCard > .hint, body.mapfs #mapCard > #apiErrBox{display:none;}
+body.mapfs #mapCard > #map{position:absolute; inset:0; height:100%; min-height:0; border:none; border-radius:0;}
+body.mapfs #mapCard > div:nth-of-type(1){position:absolute; top:8px; left:8px; right:132px; z-index:1300; margin:0; background:rgba(238,243,251,.94);}
+body.mapfs #mapCard > .lbar{position:absolute; top:56px; left:8px; width:min(520px,46vw); z-index:1300; margin:0;
+  background:rgba(255,255,255,.93); border:1.5px solid #C9D8EE; border-radius:12px; padding:8px;}
+body.mapfs #mapCard > .legend{position:absolute; left:8px; bottom:8px; right:8px; z-index:1300; margin:0;
+  background:rgba(255,255,255,.93); border:1px solid var(--line); border-radius:12px; padding:8px 12px;}
+body.mapfs #mapFsBtn{top:8px; right:8px;}
+@media(max-width:900px){
+  #mapCard{height:auto; min-height:0;}
+  #mapCard #map{height:58vh; min-height:320px;}
+  body.mapfs #mapCard > .lbar{width:auto; right:8px; max-height:38vh; overflow-y:auto;}
+  body.mapfs #mapCard > div:nth-of-type(1){right:8px; top:44px;}
+  body.mapfs #mapFsBtn{top:8px; right:8px;}
+}
 </style>
 </head>
 <body>
@@ -291,8 +316,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
     </div>
     <!-- 가운데: 지도 -->
     <div>
-      <div class="card">
+      <div class="card" id="mapCard">
         <h2>🗺️ 실시간 상황 지도 <span class="sub">레이어를 켜고 끄세요</span></h2>
+        <button id="mapFsBtn" onclick="mapFsToggle()" aria-label="지도 전체화면 전환" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶ 전체화면</button>
         <div style="display:flex; gap:7px; align-items:center; background:#EEF3FB; border:1.5px solid #C9D8EE; border-radius:12px; padding:7px 10px; margin-bottom:8px">
           <span style="font-size:12.5px; font-weight:800; color:#1D4994; margin-right:2px">🗺️ 지도 배경</span>
           <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
@@ -489,7 +515,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0138';
+const BUILD_VER = 'v0906-0139';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -670,6 +696,21 @@ function initMap(){
   renderFestivals(); refreshFestivals();
   if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ const ll=[p.coords.latitude,p.coords.longitude]; meMarker['duty']=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me-wrap"><div class="me-ring"></div><div class="me-dot"></div></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map).bindTooltip('현재 위치'); map.setView(ll,12); }, ()=>{}, {timeout:5000}); }
 }
+/* ── D-M1 지도 전체화면: 카드를 화면 전체로 펼치고 레이어 바·범례를 지도 위에 겹친다.
+   Windy 기상 오버레이(#map 내부 inset:0)는 부모 크기를 따라가므로 함께 확대된다. ── */
+let mapFsOn = false;
+function mapFsToggle(force){
+  mapFsOn = (force === undefined) ? !mapFsOn : !!force;
+  document.body.classList.toggle("mapfs", mapFsOn);
+  const b = document.getElementById("mapFsBtn");
+  if(b){ b.textContent = mapFsOn ? "⤢ 해제" : "⛶ 전체화면"; b.setAttribute("aria-pressed", String(mapFsOn)); }
+  /* 컨테이너 크기가 바뀌었으므로 Leaflet에 알려 핀·팝업·경로 좌표를 다시 맞춘다 */
+  setTimeout(()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} }, 60);
+  setTimeout(()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} }, 360);
+}
+document.addEventListener("keydown", e=>{ if(e.key === "Escape" && mapFsOn) mapFsToggle(false); });
+window.addEventListener("resize", ()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} });
+
 /* ⛶ 전체화면 토글 — 지도 우측 하단 (전체화면 ↔ 원래 크기 자유 전환) */
 function addFsCtl(m){
   const C = L.Control.extend({options:{position:'bottomright'}, onAdd:function(){
@@ -679,10 +720,7 @@ function addFsCtl(m){
     L.DomEvent.disableClickPropagation(b);
     L.DomEvent.on(b,'click',e=>{
       L.DomEvent.stop(e);
-      const el = m.getContainer();
-      if(document.fullscreenElement){ document.exitFullscreen(); }
-      else if(el.requestFullscreen){ el.requestFullscreen(); }
-      else { toast('이 브라우저는 전체화면을 지원하지 않습니다'); }
+      mapFsToggle();   // D-M1: 레이어 바·범례를 유지하는 카드 단위 전체화면
     });
     return b;
   }});
