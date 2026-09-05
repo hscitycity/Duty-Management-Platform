@@ -648,6 +648,106 @@ body.mapfs .cs{height:100vh;}
   .cs-live.on i{animation:none;} .cs-left, .cs-right, .cs-chip, .cs-tabs button{transition:none;}
 }
 
+/* ══════════ UI-FIX A~F ══════════ */
+/* A. 상황판은 명령 바 하나만 — 브랜드 헤더는 감춘다(헤더 3중 → 1개, 44px 고정) */
+body[data-mode="duty"] header{display:none;}
+body[data-mode="duty"] .cs{height:100vh;}
+.cs-logo{height:20px; flex:0 0 auto; filter:brightness(0) invert(1); opacity:.85;}
+.cs-modes{display:flex; gap:4px;}
+.cs-duty{font-size:11px; color:var(--cmuted); white-space:nowrap;}
+.cs-cmd > *{flex:0 0 auto;}
+.cs-cmd .cs-spacer{flex:1 1 auto;}
+
+/* B. 지도와 스트립이 세로를 나눠 갖는다 — 서로 겹치지 않는다 */
+.cs-body{min-height:0; overflow:hidden;}
+.cs-map{overflow:hidden;}
+#mapHud{display:none !important;}   /* 지표는 스트립의 처리 지표 칸으로 통합 */
+.cs-kpis{grid-template-columns:repeat(3,1fr);}
+.cs-stripbtn{top:-24px; background:var(--panel2);}
+
+/* C-1. 통계 한 줄 요약 — 남는 세로는 전부 목록에 */
+.cs-statline{display:flex; align-items:baseline; gap:12px; padding:8px 10px; margin-bottom:6px;
+  background:rgba(255,255,255,.04); border:1px solid var(--cline2); border-radius:6px;}
+.cs-statline > div{display:flex; align-items:baseline; gap:4px;}
+.cs-statline .n{font-family:var(--mono); font-size:17px; font-weight:800; color:var(--cbright);}
+.cs-statline .n.u{color:var(--urgent);} .cs-statline .n.p{color:var(--prog);} .cs-statline .n.d{color:var(--cdim);}
+.cs-statline .l{font-size:11px; color:var(--cmuted);}
+.cs-statsub{margin-left:auto; font-size:11px; color:var(--cdim); white-space:nowrap;}
+.cs-statsub2{font-size:11px; color:var(--cdim); margin:0 0 8px 2px;}
+.cs-statsub2 b{color:var(--cmuted); font-weight:700;}
+/* 목록은 패널 안에서만 스크롤한다 */
+#paneList{display:flex; flex-direction:column; padding-bottom:0;}
+#paneList.on{display:flex;}
+.cs-list{flex:1 1 auto; min-height:0; overflow-y:auto; padding-right:2px; padding-bottom:12px;}
+
+/* C-2. 구획형 목록 — 머리글은 스크롤해도 상단에 붙는다 */
+.cs-sec{margin-bottom:10px;}
+.cs-sechead{position:sticky; top:0; z-index:3; display:flex; align-items:center; gap:6px;
+  height:28px; padding:0 8px; margin-bottom:6px; border-radius:4px; cursor:pointer;
+  font-size:11px; font-weight:800; letter-spacing:.4px;
+  background:var(--panel2); border:1px solid var(--cline2); color:var(--cmuted);}
+.cs-sechead b{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--cbright);}
+.cs-sechead .fold{width:12px; color:var(--cdim);}
+.cs-sechead .always{margin-left:6px; font-size:10px; font-weight:400; color:var(--cdim);}
+.cs-sec.s-u .cs-sechead{background:rgba(255,95,86,.16); border-color:rgba(255,95,86,.45); color:var(--urgent); cursor:default;}
+.cs-sec.s-u .cs-sechead b{color:var(--urgent);}
+.cs-sec.s-p .cs-sechead{background:rgba(245,166,35,.13); border-color:rgba(245,166,35,.35); color:var(--prog);}
+.cs-empty{font-size:11px; color:var(--cdim); padding:8px; text-align:center;}
+/* 색은 긴급도·상태 축에만 — 부서·관할구는 라벨로 구분 */
+#duty .item{border-left:3px solid var(--cdim) !important;}
+#duty .cs-sec.s-u .item{border-left-color:var(--urgent) !important;}
+#duty .cs-sec.s-p .item{border-left-color:var(--prog) !important;}
+#duty .item.blink{animation:csPulse 2s ease-in-out infinite;}
+@keyframes csPulse{0%,100%{box-shadow:0 0 0 0 rgba(255,95,86,.45)}50%{box-shadow:0 0 0 6px rgba(255,95,86,0)}}
+/* C-3. 처리구분 배지 */
+#duty .badge.b-tri{background:rgba(255,255,255,.07); color:var(--cmuted); font-weight:700;}
+#duty .badge.b-tri.t-n{background:rgba(255,95,86,.18); color:var(--urgent);}
+#duty .badge.b-tri.t-s{background:rgba(74,158,255,.18); color:var(--done);}
+
+/* D. 다크 통일 — 상황판 안에 남은 밝은 조각 제거 */
+#duty .stats, #duty .stat{background:transparent !important; border:none !important;}
+#duty .ai-box, #duty #journalCard, #duty #wxCard, #duty #staffCard, #duty #svcCard{
+  background:var(--panel2) !important; border:1px solid var(--cline2) !important;}
+#duty .ai-note, #duty #selBanner, #duty #apiErrBox{
+  background:rgba(56,189,248,.08) !important; border:1px solid var(--cline) !important; color:var(--cink) !important;}
+#duty pre, #duty .report{background:rgba(0,0,0,.30); color:var(--cink); border:1px solid var(--cline2);}
+#duty a{color:var(--cyan);}
+#duty .sub, #duty .hint, #duty small{color:var(--cdim) !important;}
+#duty .legend .dot{outline:1px solid rgba(255,255,255,.25);}
+#duty .manual, #duty .manual *{color:var(--cink);}
+
+/* E. 레이어 칩 한 줄 — 주요 5종 + 전체 버튼 */
+.mlb-quick{flex-wrap:nowrap;}
+#mapLayerBar{max-width:calc(100% - 250px);}
+
+/* F. 시간대별 차트 스케일 표기 */
+.cs-timeline{border-bottom:1px solid var(--cline2);}
+.cs-tlmax{font-family:var(--mono); font-size:10px; color:var(--cdim); margin-left:6px;}
+/* 우측 패널 카드가 중간에 잘리지 않도록 내부 스크롤 보장 */
+.cs-right .cs-pane{overflow-y:auto; overflow-x:hidden; padding-bottom:16px;}
+/* 지도 위 Leaflet 컨트롤도 관제 톤 — 라벨 없는 버튼을 남기지 않는다 */
+.cs-map .leaflet-control-zoom a, .cs-map .loc-btn, .cs-map .leaflet-bar a{
+  background:rgba(15,28,49,.92) !important; color:var(--cink) !important;
+  border:1px solid var(--cline) !important;}
+.cs-map .leaflet-control-zoom a:hover, .cs-map .loc-btn:hover{background:rgba(56,189,248,.18) !important;}
+.cs-map .leaflet-control-attribution{background:rgba(10,22,40,.72); color:var(--cdim);}
+.cs-map .leaflet-control-attribution a{color:var(--cmuted);}
+/* ✋ 탐색 버튼은 Leaflet 우상단 — 우리 도구 바(#mapBaseBar) 아래로 내려 겹침을 막는다 */
+.cs-map .leaflet-top.leaflet-right{margin-top:52px;}
+
+/* D(계속). JS가 만들어 넣는 패널 내용도 다크로 — 지도 마커의 흰 배경은 의도된 것이라 건드리지 않는다 */
+#duty .cs-left [style*="background:#EEF3FB"], #duty .cs-right [style*="background:#EEF3FB"],
+#duty .cs-left [style*="background:#F0F4FA"], #duty .cs-right [style*="background:#F0F4FA"],
+#duty .cs-left [style*="background:#fff"], #duty .cs-right [style*="background:#fff"]{
+  background:rgba(255,255,255,.05) !important; color:var(--cink) !important;}
+#duty .cs-left [style*="background:var(--hs-blue)"], #duty .cs-right [style*="background:var(--hs-blue)"]{
+  background:var(--cyan) !important; color:#062036 !important;}
+#duty #staffBody table, #duty #svcBody table{width:100%; border-collapse:collapse;}
+#duty #staffBody th, #duty #staffBody td, #duty #svcBody th, #duty #svcBody td{
+  border-color:var(--cline2) !important; color:var(--cink);}
+#duty #staffBody, #duty #svcBody, #duty #feed, #duty #wxBody, #duty #airBody{color:var(--cink);}
+#duty #feed a{color:var(--cyan);}
+
 </style>
 </head>
 <body>
@@ -695,13 +795,27 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 
     <!-- 명령 바 44px -->
     <div class="cs-cmd">
-      <span class="cs-brand">🗺️ 상황판</span>
-      <button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="검색 (Ctrl+K)">🔎 검색<kbd>Ctrl K</kbd></button>
+      <img class="cs-logo" src="data/icons/logo.png" alt="화성특례시">
+      <!-- A: 헤더의 모드 탭을 명령 바로 합쳤다(브랜드 헤더 + 조직도 줄 + 명령 바 → 1개) -->
+      <div class="cs-modes" role="tablist">
+        <button class="cs-chip on" id="csmDuty" onclick="setMode('duty')">상황판</button>
+        <button class="cs-chip"    id="csmDash" onclick="setMode('dash')">대시보드</button>
+        <button class="cs-chip"    id="csmRoad" onclick="setMode('road')">기동단</button>
+        <button class="cs-chip"    id="csmCmd"  onclick="setMode('cmd')">조치지시</button>
+        <button class="cs-chip"    id="csmCit"  onclick="setMode('cit')">민원창구</button>
+      </div>
+      <span class="cs-sep"></span>
+      <button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="검색 (Ctrl+K)">🔎<kbd>Ctrl K</kbd></button>
       <span class="cs-sep"></span>
       <span class="cs-flabel">필터</span>
       <button class="cs-chip on" id="fltAll"  onclick="csFilter('all')">전체</button>
       <button class="cs-chip"    id="fltUrg"  onclick="csFilter('urg')">긴급</button>
       <button class="cs-chip"    id="fltOpen" onclick="csFilter('open')">미처리</button>
+      <span class="cs-flabel">구분</span>
+      <button class="cs-chip on" id="tgAll" onclick="csTri('all')">전체</button>
+      <button class="cs-chip"    id="tgNow" onclick="csTri('즉시')">즉시</button>
+      <button class="cs-chip"    id="tgSht" onclick="csTri('단기')">단기</button>
+      <button class="cs-chip"    id="tgLng" onclick="csTri('중장기')">중장기</button>
       <span class="cs-dimnote" id="csDimNote"></span>
       <span class="cs-sep"></span>
       <button class="cs-live on" id="csLive" onclick="csLiveToggle()" aria-pressed="true"><i></i>LIVE</button>
@@ -710,9 +824,12 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
       <button class="cs-chip"    id="rng6"  onclick="csRange(6)">6시간</button>
       <button class="cs-chip on" id="rng24" onclick="csRange(24)">24시간</button>
       <span class="cs-spacer"></span>
+      <span class="cs-duty">당직 김주무관</span>
       <span class="cs-clock" id="csClock"></span>
       <span class="cs-shift" id="csShift"></span>
-      <button class="cs-chip" onclick="openMe()" id="csMe">👤 <span id="csMeTxt">소속</span></button>
+      <button class="cs-chip" onclick="openMe()" id="csMe" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">👤 <span id="csMeTxt">소속</span></button>
+      <a class="cs-chip" href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener"
+         title="화성시 스마트행정지원시스템 — 내부망(행정망) 전용" style="text-decoration:none">🏢 조직도</a>
     </div>
 
     <div class="cs-body">
@@ -724,24 +841,21 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <button           id="ltRes"   role="tab" aria-selected="false" onclick="csLeftTab('res')">자원</button>
         </div>
         <div class="cs-pane on" id="paneList">
-      <div class="card">
-        <h2>📋 민원접수 현황 <span class="sub" id="listCnt"></span></h2>
-        <div class="stats" style="grid-template-columns:1fr; margin:0 0 8px">
-          <div class="stat" style="background:var(--hs-blue);color:#fff"><div class="n" id="sTot" style="color:#fff">0</div><div class="l" style="color:#EAF1FF">금일 접수</div></div>
-        </div>
-        <div class="stats" style="grid-template-columns:repeat(4,1fr); margin:0 0 12px">
-          <div class="stat"><div class="n" id="sNewCit" style="color:var(--st-cit)">0</div><div class="l">신규접수<br><span style="font-size:11px;color:var(--muted)">민원접수창구</span></div></div>
-          <div class="stat"><div class="n" id="sNewDuty" style="color:var(--st-new)">0</div><div class="l">신규접수<br><span style="font-size:11px;color:var(--muted)">당직자접수</span></div></div>
-          <div class="stat"><div class="n" id="sHand" style="color:#9A6700">0</div><div class="l">처리중</div></div>
-          <div class="stat"><div class="n" id="sDone" style="color:var(--st-done)">0</div><div class="l">완료</div></div>
-        </div>
-        <div class="sc-tabs" id="scTabs" style="display:none">
-          <button id="scTabAll" onclick="scopeTab('all')">우리 관내 전체</button>
-          <button id="scTabMine" onclick="scopeTab('mine')">우리가 처리한 건</button>
-        </div>
-        <div class="sc-sum" id="scSum"></div>
-        <div class="list-scroll" id="list"></div>
+      <!-- C-1: 통계는 한 줄 요약. 남는 세로는 전부 목록에 준다 -->
+      <div class="cs-statline" id="statLine">
+        <div><span class="n" id="sTot">0</span><span class="l">금일</span></div>
+        <div><span class="n u" id="sUrg">0</span><span class="l">긴급</span></div>
+        <div><span class="n p" id="sHand">0</span><span class="l">처리중</span></div>
+        <div><span class="n d" id="sDone">0</span><span class="l">완료</span></div>
+        <span class="cs-statsub" id="listCnt"></span>
       </div>
+      <div class="cs-statsub2">창구 <b id="sNewCit">0</b> · 당직 <b id="sNewDuty">0</b></div>
+      <div class="sc-tabs" id="scTabs" style="display:none">
+        <button id="scTabAll" onclick="scopeTab('all')">우리 관내 전체</button>
+        <button id="scTabMine" onclick="scopeTab('mine')">우리가 처리한 건</button>
+      </div>
+      <div class="sc-sum" id="scSum"></div>
+      <div class="cs-list" id="list"></div>
         </div>
         <div class="cs-pane" id="paneLayer">
           <div class="cs-secthead">레이어 <span>표시 순서는 끌어서 바꿉니다</span></div>
@@ -770,7 +884,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 
       <!-- 지도: 잔여 전체, 도구는 지도 위 오버레이 -->
       <main class="cs-map" id="mapCard">
-        <div id="apiErrBox" style="display:none;background:#FFF8F7;border:1.5px dashed #E5B4AE;border-radius:8px;padding:8px 12px;margin-bottom:8px">
+        <div id="apiErrBox" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:#B3261E">⚠️ API 연계오류 조치중</span>
           <span style="font-size:12px;color:var(--muted)"> — 아래 연계는 일시 오류로 점검 중입니다. 데이터 직접 업로드 보완 예정.</span>
           <div id="apiErrList" style="margin-top:5px"></div>
@@ -786,9 +900,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
               <button class="lb" id="cctvBtn" onclick="toggleCctv()">📹 CCTV</button>
               <button class="lb" id="incBtn" onclick="toggleInc()">⚠️ 돌발상황</button>
               <button class="lb" id="jjBtn" onclick="toggleJijeok()">📐 지적</button>
-              <button class="lb mlb-more" id="lbMoreBtn" onclick="lbMore()" aria-expanded="false" aria-controls="mapLayerMore">＋ 레이어</button>
+              <button class="lb mlb-more" id="lbMoreBtn" onclick="csLeftTab('layer')" title="레이어 전체는 좌측 패널에서 켜고 끕니다">＋ 전체</button>
             </div>
-            <div class="mlb-more-panel" id="mapLayerMore" hidden>
+            <div class="mlb-more-panel" id="mapLayerMore" hidden style="display:none">
               <button class="lb" id="stnBtn" onclick="toggleStn()">🚓🚒 소방서·경찰서</button>
               <button class="lb" id="crimeBtn" onclick="toggleCrime()">🚨 범죄주의</button>
               <button class="lb" id="hospBtn" onclick="toggleHosp()">🏥 병원</button>
@@ -851,7 +965,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         </div>
         <div id="adrRes" style="display:none; margin-bottom:10px"></div>
         <div class="ai-note" id="mapPin" style="display:none"></div>
-        <div id="selBanner" style="display:none;background:#FFF4E8;border:1.5px solid #F0C9A0;border-radius:10px;padding:7px 12px;margin-top:8px;font-size:13.5px">🎯 <b>선택 민원만 강조 표시 중</b> — 나머지 민원은 흐리게 표시됩니다. <a href="#" onclick="clearSel();return false" style="color:var(--hs-blue);font-weight:700">전체 민원 보기</a></div>
+        <div id="selBanner" style="display:none;border-radius:8px;padding:7px 12px;margin-top:8px;font-size:13.5px">🎯 <b>선택 민원만 강조 표시 중</b> — 나머지 민원은 흐리게 표시됩니다. <a href="#" onclick="clearSel();return false" style="color:var(--hs-blue);font-weight:700">전체 민원 보기</a></div>
         <textarea id="rawText" placeholder="지도를 클릭해 위치를 찍고, 통화 내용을 들리는 대로 입력하세요.
 예) 배수로가 막혀서 물이 넘친다고 빨리 치워달라시는데요"></textarea>
         <div class="row">
@@ -991,7 +1105,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0830';
+const BUILD_VER = 'v0906-0856';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1129,7 +1243,7 @@ function roadAuthority(grade){
 function emdDelegated(deptName, emdName){
   if(!DEPT_DB) return null;
   /* 읍·면이면 별표 2(읍장·면장), 동이면 별표 3(동장) 을 본다 */
-  const who = /사무소$/.test(String(emdName || '')) ? '읍장·면장' : '동장';
+  const who = /(읍|면)행정복지센터$/.test(String(emdName || '')) ? '읍장·면장' : '동장';
   const tbl = (DEPT_DB.재위임사무 || {})[who] || {};
   for(const d of Object.keys(tbl)) if(deptShort(d) === deptName) return {who: who, dept: deptShort(d)};
   return null;
@@ -1183,10 +1297,18 @@ function kwOf(t){
   }
   return out.slice(0, 24);
 }
+/* 행정조직도.md 0장: 읍·면·동 모두 「행정복지센터」로 붙여 쓴다.
+   기관장 호칭만 읍장·면장·동장 그대로다. 좁은 곳에서는 emdShort() 로 '매송면'만 쓴다. */
+const EMD_SUFFIX = '행정복지센터';
 function emdOf(it){
   const m = String(it.loc || '').match(/([가-힣]{2,4}(?:읍|면|동))/);
   if(!m) return null;
-  return m[1] + (/(읍|면)$/.test(m[1]) ? '사무소' : '주민센터');
+  return m[1] + EMD_SUFFIX;
+}
+/* 목록·배지용 축약 — '매송면사무소' 같은 잘못된 축약을 만들지 않는다 */
+function emdShort(name){
+  const t = String(name || '');
+  return t.endsWith(EMD_SUFFIX) ? t.slice(0, t.length - EMD_SUFFIX.length) : t;
 }
 function isSmallRepair(it){
   const t = [it.sub, it.sum].join(' ');
@@ -1577,6 +1699,7 @@ let csLive = true;            /* LIVE: 선택 시각이 현재를 자동 추종 
 let csRangeH = 24;            /* 시간 범위(시간) */
 let csCursor = null;          /* 선택 시각 (LIVE 면 null = 지금) */
 let csFlt = 'all';            /* 명령 바 필터 */
+let csTriFlt = 'all';         /* 처리구분 필터 — 즉시(4시간)·단기(7일)·중장기(6개월) */
 let csPlayTimer = null, csSpd = 1;
 
 function csNow(){ return csCursor || Date.now(); }
@@ -1596,6 +1719,15 @@ function csRange(h){
   }
   csApply();
 }
+function csTri(k){
+  csTriFlt = k;
+  const map = {'all':'tgAll', '즉시':'tgNow', '단기':'tgSht', '중장기':'tgLng'};
+  for(const x of Object.keys(map)){
+    const b = document.getElementById(map[x]);
+    if(b) b.classList.toggle('on', x === k);
+  }
+  csApply();
+}
 function csFilter(k){
   csFlt = k;
   for(const x of ['all', 'urg', 'open']){
@@ -1608,6 +1740,7 @@ function csFilter(k){
 function csPass(it){
   if(csFlt === 'urg' && it.urg !== '긴급') return false;
   if(csFlt === 'open' && it.st === '완료') return false;
+  if(csTriFlt !== 'all' && triage(it) !== csTriFlt) return false;   /* C-3: 숨기지 않고 흐린다 */
   const t = itemStart(it).getTime();
   if(t > csNow()) return false;                              /* 선택 시각 이후는 아직 없던 민원 */
   if(csNow() - t > csRangeH * 3600 * 1000) return false;     /* 시간 범위 밖 */
@@ -1639,26 +1772,10 @@ function csApply(){
   }
   csHud(); csStripRender();
 }
-/* 좌하단 HUD 지표 */
+/* B: 지도 위 지표 박스는 스트립의 '처리 지표' 칸으로 합쳤다 — 겹침·중복 제거 */
 function csHud(){
-  const box = document.getElementById('mapBox');
-  if(!box) return;
-  let hud = document.getElementById('mapHud');
-  if(!hud){
-    hud = document.createElement('div');
-    hud.id = 'mapHud';
-    box.appendChild(hud);
-  }
-  const live = scopeItems(realItems()).filter(i=>i.st !== '완료');
-  const urg = live.filter(i=>i.urg === '긴급').length;
-  const prog = live.filter(i=>i.st === '처리중').length;
-  const crew = live.reduce((a,i)=>a + ((i.crews || []).length), 0);
-  const avg = (typeof d10Stats === 'function') ? d10Stats().avg : 0;
-  hud.innerHTML =
-    '<div><div class="k">긴급</div><div class="v u">' + urg + '</div></div>' +
-    '<div><div class="k">처리중</div><div class="v p">' + prog + '</div></div>' +
-    '<div><div class="k">출동</div><div class="v o">' + crew + '</div></div>' +
-    '<div><div class="k">평균(분)</div><div class="v">' + avg + '</div></div>';
+  const old = document.getElementById('mapHud');
+  if(old) old.remove();
 }
 /* 하단 스트립 — 이벤트 · 시간대별 막대 · 지표 */
 function csStripRender(){
@@ -1675,15 +1792,16 @@ function csStripRender(){
     arr[k]++; if(it.urg === '긴급') urgArr[k]++;
   }
   const mx = Math.max(1, ...arr);
-  const curBin = Math.floor((now - (now - span)) / (span / bins));
+  /* F: 한 구간에 몰리면 나머지가 안 보인다 — 제곱근 스케일로 낮은 값도 읽히게 하고 최댓값을 함께 적는다 */
   tl.innerHTML = arr.map((v,i)=>{
-    const h = Math.round(v / mx * 100);
+    const h = v === 0 ? 2 : Math.max(6, Math.round(Math.sqrt(v / mx) * 100));
     const cls = urgArr[i] ? ' u' : '';
-    return '<div class="cs-tlbar' + cls + (i === bins - 1 ? ' sel' : '') + '" style="height:' + Math.max(3, h) + '%" ' +
+    return '<div class="cs-tlbar' + cls + (i === bins - 1 ? ' sel' : '') + '" style="height:' + h + '%" ' +
       'title="' + csBinLabel(now, span, bins, i) + ' · ' + v + '건' + (urgArr[i] ? ' (긴급 ' + urgArr[i] + ')' : '') + '"></div>';
   }).join('');
   const lb = document.getElementById('csTlLabel');
-  if(lb) lb.textContent = '최근 ' + csRangeH + '시간 · 총 ' + arr.reduce((a,b)=>a+b,0) + '건';
+  if(lb) lb.innerHTML = '최근 ' + csRangeH + '시간 · 총 ' + arr.reduce((a,b)=>a+b,0) + '건 ' +
+    '<span class="cs-tlmax">최대 ' + mx + '건/구간</span>';
   if(ev){
     const rows = [];
     for(const it of scopeItems(realItems()).slice().sort((a,b)=>b.id - a.id).slice(0, 20)){
@@ -1696,9 +1814,12 @@ function csStripRender(){
   if(kp){
     const live = scopeItems(realItems()).filter(i=>i.st !== '완료');
     const d = (typeof d10Stats === 'function') ? d10Stats() : {avg:0, p90:0};
+    const crew = live.reduce((a,i)=>a + ((i.crews || []).length), 0);
     kp.innerHTML =
-      '<div><div class="k">열린 민원</div><div class="v">' + live.length + '</div></div>' +
       '<div><div class="k">긴급</div><div class="v" style="color:var(--urgent)">' + live.filter(i=>i.urg === '긴급').length + '</div></div>' +
+      '<div><div class="k">처리중</div><div class="v" style="color:var(--prog)">' + live.filter(i=>i.st === '처리중').length + '</div></div>' +
+      '<div><div class="k">출동</div><div class="v" style="color:var(--ok)">' + crew + '</div></div>' +
+      '<div><div class="k">열린 민원</div><div class="v">' + live.length + '</div></div>' +
       '<div><div class="k">평균 처리</div><div class="v">' + d.avg + '분</div></div>' +
       '<div><div class="k">지연 상위10%</div><div class="v">' + d.p90 + '분</div></div>';
   }
@@ -1830,16 +1951,8 @@ function mapResize(){
 document.addEventListener("keydown", e=>{ if(e.key === "Escape" && mapFsOn) mapFsToggle(false); });
 
 /* 레이어 더보기 — 기본은 접힌 상태, 자주 쓰는 5종만 노출 */
-function lbMore(){
-  const panel = document.getElementById("mapLayerMore");
-  const btn = document.getElementById("lbMoreBtn");
-  if(!panel || !btn) return;
-  const open = panel.hasAttribute("hidden");
-  if(open) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
-  btn.setAttribute("aria-expanded", String(open));
-  btn.textContent = open ? "− 레이어 접기" : "＋ 레이어";
-  btn.classList.toggle("on", open);
-}
+/* E: 레이어 전체 조작은 좌측 '레이어' 탭이 맡는다(지도 위는 주요 5종 한 줄) */
+function lbMore(){ csLeftTab('layer'); }
 /* 지도 밖을 누르면 더보기 패널을 닫는다 */
 document.addEventListener("click", e=>{
   const bar = document.getElementById("mapLayerBar");
@@ -2008,38 +2121,76 @@ function progBar(st){
   const lv = {"신규접수":1,"처리중":2,"완료":3}[st]||1;
   return '<div class="prog">'+stages.map((s,i)=>'<div class="p" title="'+s+'" style="'+(i<lv?'background:'+cols[i]:'')+'"></div>').join("")+'<span>'+stages[lv-1]+'</span></div>';
 }
+/* C-2: 긴급 → 일반 → 처리중 구획. 완료는 목록에서 빼고 대시보드로 넘긴다.
+   구획 머리글은 스크롤해도 상단에 붙어 있고(sticky), 긴급 구획은 항상 맨 위이며 접히지 않는다. */
+let listFold = {일반:false, 처리중:false};
+try{ const v = JSON.parse(localStorage.getItem('hs_list_fold') || 'null'); if(v) listFold = Object.assign(listFold, v); }catch(e){}
+function listFoldToggle(k){
+  listFold[k] = !listFold[k];
+  try{ localStorage.setItem('hs_list_fold', JSON.stringify(listFold)); }catch(e){}
+  renderList();
+}
+function listRow(it){
+  const tri = triage(it);
+  return '<div class="item' + (it.id === selId ? ' sel' : '') +
+    ((it.urg === '긴급' && !(it.dispN) && it.st !== '완료') ? ' blink' : '') +
+    (scopeOther(it) ? ' other' : '') + '" data-id="' + it.id + '" onclick="cardClick(' + it.id + ')">' +
+    '<div class="top">' +
+    '<span class="badge ' + stBadge(it) + '">' + it.st + '</span>' +
+    '<span class="badge b-tri t-' + (tri === '즉시' ? 'n' : (tri === '단기' ? 's' : 'l')) + '">' + tri + '</span>' +
+    '<span class="badge b-cat">' + it.field + '</span>' +
+    (scopeOther(it) ? '<span class="badge b-dept">' + deptOf(it).actor.org + '</span>' : '') +
+    '<time>#' + String(it.id).padStart(3, '0') + '</time></div>' +
+    '<div class="loc">' + it.loc + '</div>' +
+    '<div class="txt">' + it.sub + ' · ' + it.sum + '</div>' +
+    '<div class="meta"><span>🕐 ' + it.time + ' (' + elapsed(it.time) + ')</span>' +
+    '<span>' + it.gu + '</span>' +
+    (it.sms ? '<span>📨 인계</span>' : '') +
+    (it.photo ? '<span>📷</span>' : '') +
+    ((it.crews && it.crews.length) ? '<span>🛵 ' + it.crews.length + '</span>' : '') +
+    '</div></div>';
+}
 function renderList(){
   const l = document.getElementById("list");
-  const sorted = [...scopeItems()].filter(i=>i.st!=="완료").sort((a,b)=>{ const ua=a.urg==="긴급"?1:0, ub=b.urg==="긴급"?1:0; if(ua!==ub) return ub-ua; return b.id-a.id; });
-  l.innerHTML = sorted.map(it=>
-    '<div class="item'+(it.id===selId?" sel":"")+(it.st==="신규접수"?" blink":"")+(scopeOther(it)?" other":"")+'" data-id="'+it.id+'" style="border-left-color:'+URG_BORDER[it.urg]+'" onclick="cardClick('+it.id+')">'+
-    '<div class="top"><span style="font-size:15px">'+(SRC_ICO[it.src]||"📞")+'</span>'+
-    '<span class="badge '+stBadge(it)+'">'+it.st+(it.st==="신규접수"?"("+srcLabel(it)+")":"")+'</span>'+
-    '<span class="badge b-cat">'+it.field+'</span>'+
-    (scopeOther(it)?'<span class="badge b-dept">'+deptOf(it).actor.org+'</span>':"")+
-    (it.urg!=="일반"?'<span class="badge b-urg">'+it.urg+'</span>':"")+
-    '<time>#'+String(it.id).padStart(3,"0")+'</time></div>'+
-    '<div class="loc">'+it.loc+'</div>'+
-    '<div class="txt">'+it.sub+' · '+it.sum+'</div>'+
-    progBar(it.st)+
-    '<div class="meta"><span>🕐 '+it.time+' ('+elapsed(it.time)+')</span><span>'+it.gu+'</span>'+
-    (it.sms?'<span>📨 문자발송</span>':"")+
-    (it.photo?'<span>📷 사진 1</span>':"")+'</div></div>').join("");
-  document.getElementById("listCnt").innerHTML = "진행 "+sorted.length+"건" + (selId!=null && items.some(i=>i.id===selId) ? ' · <a href="#" onclick="clearSel();return false" style="color:var(--hs-orange);font-weight:700">✕ 선택해제</a>' : '');
   const sc = scopeItems();
+  const open = sc.filter(i=>i.st !== "완료");
+  const byNew = (a,b)=>b.id - a.id;                      /* 구획 안 정렬은 최신순 */
+  const secUrg  = open.filter(i=>i.urg === "긴급").sort(byNew);
+  const secWork = open.filter(i=>i.urg !== "긴급" && i.st === "처리중").sort(byNew);
+  const secNorm = open.filter(i=>i.urg !== "긴급" && i.st !== "처리중").sort(byNew);
+
+  function sec(key, ico, list, foldable){
+    if(!list.length && key !== '긴급') return '';
+    const folded = foldable && listFold[key];
+    const cls = key === '긴급' ? 'u' : (key === '처리중' ? 'p' : 'n');
+    return '<div class="cs-sec s-' + cls + '">' +
+      '<div class="cs-sechead"' + (foldable ? ' onclick="listFoldToggle(\'' + key + '\')" role="button" tabindex="0"' : '') + '>' +
+      (foldable ? '<span class="fold">' + (folded ? '▸' : '▾') + '</span>' : '<span class="fold">•</span>') +
+      ico + ' ' + key + '<b>' + list.length + '</b>' +
+      (foldable ? '' : '<span class="always">고정</span>') + '</div>' +
+      (folded ? '' : '<div class="cs-secbody">' +
+        (list.length ? list.map(listRow).join('') : '<div class="cs-empty">해당 건이 없습니다</div>') + '</div>') +
+      '</div>';
+  }
+  l.innerHTML =
+    sec('긴급', '🚨', secUrg, false) +
+    sec('일반', '📢', secNorm, true) +
+    sec('처리중', '🛠️', secWork, true);
+
+  document.getElementById("listCnt").textContent = "진행 " + open.length + "건";
   document.getElementById("sTot").textContent = sc.length;
-  document.getElementById("sNewCit").textContent = sc.filter(i=>i.st==="신규접수" && i.src==="시민접수").length;
-  document.getElementById("sNewDuty").textContent = sc.filter(i=>i.st==="신규접수" && i.src!=="시민접수").length;
-  document.getElementById("sHand").textContent = sc.filter(i=>i.st==="처리중").length;
-  document.getElementById("sDone").textContent = sc.filter(i=>i.st==="완료").length;
-  if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);   /* 필터 흐림·HUD·스트립 갱신 */
-  /* S-11: 우리 처리·타 부서를 나눠 세고, 현재 범위 그대로 내려받게 한다 */
+  document.getElementById("sUrg").textContent = secUrg.length;
+  document.getElementById("sHand").textContent = sc.filter(i=>i.st === "처리중").length;
+  document.getElementById("sDone").textContent = sc.filter(i=>i.st === "완료").length;
+  document.getElementById("sNewCit").textContent = sc.filter(i=>i.st === "신규접수" && i.src === "시민접수").length;
+  document.getElementById("sNewDuty").textContent = sc.filter(i=>i.st === "신규접수" && i.src !== "시민접수").length;
   const sm = document.getElementById("scSum");
   if(sm){
     const mine = sc.filter(isMine).length;
-    sm.innerHTML = '범위: <b>' + meLabel() + '</b> · ' + sc.length + '건 (우리 처리 <b>' + mine + '</b> · 타 부서 ' + (sc.length - mine) + ')' +
-      ' <a href="#" onclick="scopeExport();return false" style="color:var(--hs-blue);font-weight:700">⬇ 현재 범위 내려받기</a>';
+    sm.innerHTML = '<b>' + meLabel() + '</b> · ' + sc.length + '건 (우리 ' + mine + ' · 타 부서 ' + (sc.length - mine) + ')' +
+      ' <a href="#" onclick="scopeExport();return false">⬇ 내려받기</a>';
   }
+  if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);
   saveState();
 }
 function clearSel(){
@@ -4896,7 +5047,7 @@ function d10Stats(){
   /* 상습지점 — 같은 읍면동·같은 유형이 반복되는 곳 */
   const g = {};
   for(const it of scopeItems(realItems()).concat([])){
-    const k = (emdOf(it) || it.gu || '관내').replace(/(사무소|주민센터)$/, '') + ' · ' + it.sub;
+    const k = emdShort(emdOf(it) || it.gu || '관내') + ' · ' + it.sub;
     g[k] = (g[k] || 0) + 1;
   }
   const hot = Object.keys(g).map(k=>({k:k, n:g[k]})).filter(x=>x.n >= 2).sort((a,b)=>b.n - a.n).slice(0, 6);
@@ -5500,7 +5651,7 @@ function scopeItems(list){
     return ME.dept && (a.legal.dept.indexOf(ME.dept) >= 0 || a.actor.org.indexOf(ME.dept) >= 0);
   });
   if(sc === 'emd'){
-    const key = (ME.emd || '').replace(/(사무소|주민센터)$/, '');
+    const key = emdShort(ME.emd || '');
     const inArea = src.filter(i=>key && String(i.loc || '').indexOf(key) >= 0);
     return scopeMode === 'mine' ? inArea.filter(isMine) : inArea;
   }
@@ -5515,7 +5666,8 @@ function scopeTab(m){
   renderList(); renderMap();
 }
 function openMe(){
-  const emdOpts = ['','매송면사무소','비봉면사무소','마도면사무소','송산면사무소','서신면사무소','팔탄면사무소','장안면사무소','우정읍사무소','향남읍사무소','남양읍사무소','봉담읍사무소','정남면사무소','동탄1동주민센터','병점1동주민센터','화산동주민센터','진안동주민센터','오산동주민센터'];
+  const emdOpts = ['','매송면','비봉면','마도면','송산면','서신면','팔탄면','장안면','우정읍','향남읍','남양읍','봉담읍','정남면','동탄1동','병점1동','화산동','진안동','오산동']
+    .map(x=>x ? x + EMD_SUFFIX : '');
   showModal('<h2>👤 내 소속</h2>' +
     '<p style="font-size:14px;color:var(--muted);line-height:1.7">소속을 고르면 화면에 걸리는 범위가 바뀝니다. 범위 밖 민원은 표시되지 않습니다.</p>' +
     '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">직위·역할</label>' +
@@ -5549,7 +5701,7 @@ function meApply(){
   const a = document.getElementById('scTabAll'), b = document.getElementById('scTabMine');
   if(a) a.classList.toggle('on', scopeMode === 'all');
   if(b) b.classList.toggle('on', scopeMode === 'mine');
-  if(a && ME.emd) a.textContent = '우리 ' + ME.emd.replace(/(사무소|주민센터)$/, '') + ' 전체';
+  if(a && ME.emd) a.textContent = '우리 ' + emdShort(ME.emd) + ' 전체';
   renderMap(); renderList();
   if(curMode === 'dash') renderDash();
 }
@@ -6044,7 +6196,7 @@ function bundleSuggest(list){
   const g = {};
   for(const it of list){
     if(triage(it) !== '단기') continue;
-    const key = (emdOf(it) || it.gu || '관내') + '|' + it.sub;
+    const key = emdShort(emdOf(it) || it.gu || '관내') + '|' + it.sub;
     (g[key] = g[key] || []).push(it);
   }
   return Object.keys(g).filter(k=>g[k].length >= BUNDLE_MIN).map(k=>({key:k, org:k.split('|')[0], sub:k.split('|')[1], list:g[k]}));
@@ -6136,6 +6288,10 @@ function setMode(m, fromHash){
   document.getElementById("tabCit").className = m==="cit"?"on":"";
   const tr=document.getElementById("tabRoad"); if(tr) tr.className = m==="road"?"on":"";
   const tc=document.getElementById("tabCmd"); if(tc) tc.className = m==="cmd"?"on":"";
+  /* A: 명령 바로 합친 모드 칩도 같은 상태를 쓴다 */
+  for(const mk of [["duty","csmDuty"],["dash","csmDash"],["road","csmRoad"],["cmd","csmCmd"],["cit","csmCit"]]){
+    const b=document.getElementById(mk[1]); if(b) b.classList.toggle("on", m===mk[0]);
+  }
   if(m==="road") renderRoad();
   if(m==="track") renderTrack();
   if(m==="cmd") renderCmd();
