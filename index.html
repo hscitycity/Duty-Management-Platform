@@ -46,8 +46,12 @@ header .duty b{color:var(--ink); font-weight:600;}
 .mode button.on{background:var(--hs-blue); color:#fff;}
 /* ── 레이아웃 ── */
 .wrap{max-width:none; margin:0; padding:14px 16px 40px;}
-.grid{display:grid; grid-template-columns:minmax(430px,26%) minmax(0,1fr) minmax(440px,27%) ; gap:12px; align-items:start;}
-@media(max-width:1200px){.grid{grid-template-columns:280px minmax(0,1fr);} .col-r{grid-column:1/-1;}}
+/* D-M1: 좌우 열 최소폭을 320px 로 낮추고, 지도 열이 남는 폭을 우선 갖게 한다.
+   1440px → 좌우 각 ~330px, 지도 열 ~720px / 1920px → 지도 열 ~960px */
+.grid{display:grid; grid-template-columns:minmax(320px,24%) minmax(700px,1fr) minmax(320px,24%);
+  gap:12px; align-items:start;}
+@media(max-width:1500px){.grid{grid-template-columns:minmax(320px,23%) minmax(640px,1fr) minmax(320px,23%);}}
+@media(max-width:1200px){.grid{grid-template-columns:minmax(300px,1fr) minmax(0,1.7fr);} .col-r{grid-column:1/-1;}}
 @media(max-width:900px){.grid{grid-template-columns:1fr;} .col-r{grid-column:auto;}}
 .col-l .list-scroll{max-height:46vh; overflow-y:auto; padding-right:4px;}
 .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px;}
@@ -222,53 +226,51 @@ footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px
 #splash .sp-ver{position:absolute; bottom:16px; font-size:12px; color:#5E82B8;}
 @media (prefers-reduced-motion: reduce){ #splash, #splash .sp-fill{transition:none;} }
 @media (max-width:520px){ #splash .sp-t{font-size:22px;} #splash .sp-logo{height:56px;} }
-/* ── D-M1 실시간 상황 지도: 스크롤 없는 높이 + 전체화면 토글 ── */
-#mapCard{position:relative; display:flex; flex-direction:column; height:calc(100vh - var(--hdr-h, 96px)); min-height:520px;}
-#mapCard #map{flex:1 1 auto; height:auto; min-height:300px;}
-#mapCard .legend{flex:0 0 auto;}
-#mapFsBtn{position:absolute; top:12px; right:16px; z-index:1300; height:32px; padding:0 12px; font-size:13px; font-weight:700;
-  background:rgba(255,255,255,.94); color:#1D4994; border:1.5px solid #C9D8EE; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,.18);}
-#mapFsBtn:hover{background:#EEF3FB;}
-/* 전체화면: 레이어 바·범례를 지도 위에 겹쳐 표시 */
+/* ══════════ D-M1 실시간 상황 지도 (재작업) ══════════
+   ① 좌우 열 최소폭을 낮추고 지도 열이 남는 폭을 우선 갖는다
+   ② 지도 높이는 카드가 아니라 지도 자신을 기준으로 — 카드 안 다른 요소는 flex 로 실측되어 빠진다
+   ③ 레이어 조작은 전부 지도 위 오버레이 — 지도 세로 영역을 침범하지 않는다 */
+#mapCard{position:relative; display:flex; flex-direction:column;
+  height:calc(100vh - var(--hdr-h, 96px)); min-height:0; overflow:hidden;}
+#mapCard > h2, #mapCard > #apiErrBox, #mapCard > .legend, #mapCard > .row, #mapCard > .hint, #mapCard > .phone-note{flex:0 0 auto;}
+/* 지도 껍데기가 남는 세로 공간을 전부 갖는다. min-height:0 이 없으면 flex 자식이 줄지 않는다 */
+#mapBox{position:relative; flex:1 1 auto; min-height:360px; border-radius:12px; overflow:hidden; border:1.5px solid var(--line);}
+#mapCard #map{position:absolute; inset:0; width:100%; height:100%; min-height:0; border:none; border-radius:0;}
+
+/* 지도 위 오버레이 — Leaflet 줌 컨트롤(좌상단 z-index 1000)과 자리·계층을 나눈다 */
+#mapLayerBar{position:absolute; left:12px; top:12px; z-index:1100; max-width:min(560px, calc(100% - 220px));}
+#mapBaseBar{position:absolute; right:12px; top:12px; z-index:1100; display:flex; gap:8px;}
+.mlb-quick{display:flex; flex-wrap:wrap; gap:8px;}
+.mlb-more-panel{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; padding:12px;
+  background:rgba(255,255,255,.96); border:1.5px solid var(--hs-blue-line); border-radius:12px;
+  box-shadow:0 4px 16px rgba(16,32,64,.18); max-height:46vh; overflow-y:auto;}
+.mlb-more-panel[hidden]{display:none;}
+#mapLayerBar .lb, #mapBaseBar .lb{height:36px; min-height:36px; padding:0 12px; font-size:13px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.96); border:1.5px solid #C9D8EE; color:var(--hs-blue-dark);
+  box-shadow:0 1px 4px rgba(16,32,64,.16); white-space:nowrap;}
+#mapLayerBar .lb.on, #mapBaseBar .lb.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;}
+#mapLayerBar .lb:hover, #mapBaseBar .lb:hover{background:#EEF3FB;}
+#mapLayerBar .lb.on:hover, #mapBaseBar .lb.on:hover{background:var(--hs-blue-dark);}
+#mapFsBtn{width:36px; padding:0; font-size:17px;}
+
+/* 전체화면 — 위치 선택자(nth-of-type) 없이 id/class 로만 지정한다 */
 body.mapfs{overflow:hidden;}
-body.mapfs #mapCard{position:fixed; inset:0; z-index:4000; height:100vh; min-height:0; border-radius:0; border:none; padding:0;}
-body.mapfs #mapCard > h2, body.mapfs #mapCard > .row, body.mapfs #mapCard > .hint, body.mapfs #mapCard > #apiErrBox{display:none;}
-body.mapfs #mapCard > #map{position:absolute; inset:0; height:100%; min-height:0; border:none; border-radius:0;}
-body.mapfs #mapCard > div:nth-of-type(1){position:absolute; top:8px; left:8px; right:132px; z-index:1300; margin:0; background:rgba(238,243,251,.94);}
-body.mapfs #mapCard > .lbar{position:absolute; top:56px; left:8px; width:min(520px,46vw); z-index:1300; margin:0;
-  background:rgba(255,255,255,.93); border:1.5px solid #C9D8EE; border-radius:12px; padding:8px;}
-body.mapfs #mapCard > .legend{position:absolute; left:8px; bottom:8px; right:8px; z-index:1300; margin:0;
-  background:rgba(255,255,255,.93); border:1px solid var(--line); border-radius:12px; padding:8px 12px;}
-body.mapfs #mapFsBtn{top:8px; right:8px;}
+body.mapfs #mapCard{position:fixed; inset:0; z-index:4000; height:100vh; border-radius:0; border:none; padding:0;}
+body.mapfs #mapTitle, body.mapfs #mapCard > .row, body.mapfs #mapCard > .hint,
+body.mapfs #mapCard > .phone-note, body.mapfs #apiErrBox{display:none;}
+body.mapfs #mapBox{border:none; border-radius:0; min-height:0;}
+body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-index:1100; margin:0;
+  background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:12px; padding:8px 12px;}
+
+@media(max-height:760px){ #mapBox{min-height:280px;} }
+@media(max-height:640px){ #mapBox{min-height:220px;} #mapCard > .hint{display:none;} }
 @media(max-width:900px){
-  #mapCard{height:auto; min-height:0;}
-  #mapCard #map{height:58vh; min-height:320px;}
-  body.mapfs #mapCard > .lbar{width:auto; right:8px; max-height:38vh; overflow-y:auto;}
-  body.mapfs #mapCard > div:nth-of-type(1){right:8px; top:44px;}
-  body.mapfs #mapFsBtn{top:8px; right:8px;}
+  #mapCard{height:auto;}
+  #mapBox{height:58vh; min-height:320px;}
+  #mapLayerBar{max-width:calc(100% - 24px);}
+  #mapBaseBar{top:auto; bottom:12px;}
 }
-/* ── S-12 신속기동단 작업판 ── */
-#road{padding-bottom:32px;}
-.rd-head{display:flex; gap:12px; align-items:center; flex-wrap:wrap; margin-bottom:16px;}
-.rd-cols{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px; align-items:start;}
-@media(max-width:1100px){.rd-cols{grid-template-columns:1fr;}}
-.rd-col{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px;}
-.rd-col > h3{font-size:17px; font-weight:800; color:var(--hs-blue-dark); display:flex; align-items:center; gap:8px; margin-bottom:4px;}
-.rd-col > .rd-rule{font-size:12px; color:var(--muted); margin-bottom:12px;}
-.rd-card{border:1px solid var(--line); border-left:4px solid var(--hs-blue); border-radius:8px; padding:12px; margin-bottom:12px; cursor:pointer; background:#fff;}
-.rd-card:hover{background:#F7FAFF;}
-.rd-card.warn{border-left-color:var(--hs-orange); background:#FFF9F3;}
-.rd-card.over{border:2px solid var(--st-new); border-left-width:4px; background:#FDF3F2;}
-.rd-card .rd-t{font-size:15px; font-weight:700; color:var(--ink);}
-.rd-card .rd-m{font-size:12px; color:var(--muted); margin-top:4px; line-height:1.6;}
-.rd-due{display:inline-block; font-size:12px; font-weight:800; border-radius:4px; padding:2px 8px; margin-top:8px;}
-.rd-due.ok{background:#E1EBFA; color:#1D4994;} .rd-due.warn{background:var(--hs-orange-bg); color:#B25412;}
-.rd-due.over{background:var(--st-new-bg); color:var(--st-new);}
-.rd-bundle{background:var(--hs-blue-bg); border:1.5px dashed var(--hs-blue-line); border-radius:12px; padding:12px 16px; margin-bottom:16px; font-size:13px; line-height:1.7;}
-.rd-steps{display:flex; gap:4px; margin-top:8px; flex-wrap:wrap;}
-.rd-steps span{font-size:11px; padding:2px 7px; border-radius:999px; background:#EEF1F4; color:var(--muted);}
-.rd-steps span.on{background:var(--hs-blue); color:#fff;}
-.rd-steps span.done{background:#DFF0E3; color:#1D8348;}
 /* ── S-03 처리 현황 추적 화면 ── */
 #track{display:none; max-width:520px; margin:0 auto; padding-bottom:32px;}
 @media(min-width:900px){#track{max-width:560px;}}
@@ -544,43 +546,50 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
     <!-- 가운데: 지도 -->
     <div>
       <div class="card" id="mapCard">
-        <h2>🗺️ 실시간 상황 지도 <span class="sub">레이어를 켜고 끄세요</span></h2>
-        <button id="mapFsBtn" onclick="mapFsToggle()" aria-label="지도 전체화면 전환" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶ 전체화면</button>
-        <div style="display:flex; gap:7px; align-items:center; background:#EEF3FB; border:1.5px solid #C9D8EE; border-radius:12px; padding:7px 10px; margin-bottom:8px">
-          <span style="font-size:12.5px; font-weight:800; color:#1D4994; margin-right:2px">🗺️ 지도 배경</span>
-          <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
-          <button class="lb" id="wxBtn" onclick="toggleWx()">🌦️ 기상</button>
-          <button class="lb" id="nightBtn" onclick="toggleNight()">🌙 야간모드</button>
-        </div>
-        <div class="lbar">
-          <div class="lbar-grid">
-          <button class="lb on" id="cplBtn" onclick="toggleCpl()">🚨 민원</button>
-          <button class="lb on" id="festBtn" onclick="toggleFest()">🎪 행사·인파</button>
-          <button class="lb" id="stnBtn" onclick="toggleStn()">🚓🚒 소방서·경찰서</button>
-          <button class="lb" id="crimeBtn" onclick="toggleCrime()">🚨 범죄주의</button>
-          <button class="lb" id="hospBtn" onclick="toggleHosp()">🏥 병원</button>
-          <button class="lb" id="pmBtn" onclick="togglePm()">💨 미세먼지</button>
-          <button class="lb" id="rwBtn" onclick="toggleRoadWx()">🛣️ 도로날씨</button>
-          <button class="lb" id="cctvBtn" onclick="toggleCctv()">📹 CCTV</button>
-          <button class="lb" id="bldgBtn" onclick="toggleBldg()">🏢 건축물대장</button>
-          <button class="lb" id="jjBtn" onclick="toggleJijeok()">📐 지적</button>
-          <button class="lb" id="safeBtn" onclick="toggleSafe()">🧒 안전시설</button>
-          <button class="lb" id="waterBtn" onclick="toggleSM('water')">🌊 물놀이</button>
-          <button class="lb" id="cnstBtn" onclick="toggleSM('cnst')">🏗️ 공사현장</button>
-          <button class="lb" id="bellBtn" onclick="toggleSM('bell')">🔔 비상벨</button>
-          <button class="lb" id="emgBtn" onclick="toggleSM('emg')">🚑 응급의료</button>
-          <button class="lb" id="cptedBtn" onclick="toggleSM('cpted')">🛡️ CPTED</button>
-          <button class="lb" id="incBtn" onclick="toggleInc()">⚠️ 돌발상황</button>
-          <button class="lb" id="pharmBtn" onclick="togglePharm()">💊 심야약국</button>
-          </div>
-        </div>
-        <div id="apiErrBox" style="display:none;background:#FFF8F7;border:1.5px dashed #E5B4AE;border-radius:10px;padding:8px 12px;margin-bottom:10px">
+        <h2 id="mapTitle">🗺️ 실시간 상황 지도 <span class="sub">레이어는 지도 위에서 켜고 끄세요</span></h2>
+        <div id="apiErrBox" style="display:none;background:#FFF8F7;border:1.5px dashed #E5B4AE;border-radius:8px;padding:8px 12px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:#B3261E">⚠️ API 연계오류 조치중</span>
           <span style="font-size:12px;color:var(--muted)"> — 아래 연계는 일시 오류로 점검 중입니다. 데이터 직접 업로드 보완 예정.</span>
           <div id="apiErrList" style="margin-top:5px"></div>
         </div>
-        <div id="map" role="application" aria-label="화성시 접수 현황 지도"></div>
-        <div class="legend">
+        <!-- D-M1: 지도 껍데기 — 레이어 조작은 전부 지도 위 오버레이라 지도 영역을 침범하지 않는다 -->
+        <div id="mapBox">
+          <div id="map" role="application" aria-label="화성시 접수 현황 지도"></div>
+          <!-- 좌상단: 자주 쓰는 레이어 + 더보기 -->
+          <div id="mapLayerBar">
+            <div class="mlb-quick">
+              <button class="lb on" id="cplBtn" onclick="toggleCpl()">🚨 민원</button>
+              <button class="lb on" id="festBtn" onclick="toggleFest()">🎪 행사·인파</button>
+              <button class="lb" id="cctvBtn" onclick="toggleCctv()">📹 CCTV</button>
+              <button class="lb" id="incBtn" onclick="toggleInc()">⚠️ 돌발상황</button>
+              <button class="lb" id="jjBtn" onclick="toggleJijeok()">📐 지적</button>
+              <button class="lb mlb-more" id="lbMoreBtn" onclick="lbMore()" aria-expanded="false" aria-controls="mapLayerMore">＋ 레이어</button>
+            </div>
+            <div class="mlb-more-panel" id="mapLayerMore" hidden>
+              <button class="lb" id="stnBtn" onclick="toggleStn()">🚓🚒 소방서·경찰서</button>
+              <button class="lb" id="crimeBtn" onclick="toggleCrime()">🚨 범죄주의</button>
+              <button class="lb" id="hospBtn" onclick="toggleHosp()">🏥 병원</button>
+              <button class="lb" id="pmBtn" onclick="togglePm()">💨 미세먼지</button>
+              <button class="lb" id="rwBtn" onclick="toggleRoadWx()">🛣️ 도로날씨</button>
+              <button class="lb" id="bldgBtn" onclick="toggleBldg()">🏢 건축물대장</button>
+              <button class="lb" id="safeBtn" onclick="toggleSafe()">🧒 안전시설</button>
+              <button class="lb" id="waterBtn" onclick="toggleSM('water')">🌊 물놀이</button>
+              <button class="lb" id="cnstBtn" onclick="toggleSM('cnst')">🏗️ 공사현장</button>
+              <button class="lb" id="bellBtn" onclick="toggleSM('bell')">🔔 비상벨</button>
+              <button class="lb" id="emgBtn" onclick="toggleSM('emg')">🚑 응급의료</button>
+              <button class="lb" id="cptedBtn" onclick="toggleSM('cpted')">🛡️ CPTED</button>
+              <button class="lb" id="pharmBtn" onclick="togglePharm()">💊 심야약국</button>
+            </div>
+          </div>
+          <!-- 우상단: 배경 전환 + 전체화면 (Leaflet 줌 컨트롤과 겹치지 않는 자리) -->
+          <div id="mapBaseBar">
+            <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
+            <button class="lb" id="wxBtn" onclick="toggleWx()">🌦️ 기상</button>
+            <button class="lb" id="nightBtn" onclick="toggleNight()">🌙 야간</button>
+            <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-label="지도 전체화면 전환" aria-pressed="false" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶</button>
+          </div>
+        </div>
+        <div class="legend" id="mapLegend">
           <span>🚨 긴급 민원 · 📢 일반 민원 — 테두리색=상태:</span>
           <span><span class="dot" style="background:var(--hs-orange)"></span>신규접수(민원접수창구)</span>
           <span><span class="dot" style="background:var(--st-new)"></span>신규접수(당직자접수)</span>
@@ -721,7 +730,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0224';
+const BUILD_VER = 'v0906-0801';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1180,40 +1189,74 @@ function initMap(){
   }});
   map.addControl(new PanCtl());
   map.fitBounds([[b[1],b[0]],[b[3],b[2]]], {padding:[8,8]});
-  addLocate(map); addFsCtl(map);
+  addLocate(map);   /* D-M1: ⛶ 는 지도 우상단 오버레이 하나로 통일(중복 컨트롤 제거) */
   const hh = new Date().getHours();
   if(hh >= 21 || hh < 2){ toggleNight(); toast('오후 9시~새벽 2시 — 야간모드로 시작합니다'); }
   /* D-05: 기관·행사 레이어는 상황판이 실제로 열릴 때 붙인다 */
   map.on('zoomend', ()=>{ renderMap(); });
   if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ const ll=[p.coords.latitude,p.coords.longitude]; meMarker['duty']=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me-wrap"><div class="me-ring"></div><div class="me-dot"></div></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map).bindTooltip('현재 위치'); map.setView(ll,12); }, ()=>{}, {timeout:5000}); }
 }
-/* ── D-M1 지도 전체화면: 카드를 화면 전체로 펼치고 레이어 바·범례를 지도 위에 겹친다.
-   Windy 기상 오버레이(#map 내부 inset:0)는 부모 크기를 따라가므로 함께 확대된다. ── */
+/* ══════════ D-M1 지도 전체화면 ══════════
+   카드를 화면 전체로 펼친다. 레이어 바·배경 바는 이미 지도 위 오버레이라 그대로 따라 커지고,
+   범례만 오버레이로 내려붙는다. Windy 기상 오버레이(#map 안 inset:0)도 부모를 따라 확대된다. */
+let mapFsOn = false;
+function mapFsToggle(force){
+  mapFsOn = (force === undefined) ? !mapFsOn : !!force;
+  document.body.classList.toggle("mapfs", mapFsOn);
+  const b = document.getElementById("mapFsBtn");
+  if(b){
+    b.textContent = mapFsOn ? "⤢" : "⛶";
+    b.setAttribute("aria-pressed", String(mapFsOn));
+    b.title = mapFsOn ? "전체화면 해제 (Esc)" : "지도 전체화면 (Esc 또는 다시 눌러 해제)";
+    b.classList.toggle("on", mapFsOn);
+  }
+  /* 컨테이너 크기가 바뀌었으니 Leaflet 에 알린다 — 타일 깨짐·좌표 어긋남 방지 */
+  mapResize();
+}
+function mapResize(){
+  const kick = ()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize({pan:false}); }catch(e){} };
+  kick();
+  requestAnimationFrame(kick);
+  setTimeout(kick, 80);
+  setTimeout(kick, 360);   /* CSS 전환(.28s)이 끝난 뒤 한 번 더 */
+}
+document.addEventListener("keydown", e=>{ if(e.key === "Escape" && mapFsOn) mapFsToggle(false); });
+
+/* 레이어 더보기 — 기본은 접힌 상태, 자주 쓰는 5종만 노출 */
+function lbMore(){
+  const panel = document.getElementById("mapLayerMore");
+  const btn = document.getElementById("lbMoreBtn");
+  if(!panel || !btn) return;
+  const open = panel.hasAttribute("hidden");
+  if(open) panel.removeAttribute("hidden"); else panel.setAttribute("hidden", "");
+  btn.setAttribute("aria-expanded", String(open));
+  btn.textContent = open ? "− 레이어 접기" : "＋ 레이어";
+  btn.classList.toggle("on", open);
+}
+/* 지도 밖을 누르면 더보기 패널을 닫는다 */
+document.addEventListener("click", e=>{
+  const bar = document.getElementById("mapLayerBar");
+  const panel = document.getElementById("mapLayerMore");
+  if(!bar || !panel || panel.hasAttribute("hidden")) return;
+  if(!bar.contains(e.target)) lbMore();
+});
+
 /* 헤더 실측 높이 + 여백을 --hdr-h 로 반영 (헤더 줄바꿈 시에도 스크롤 없음) */
 function syncHdrH(){
   try{
     const h = document.querySelector("header");
     if(h) document.documentElement.style.setProperty("--hdr-h", (h.offsetHeight + 32) + "px");
   }catch(e){}
+  mapResize();
 }
 syncHdrH();
 window.addEventListener("resize", syncHdrH);
 if(window.ResizeObserver){ try{ new ResizeObserver(syncHdrH).observe(document.querySelector("header")); }catch(e){} }
-
-let mapFsOn = false;
-function mapFsToggle(force){
-  mapFsOn = (force === undefined) ? !mapFsOn : !!force;
-  document.body.classList.toggle("mapfs", mapFsOn);
-  const b = document.getElementById("mapFsBtn");
-  if(b){ b.textContent = mapFsOn ? "⤢ 해제" : "⛶ 전체화면"; b.setAttribute("aria-pressed", String(mapFsOn)); }
-  /* 컨테이너 크기가 바뀌었으므로 Leaflet에 알려 핀·팝업·경로 좌표를 다시 맞춘다 */
-  setTimeout(()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} }, 60);
-  setTimeout(()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} }, 360);
+/* 지도 껍데기 크기가 바뀌면(열 폭 변화·시트 열림 등) Leaflet 에 알린다 */
+if(window.ResizeObserver){
+  try{ new ResizeObserver(()=>mapResize()).observe(document.getElementById("mapBox")); }catch(e){}
 }
-document.addEventListener("keydown", e=>{ if(e.key === "Escape" && mapFsOn) mapFsToggle(false); });
-window.addEventListener("resize", ()=>{ try{ if(typeof map !== "undefined" && map) map.invalidateSize(); }catch(e){} });
-
-/* ⛶ 전체화면 토글 — 지도 우측 하단 (전체화면 ↔ 원래 크기 자유 전환) */
+/* ⛶ 전체화면 — 보조 지도(대시보드) 전용. 상황판 지도는 우상단 #mapFsBtn 하나로 통일했다. */
 function addFsCtl(m){
   const C = L.Control.extend({options:{position:'bottomright'}, onAdd:function(){
     const b = L.DomUtil.create('button','lb');
@@ -1222,7 +1265,10 @@ function addFsCtl(m){
     L.DomEvent.disableClickPropagation(b);
     L.DomEvent.on(b,'click',e=>{
       L.DomEvent.stop(e);
-      mapFsToggle();   // D-M1: 레이어 바·범례를 유지하는 카드 단위 전체화면
+      const el = m.getContainer();
+      if(document.fullscreenElement){ document.exitFullscreen(); }
+      else if(el.requestFullscreen){ el.requestFullscreen(); }
+      else { toast('이 브라우저는 전체화면을 지원하지 않습니다'); }
     });
     return b;
   }});
@@ -4056,7 +4102,7 @@ async function sbInit(){
       });
     /* 실시간이 막혀도 따라잡는 폴링 백업 (20초) */
     setInterval(sbPoll, 20000);
-    loadFeed();   // DB 연결 후 연합뉴스(재난) 축적분 포함 재렌더
+    if(bootedDuty) loadFeed();   // DB 연결 후 연합뉴스(재난) 축적분 재렌더 — 당직 경로에서만
   }catch(e){
     cloudOn = false;
     toast('⚠️ 클라우드 미연결 — 오프라인 모드'); 
@@ -4880,9 +4926,13 @@ function saveMe(){
   closeModal(); meApply();
   toast(meLabel() + ' 범위로 전환했습니다');
 }
-function meApply(){
+/* 배지 문구만 갱신 — 목록·지도 렌더 없이 어느 모드에서나 안전하다 */
+function meChipSync(){
   const t = document.getElementById('meChipTxt');
   if(t) t.textContent = meLabel();
+}
+function meApply(){
+  meChipSync();
   const tabs = document.getElementById('scTabs');
   if(tabs) tabs.style.display = meScope() === 'emd' ? 'flex' : 'none';
   const a = document.getElementById('scTabAll'), b = document.getElementById('scTabMine');
@@ -5479,8 +5529,8 @@ function setMode(m, fromHash){
   if(m==="track") renderTrack();
   if(m==="cmd") renderCmd();
   if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
-  if(m==="cit") initCitMap();
-  if(m==="dash"){ initDashMap(); renderDash(); }
+  bootFor(m);   // D-02: 이 모드에 필요한 것만 준비(중복 실행 없음)
+  if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
   if(m==="duty" && map){ dutyLayersInit(); setTimeout(()=>map.invalidateSize(),50); }
   if(m==="duty" && notifyQueue.length){
     const nid = notifyQueue.shift();
@@ -5515,18 +5565,57 @@ function spHide(){
 setTimeout(spHide, 6000);
 try{ const sv=document.getElementById('spVer'); if(sv) sv.textContent=BUILD_VER; }catch(e){}
 
-/* 초기 렌더 + 시민 첫 인사 */
-const restored = loadState();
-setTimeout(loadJournal, 0);
-spStep('res'); initMap(); spStep('map'); renderMap(); renderList();
-if(restored){ toast("💾 저장된 접수 데이터 "+items.length+"건 복원 (이 PC 누적분)"); const last=[...items].sort((a,b)=>b.id-a.id)[0]; if(last) selectItem(last.id); } else { selectItem(3); }
-spStep('db'); sbInit().finally(()=>spStep('done'));   // ☁️ Supabase complaints 실시간 연동 (호출 누락돼 있던 버그 — DB가 민원 원천, 성공 시 시드 대체)
-renderStaff();
-meApply();     // S-11: 소속 범위를 화면에 먼저 건다
-applyHash();   // D-02: 주소(#cit #duty #dash #road #track)로 첫 화면 결정
-loadWeather(); loadFeed(); loadAir(); loadRoadWx();
-setInterval(loadWeather, 10*60*1000); setInterval(loadAir, 15*60*1000);
-setInterval(renderStaff, 5*60*1000);   // 근무대 전환(주간↔야간) 자동 반영
+/* ══════════ D-02 보완: 모드별 초기화 ══════════
+   전체를 무조건 돌리지 않는다. 주소로 모드를 먼저 정하고, 그 모드에 필요한 것만 준비한다.
+   시민(cit)·추적(track) 경로에서는 당직 전용 초기화(상황판 지도·인력·기상·뉴스)를 아예 돌리지 않는다.
+   모드를 옮기면 그때 준비하고, 준비 여부는 플래그로 한 번만 실행한다. */
+const DUTY_MODES = ["duty", "dash", "road", "cmd"];
+let bootedDuty = false, bootedCit = false;
+
+/* 당직 계열(상황판·대시보드·작업판·조치지시) 준비 */
+function bootDuty(){
+  if(bootedDuty) return;
+  bootedDuty = true;
+  spStep("res");
+  initMap();
+  spStep("map");
+  renderMap(); renderList();
+  renderStaff();
+  setInterval(renderStaff, 5*60*1000);   /* 근무대 전환(주간↔야간) 자동 반영 */
+  /* 첫 선택 — 복원분이 있으면 최근 건, 없으면 시드 */
+  if(bootRestored){
+    toast("💾 저장된 접수 데이터 " + items.length + "건 복원 (이 PC 누적분)");
+    const last = [...items].sort((a,b)=>b.id - a.id)[0];
+    if(last) selectItem(last.id);
+  } else if(items.some(i=>i.id === 3)) selectItem(3);
+  /* 외부 연계는 당직 화면에서만 — 시민 경로에 불필요한 호출을 내보내지 않는다 */
+  loadWeather(); loadFeed(); loadAir(); loadRoadWx();
+  setInterval(loadWeather, 10*60*1000);
+  setInterval(loadAir, 15*60*1000);
+  setTimeout(loadJournal, 0);
+  meApply();   /* S-11: 소속 범위를 화면에 건다 */
+}
+
+/* 시민 계열(신고·추적) 준비 — 시민 지도와 신고·추적에 필요한 것만 */
+function bootCit(){
+  if(bootedCit) return;
+  bootedCit = true;
+  initCitMap();
+}
+
+/* 모드에 맞는 준비를 수행한다(중복 실행 없음) */
+function bootFor(m){
+  if(DUTY_MODES.indexOf(m) >= 0) bootDuty();
+  else bootCit();
+}
+
+/* 초기 렌더 — 주소로 모드를 먼저 정한다 */
+const bootRestored = loadState();
+meChipSync();                                 /* 소속 배지는 모든 모드에서 보인다 */
+applyHash();                                  /* setMode → bootFor 로 필요한 것만 준비 */
+spStep("db");
+sbInit().finally(()=>spStep("done"));         /* 민원 원천은 어느 모드에서나 필요하다 */
+
 
 </script>
 </body>
