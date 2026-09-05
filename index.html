@@ -46,14 +46,9 @@ header .duty b{color:var(--ink); font-weight:600;}
 .mode button.on{background:var(--hs-blue); color:#fff;}
 /* ── 레이아웃 ── */
 .wrap{max-width:none; margin:0; padding:14px 16px 40px;}
-/* D-M1: 좌우 열 최소폭을 320px 로 낮추고, 지도 열이 남는 폭을 우선 갖게 한다.
-   1440px → 좌우 각 ~330px, 지도 열 ~720px / 1920px → 지도 열 ~960px */
-.grid{display:grid; grid-template-columns:minmax(320px,24%) minmax(700px,1fr) minmax(320px,24%);
-  gap:12px; align-items:start;}
-@media(max-width:1500px){.grid{grid-template-columns:minmax(320px,23%) minmax(640px,1fr) minmax(320px,23%);}}
-@media(max-width:1200px){.grid{grid-template-columns:minmax(300px,1fr) minmax(0,1.7fr);} .col-r{grid-column:1/-1;}}
-@media(max-width:900px){.grid{grid-template-columns:1fr;} .col-r{grid-column:auto;}}
-.col-l .list-scroll{max-height:46vh; overflow-y:auto; padding-right:4px;}
+/* 상황판은 관제 셸(.cs)로 전환됐다 — .grid/.col-* 는 더 이상 쓰지 않는다.
+   패널 폭은 .cs-body 의 308 / 잔여(최소 480) / 340px 이 기준(design_console.md 3.4). */
+.list-scroll{max-height:46vh; overflow-y:auto; padding-right:4px;}
 .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px;}
 .card h2{font-size:16.5px; font-weight:700; color:var(--hs-blue-dark); margin-bottom:12px; display:flex; align-items:center; gap:8px; white-space:nowrap;}
 .card h2 .sub{font-size:11.5px; color:var(--muted); font-weight:400; margin-left:auto; white-space:normal; text-align:right; line-height:1.3;}
@@ -364,15 +359,12 @@ body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-i
 }
 @media(max-width:700px){
   .wrap{padding:12px 12px 0;}
+  body[data-mode="duty"] .wrap{padding:0;}
   body[data-mode="duty"]{overflow-x:hidden;}
-  body[data-mode="duty"] .grid{display:block;}
-  body[data-mode="duty"] #mapCard{height:calc(100vh - var(--hdr-h, 96px) - 56px); min-height:0; padding:12px;}
-  body[data-mode="duty"] .col-l, body[data-mode="duty"] .col-r{
-    position:fixed; left:0; right:0; bottom:0; z-index:900; background:var(--bg);
-    border-radius:16px 16px 0 0; box-shadow:0 -6px 24px rgba(16,32,64,.18);
-    max-height:76vh; overflow-y:auto; padding:16px 16px calc(72px + env(safe-area-inset-bottom,0px));
-    transform:translateY(101%); transition:transform .28s ease;}
-  body[data-mode="duty"] .col-l.on, body[data-mode="duty"] .col-r.on{transform:translateY(0);}
+  /* 폰 상황판: 지도 전체 + 하단 시트 — 패널은 .cs-left/.cs-right 가 담당한다 */
+  body[data-mode="duty"] .cs{height:calc(100vh - var(--hdr-h, 96px));}
+  body[data-mode="duty"] .cs-left, body[data-mode="duty"] .cs-right{
+    padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));}
   /* 폰 하단 이동 바 — 홈 인디케이터에 가리지 않게 안전 영역만큼 띄운다 */
   body[data-mode="duty"] #dutyBar{display:flex; position:fixed; left:0; right:0; bottom:0; z-index:950;
     background:#fff; border-top:1px solid var(--line); gap:8px; padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));}
@@ -383,6 +375,7 @@ body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-i
   .pc-only{display:none !important;}
   .phone-note{display:block; font-size:13px; color:var(--muted); background:var(--hs-blue-bg);
     border:1px solid var(--hs-blue-line); border-radius:8px; padding:12px; line-height:1.6;}
+  #duty .cs-brand, #duty #csSearchBtn, #duty .cs-shift, #duty .cs-sep{display:none;}
   #dash .dash-top{grid-template-columns:1fr !important;}
   #dash .dgrid2{grid-template-columns:1fr !important;}
   .rd-cols{grid-template-columns:1fr;}
@@ -463,6 +456,198 @@ body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-i
 .d10{display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:12px;}
 .d10 > div{background:#fff; border:1px solid var(--line); border-radius:8px; padding:12px;}
 .d10 .k{font-size:12px; color:var(--muted);} .d10 .v{font-size:22px; font-weight:800; color:var(--hs-blue-dark);}
+/* ══════════════════════════════════════════════════════════
+   관제 콘솔 — design_console.md 7장 토큰
+   다크는 상황판(#duty)에만. 시민·추적·대시보드는 라이트를 유지한다.
+   ══════════════════════════════════════════════════════════ */
+#duty{
+  --navy:#0a1628; --panel:#0f1c31; --panel2:#132339;
+  --cline:rgba(56,189,248,.16); --cline2:rgba(255,255,255,.07);
+  --cink:#dce8f7; --cmuted:#7f97b5; --cdim:#5b7191; --cbright:#f0f9ff;
+  /* 상태색 — 인코딩 전용. 부서·관할구는 색으로 나누지 않는다 */
+  --urgent:#ff5f56; --prog:#f5a623; --done:#4a9eff; --ok:#3ddc97; --cyan:#38bdf8;
+  --mono:ui-monospace,"Consolas","D2Coding",monospace;
+}
+/* 페이지 전체 스크롤 없음 — 각 패널이 자기 영역 안에서만 스크롤한다 */
+body[data-mode="duty"]{overflow:hidden; background:var(--navy);}
+body[data-mode="duty"] .wrap{max-width:none; margin:0; padding:0;}
+body[data-mode="duty"] footer{display:none;}
+#duty{background:var(--navy); color:var(--cink);
+  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;}
+.cs{display:flex; flex-direction:column; height:calc(100vh - var(--hdr-h, 96px)); min-height:0;}
+
+/* ── 명령 바 44px ── */
+.cs-cmd{flex:0 0 44px; height:44px; display:flex; align-items:center; gap:8px;
+  padding:0 12px; background:var(--panel); border-bottom:1px solid var(--cline);
+  overflow-x:auto; overflow-y:hidden; scrollbar-width:thin;}
+.cs-brand{font-size:13px; font-weight:800; color:var(--cbright); white-space:nowrap;}
+.cs-sep{width:1px; height:20px; background:var(--cline2); flex:0 0 auto;}
+.cs-spacer{flex:1 1 auto;}
+.cs-flabel{font-size:11px; color:var(--cdim); white-space:nowrap;}
+.cs-chip{height:26px; padding:0 10px; border-radius:4px; font-size:12px; font-weight:600;
+  background:transparent; color:var(--cmuted); border:1px solid var(--cline2);
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap; transition:.2s ease;}
+.cs-chip:hover{background:rgba(56,189,248,.10); color:var(--cink);}
+.cs-chip.on{background:rgba(56,189,248,.16); border-color:var(--cyan); color:var(--cbright);}
+.cs-chip kbd{font-family:var(--mono); font-size:10px; color:var(--cdim); border:1px solid var(--cline2);
+  border-radius:3px; padding:0 4px;}
+.cs-live{height:26px; padding:0 10px; border-radius:4px; font-size:11px; font-weight:800; letter-spacing:.4px;
+  background:transparent; color:var(--cdim); border:1px solid var(--cline2);
+  display:inline-flex; align-items:center; gap:6px;}
+.cs-live i{width:7px; height:7px; border-radius:50%; background:var(--cdim); display:block;}
+.cs-live.on{color:var(--ok); border-color:rgba(61,220,151,.45);}
+.cs-live.on i{background:var(--ok); box-shadow:0 0 8px var(--ok); animation:csBlink 2s ease-in-out infinite;}
+@keyframes csBlink{0%,100%{opacity:1}50%{opacity:.35}}
+.cs-dimnote{font-size:11px; color:var(--prog); white-space:nowrap;}
+.cs-clock{font-family:var(--mono); font-size:12px; color:var(--cink); white-space:nowrap;}
+.cs-shift{font-size:11px; color:var(--cmuted); white-space:nowrap;}
+
+/* ── 본문 3열 ── */
+.cs-body{flex:1 1 auto; display:grid; grid-template-columns:308px minmax(480px,1fr) 340px;
+  min-height:0; gap:0;}
+@media(max-width:1200px){.cs-body{grid-template-columns:250px minmax(0,1fr) 290px;}}
+.cs-left, .cs-right{display:flex; flex-direction:column; min-height:0; background:var(--panel);}
+.cs-left{border-right:1px solid var(--cline);}
+.cs-right{border-left:1px solid var(--cline);}
+.cs-map{position:relative; min-width:0; min-height:0; background:var(--navy);}
+
+/* ── 패널 탭 ── */
+.cs-tabs{flex:0 0 auto; display:flex; border-bottom:1px solid var(--cline2); background:var(--panel2);}
+.cs-tabs button{flex:1; height:32px; font-size:12px; font-weight:700; background:transparent;
+  color:var(--cdim); border:none; border-bottom:2px solid transparent; border-radius:0; transition:.2s ease;}
+.cs-tabs button:hover{color:var(--cink);}
+.cs-tabs button.on{color:var(--cbright); border-bottom-color:var(--cyan); background:rgba(56,189,248,.08);}
+.cs-pane{display:none; flex:1 1 auto; min-height:0; overflow-y:auto; overflow-x:hidden; padding:12px;}
+.cs-pane.on{display:block;}
+.cs-pane::-webkit-scrollbar{width:8px}
+.cs-pane::-webkit-scrollbar-thumb{background:rgba(56,189,248,.22); border-radius:4px}
+.cs-secthead{font-size:11px; font-weight:800; color:var(--cdim); letter-spacing:.5px;
+  text-transform:uppercase; margin:0 0 8px; display:flex; gap:8px; align-items:baseline;}
+.cs-secthead span{font-size:11px; font-weight:400; text-transform:none; letter-spacing:0; color:var(--cdim);}
+
+/* ── 패널 안 기존 카드를 관제 톤으로 ── */
+#duty .card{background:var(--panel2); border:1px solid var(--cline2); border-radius:8px;
+  padding:12px; margin:0 0 12px; color:var(--cink);}
+#duty .card:last-child{margin-bottom:0;}
+#duty .card h2{font-size:13px; font-weight:800; color:var(--cbright); margin-bottom:8px;}
+#duty .card h2 .sub{font-size:11px; color:var(--cdim);}
+#duty .stat, #duty .stats > div{background:rgba(255,255,255,.04); border:1px solid var(--cline2); border-radius:6px;}
+#duty .stat .n{font-size:22px; color:var(--cbright);}
+#duty .stat .l{font-size:11px; color:var(--cmuted);}
+#duty .hint{font-size:11px; color:var(--cdim); line-height:1.6;}
+#duty label{color:var(--cmuted) !important; font-size:11px;}
+#duty input, #duty textarea, #duty select{background:rgba(255,255,255,.05); border:1px solid var(--cline2);
+  color:var(--cink); font-size:13px; border-radius:6px; padding:8px 10px;}
+#duty input::placeholder, #duty textarea::placeholder{color:var(--cdim);}
+#duty input:focus, #duty textarea:focus, #duty select:focus{outline:2px solid var(--cyan); border-color:var(--cyan);}
+#duty select option{background:var(--panel2); color:var(--cink);}
+#duty .btn-p{background:var(--cyan); color:#062036; font-weight:800;}
+#duty .btn-o{background:var(--prog); color:#2a1a02; font-weight:800;}
+#duty .btn-g{background:rgba(255,255,255,.07); color:var(--cink); border:1px solid var(--cline2);}
+#duty .btn-p, #duty .btn-o, #duty .btn-g{min-height:32px; font-size:12px; border-radius:6px;}
+#duty .row{gap:8px; margin-top:8px;}
+#duty .item{background:rgba(255,255,255,.035); border:1px solid var(--cline2); border-radius:6px;
+  color:var(--cink); margin-bottom:8px; padding:10px 12px; transition:.2s ease;}
+#duty .item:hover{background:rgba(56,189,248,.10);}
+#duty .item.sel{background:rgba(56,189,248,.16); border-color:var(--cyan); box-shadow:0 0 0 1px var(--cyan) inset;}
+#duty .item .loc{color:var(--cbright); font-size:13px;}
+#duty .item .txt{color:var(--cmuted); font-size:12px;}
+#duty .item .meta, #duty .item time{color:var(--cdim); font-size:11px;}
+#duty .badge{font-size:11px; border-radius:4px;}
+#duty .dept{background:rgba(255,255,255,.045); border-left:2px solid var(--cyan); color:var(--cink);
+  font-size:12px; border-radius:4px; padding:8px 10px; margin-top:6px;}
+#duty .manual{background:rgba(255,255,255,.03); border:1px solid var(--cline2); border-radius:6px; color:var(--cink);}
+#duty .list-scroll{max-height:none; overflow:visible; padding-right:0;}
+#duty .sc-tabs button{background:rgba(255,255,255,.05); color:var(--cmuted); height:28px; font-size:11px;}
+#duty .sc-tabs button.on{background:var(--cyan); color:#062036;}
+#duty .sc-sum{color:var(--cdim); font-size:11px;}
+#duty .ai-note{background:rgba(56,189,248,.08); border:1px solid var(--cline); color:var(--cink); font-size:12px;}
+#duty .legend{color:var(--cdim); font-size:11px; gap:8px; margin-top:0;}
+
+/* ── 지도 ── */
+.cs-map #mapBox{position:absolute; inset:0; border:none; border-radius:0; min-height:0;}
+.cs-map #map{position:absolute; inset:0; width:100%; height:100%;}
+.cs-map #apiErrBox{position:absolute; left:12px; right:12px; bottom:12px; z-index:1150; margin:0;}
+/* 우상단 도구는 세로로 — 전체화면·항공·기상·야간 */
+#mapBaseBar{flex-direction:column; align-items:flex-end;}
+#mapLayerBar .lb, #mapBaseBar .lb{height:32px; min-height:32px; font-size:12px;
+  background:rgba(15,28,49,.92); border:1px solid var(--cline); color:var(--cink);
+  box-shadow:0 2px 10px rgba(0,0,0,.45); backdrop-filter:blur(6px);}
+#mapLayerBar .lb.on, #mapBaseBar .lb.on{background:rgba(56,189,248,.22); border-color:var(--cyan); color:var(--cbright);}
+#mapLayerBar .lb:hover, #mapBaseBar .lb:hover{background:rgba(56,189,248,.16);}
+.mlb-more-panel{background:rgba(15,28,49,.96); border:1px solid var(--cline);
+  box-shadow:0 8px 28px rgba(0,0,0,.55); backdrop-filter:blur(8px);}
+/* 좌하단 HUD 지표 */
+#mapHud{position:absolute; left:12px; bottom:12px; z-index:1100; display:flex; gap:8px;
+  background:rgba(15,28,49,.92); border:1px solid var(--cline); border-radius:8px;
+  padding:8px 12px; box-shadow:0 2px 12px rgba(0,0,0,.45); backdrop-filter:blur(6px);}
+#mapHud > div{min-width:56px;}
+#mapHud .k{font-size:10px; color:var(--cdim); letter-spacing:.4px;}
+#mapHud .v{font-family:var(--mono); font-size:20px; font-weight:800; color:var(--cbright); line-height:1.2;}
+#mapHud .v.u{color:var(--urgent);} #mapHud .v.p{color:var(--prog);} #mapHud .v.o{color:var(--ok);}
+
+/* ── 레이어 패널 ── */
+.ly-row{display:flex; align-items:center; gap:8px; padding:7px 8px; border-radius:6px;
+  border:1px solid transparent; cursor:grab; font-size:12px; color:var(--cink);}
+.ly-row:hover{background:rgba(56,189,248,.08); border-color:var(--cline2);}
+.ly-row.drag{opacity:.4;}
+.ly-row.over{border-color:var(--cyan); background:rgba(56,189,248,.12);}
+.ly-row .eye{width:24px; height:24px; border-radius:4px; background:rgba(255,255,255,.06);
+  color:var(--cdim); font-size:12px; flex:0 0 auto;}
+.ly-row.on .eye{background:rgba(56,189,248,.20); color:var(--cyan);}
+.ly-row .nm{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.ly-row .gr{font-size:10px; color:var(--cdim);}
+.ly-grp{font-size:10px; font-weight:800; color:var(--cdim); letter-spacing:.6px;
+  margin:12px 0 4px; text-transform:uppercase;}
+.ly-grp:first-child{margin-top:0;}
+
+/* ── 하단 스트립 132px ── */
+.cs-strip{flex:0 0 auto; background:var(--panel); border-top:1px solid var(--cline); position:relative;}
+.cs-stripbtn{position:absolute; right:12px; top:-25px; height:24px; padding:0 10px; z-index:5;
+  font-size:11px; font-weight:700; background:var(--panel); color:var(--cmuted);
+  border:1px solid var(--cline); border-bottom:none; border-radius:6px 6px 0 0;}
+.cs-stripbody{height:132px; display:grid; grid-template-columns:1fr 1.6fr 1fr; gap:12px; padding:10px 12px;}
+.cs-strip.off .cs-stripbody{display:none;}
+.cs-strip-col{min-width:0; display:flex; flex-direction:column;}
+.cs-events{flex:1; overflow-y:auto; font-size:11px; line-height:1.7;}
+.cs-events div{color:var(--cmuted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.cs-events b{color:var(--cink); font-weight:700;}
+.cs-events .t{font-family:var(--mono); color:var(--cdim); margin-right:6px;}
+.cs-timeline{flex:1; display:flex; align-items:flex-end; gap:2px; position:relative; cursor:crosshair; min-height:36px;}
+.cs-tlbar{flex:1; background:rgba(56,189,248,.28); border-radius:2px 2px 0 0; min-height:2px; position:relative;}
+.cs-tlbar.u{background:var(--urgent);}
+.cs-tlbar.sel{background:var(--cyan); box-shadow:0 0 8px var(--cyan);}
+.cs-tlbar.dim{opacity:.28;}
+.cs-play{flex:0 0 auto; display:flex; gap:6px; align-items:center; margin-top:6px;}
+.cs-cursorlb{font-family:var(--mono); font-size:11px; color:var(--cyan);}
+.cs-kpis{flex:1; display:grid; grid-template-columns:1fr 1fr; gap:6px; align-content:start;}
+.cs-kpis > div{background:rgba(255,255,255,.04); border:1px solid var(--cline2); border-radius:6px; padding:6px 8px;}
+.cs-kpis .k{font-size:10px; color:var(--cdim);}
+.cs-kpis .v{font-family:var(--mono); font-size:17px; font-weight:800; color:var(--cbright);}
+
+/* ── 필터: 숨기지 않고 흐린다 ── */
+#duty .item.flt-dim{opacity:.30;}
+.pin.flt-dim{opacity:.22; filter:grayscale(.7); animation:none;}
+
+/* ── 전체화면 (관제 셸 기준) ── */
+body.mapfs .cs-left, body.mapfs .cs-right, body.mapfs .cs-strip, body.mapfs .cs-cmd{display:none;}
+body.mapfs .cs-body{grid-template-columns:1fr;}
+body.mapfs .cs{height:100vh;}
+
+/* ── 폰: 지도 전체 + 하단 시트 (D-08 유지) ── */
+@media(max-width:900px){
+  .cs-body{grid-template-columns:1fr;}
+  .cs-left, .cs-right{position:fixed; left:0; right:0; bottom:56px; top:auto; z-index:900;
+    max-height:70vh; border-radius:12px 12px 0 0; border:1px solid var(--cline);
+    transform:translateY(102%); transition:transform .28s ease;}
+  .cs-left.open, .cs-right.open{transform:translateY(0);}
+  .cs-strip{display:none;}
+  .cs-cmd{overflow-x:auto;}
+}
+@media (prefers-reduced-motion: reduce){
+  .cs-live.on i{animation:none;} .cs-left, .cs-right, .cs-chip, .cs-tabs button{transition:none;}
+}
+
 </style>
 </head>
 <body>
@@ -503,15 +688,42 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 
 <div class="wrap">
 <!-- ═══════════ 당직자 화면 ═══════════ -->
+<!-- ══════════ 관제 콘솔 셸 (design_console.md 3장) ══════════
+     페이지 전체 스크롤 없음 — 각 패널이 자기 영역 안에서만 스크롤한다. -->
 <div id="duty">
-  <div class="grid">
-    <!-- 왼쪽: 접수 현황 -->
-    <div class="col-l">
-      <div class="card" style="margin-bottom:14px; padding:13px 16px" id="wxCard">
-        <h2 style="margin-bottom:8px">🌤️ 화성시 실시간 기상 <span class="sub">기상청 연동</span></h2>
-        <div id="wxBody" style="font-size:14.5px; color:var(--muted)">기상 정보를 불러오는 중…</div>
-        <div id="airBody" style="font-size:13.5px; color:var(--muted); margin-top:6px"></div>
-      </div>
+  <div class="cs">
+
+    <!-- 명령 바 44px -->
+    <div class="cs-cmd">
+      <span class="cs-brand">🗺️ 상황판</span>
+      <button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="검색 (Ctrl+K)">🔎 검색<kbd>Ctrl K</kbd></button>
+      <span class="cs-sep"></span>
+      <span class="cs-flabel">필터</span>
+      <button class="cs-chip on" id="fltAll"  onclick="csFilter('all')">전체</button>
+      <button class="cs-chip"    id="fltUrg"  onclick="csFilter('urg')">긴급</button>
+      <button class="cs-chip"    id="fltOpen" onclick="csFilter('open')">미처리</button>
+      <span class="cs-dimnote" id="csDimNote"></span>
+      <span class="cs-sep"></span>
+      <button class="cs-live on" id="csLive" onclick="csLiveToggle()" aria-pressed="true"><i></i>LIVE</button>
+      <span class="cs-flabel">범위</span>
+      <button class="cs-chip"    id="rng1"  onclick="csRange(1)">1시간</button>
+      <button class="cs-chip"    id="rng6"  onclick="csRange(6)">6시간</button>
+      <button class="cs-chip on" id="rng24" onclick="csRange(24)">24시간</button>
+      <span class="cs-spacer"></span>
+      <span class="cs-clock" id="csClock"></span>
+      <span class="cs-shift" id="csShift"></span>
+      <button class="cs-chip" onclick="openMe()" id="csMe">👤 <span id="csMeTxt">소속</span></button>
+    </div>
+
+    <div class="cs-body">
+      <!-- 좌측 3탭: 민원 · 레이어 · 자원 -->
+      <aside class="cs-left" id="csLeft">
+        <div class="cs-tabs" role="tablist">
+          <button class="on" id="ltList"  role="tab" aria-selected="true"  onclick="csLeftTab('list')">민원</button>
+          <button           id="ltLayer" role="tab" aria-selected="false" onclick="csLeftTab('layer')">레이어</button>
+          <button           id="ltRes"   role="tab" aria-selected="false" onclick="csLeftTab('res')">자원</button>
+        </div>
+        <div class="cs-pane on" id="paneList">
       <div class="card">
         <h2>📋 민원접수 현황 <span class="sub" id="listCnt"></span></h2>
         <div class="stats" style="grid-template-columns:1fr; margin:0 0 8px">
@@ -530,6 +742,17 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <div class="sc-sum" id="scSum"></div>
         <div class="list-scroll" id="list"></div>
       </div>
+        </div>
+        <div class="cs-pane" id="paneLayer">
+          <div class="cs-secthead">레이어 <span>표시 순서는 끌어서 바꿉니다</span></div>
+          <div id="layerList"></div>
+        </div>
+        <div class="cs-pane" id="paneRes">
+      <div class="card" style="margin-bottom:14px; padding:13px 16px" id="wxCard">
+        <h2 style="margin-bottom:8px">🌤️ 화성시 실시간 기상 <span class="sub">기상청 연동</span></h2>
+        <div id="wxBody" style="font-size:14.5px; color:var(--muted)">기상 정보를 불러오는 중…</div>
+        <div id="airBody" style="font-size:13.5px; color:var(--muted); margin-top:6px"></div>
+      </div>
       <div class="card" style="margin-top:14px" id="staffCard">
         <h2>🧑‍🚒 당직 인력 현황 <span class="sub">투입 버튼 연동</span></h2>
         <div id="staffBody"></div>
@@ -542,11 +765,11 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <h2>📰 화성시 실시간 이슈 <span class="sub">키워드 '화성시'</span></h2>
         <div id="feed" style="font-size:14px; line-height:1.6; color:var(--muted); max-height:420px; overflow-y:auto; padding-right:4px">이슈를 불러오는 중…</div>
       </div>
-    </div>
-    <!-- 가운데: 지도 -->
-    <div>
-      <div class="card" id="mapCard">
-        <h2 id="mapTitle">🗺️ 실시간 상황 지도 <span class="sub">레이어는 지도 위에서 켜고 끄세요</span></h2>
+        </div>
+      </aside>
+
+      <!-- 지도: 잔여 전체, 도구는 지도 위 오버레이 -->
+      <main class="cs-map" id="mapCard">
         <div id="apiErrBox" style="display:none;background:#FFF8F7;border:1.5px dashed #E5B4AE;border-radius:8px;padding:8px 12px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:#B3261E">⚠️ API 연계오류 조치중</span>
           <span style="font-size:12px;color:var(--muted)"> — 아래 연계는 일시 오류로 점검 중입니다. 데이터 직접 업로드 보완 예정.</span>
@@ -586,9 +809,24 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
             <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
             <button class="lb" id="wxBtn" onclick="toggleWx()">🌦️ 기상</button>
             <button class="lb" id="nightBtn" onclick="toggleNight()">🌙 야간</button>
+            <button class="lb" id="mapCapBtn" onclick="csCapture()" aria-label="지도 캡처" title="지도 이미지 내려받기 (보고서 삽입용)">📸</button>
             <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-label="지도 전체화면 전환" aria-pressed="false" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶</button>
           </div>
         </div>
+      </main>
+
+      <!-- 우측: 선택 상세 + 조치 실행 -->
+      <aside class="cs-right" id="csRight">
+        <div class="cs-tabs" role="tablist">
+          <button class="on" id="rtSel"  role="tab" aria-selected="true"  onclick="csRightTab('sel')">선택 상세</button>
+          <button           id="rtNew"  role="tab" aria-selected="false" onclick="csRightTab('new')">접수</button>
+          <button           id="rtJrn"  role="tab" aria-selected="false" onclick="csRightTab('jrn')">일지</button>
+        </div>
+        <div class="cs-pane on" id="paneSel">
+      <div class="card">
+        <h2>🧑‍💼 업무 처리 <span class="sub" id="dHint">목록/지도에서 선택</span></h2>
+        <div id="detail"><p class="hint">왼쪽 접수 목록 또는 지도 핀을 선택하면 대응 매뉴얼과 처리 버튼이 표시됩니다.</p></div>
+      </div>
         <div class="legend" id="mapLegend">
           <span>🚨 긴급 민원 · 📢 일반 민원 — 테두리색=상태:</span>
           <span><span class="dot" style="background:var(--hs-orange)"></span>신규접수(민원접수창구)</span>
@@ -603,10 +841,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         </div>
         <p class="phone-note">📄 일일보고·민원접수서 등 문서 생성은 <b>PC에서 이용</b>해 주세요. 폰에서는 접수·확인·출동 지시가 가능합니다.</p>
         <p class="hint">핀 클릭=상세 보기 · <b>빈 지도 클릭=신규 접수 위치 지정</b>(관할구 자동, 오른쪽 AI 서기와 연동)</p>
-      </div>
-    </div>
-    <!-- 오른쪽: 업무 처리 -->
-    <div class="col-r">
+        </div>
+        <div class="cs-pane" id="paneNew">
       <div class="card ai-box">
         <h2>🖊️ AI 접수 서기 <span class="sub">전화 받으며 입력</span></h2>
         <div style="display:flex; gap:8px; margin-bottom:10px">
@@ -634,6 +870,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         </div>
         <p class="hint">AI가 정리해 채워줍니다. <b>확인 후 접수 등록을 눌러야 정식 접수됩니다.</b></p>
       </div>
+        </div>
+        <div class="cs-pane" id="paneJrn">
             <div class="card" style="margin-bottom:14px" id="journalCard">
         <h2>📋 재난상황일지 AI 서기 <span class="sub">막 적으면 자동 분류</span></h2>
         <textarea id="jRaw" placeholder="상황을 자유롭게 적으세요.
@@ -663,10 +901,33 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <textarea id="jNation" placeholder="특이사항 없음" style="min-height:52px; resize:vertical" oninput="saveJournal()"></textarea>
         </div>
       </div>
-      <div class="card">
-        <h2>🧑‍💼 업무 처리 <span class="sub" id="dHint">목록/지도에서 선택</span></h2>
-        <div id="detail"><p class="hint">왼쪽 접수 목록 또는 지도 핀을 선택하면 대응 매뉴얼과 처리 버튼이 표시됩니다.</p></div>
-      </div>
+        </div>
+      </aside>
+    </div>
+
+    <!-- 하단 스트립 (접기 가능) -->
+    <div class="cs-strip" id="csStrip">
+      <button class="cs-stripbtn" id="csStripBtn" onclick="csStripToggle()" aria-expanded="true">▾ 타임라인</button>
+      <div class="cs-stripbody" id="csStripBody">
+        <div class="cs-strip-col">
+          <div class="cs-secthead">실시간 이벤트</div>
+          <div class="cs-events" id="csEvents"></div>
+        </div>
+        <div class="cs-strip-col cs-strip-time">
+          <div class="cs-secthead">시간대별 접수 <span id="csTlLabel"></span></div>
+          <div class="cs-timeline" id="csTimeline"></div>
+          <div class="cs-play">
+            <button class="cs-chip" id="csPlayBtn" onclick="csPlay()">▶ 재생</button>
+            <button class="cs-chip" id="csSpd1"  onclick="csSpeed(1)">1x</button>
+            <button class="cs-chip" id="csSpd5"  onclick="csSpeed(5)">5x</button>
+            <button class="cs-chip" id="csSpd20" onclick="csSpeed(20)">20x</button>
+            <span class="cs-cursorlb" id="csCursorLb"></span>
+          </div>
+        </div>
+        <div class="cs-strip-col">
+          <div class="cs-secthead">처리 지표</div>
+          <div class="cs-kpis" id="csKpis"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -730,7 +991,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0801';
+const BUILD_VER = 'v0906-0830';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1196,6 +1457,352 @@ function initMap(){
   map.on('zoomend', ()=>{ renderMap(); });
   if(navigator.geolocation){ navigator.geolocation.getCurrentPosition(p=>{ const ll=[p.coords.latitude,p.coords.longitude]; meMarker['duty']=L.marker(ll,{icon:L.divIcon({className:'',html:'<div class="me-wrap"><div class="me-ring"></div><div class="me-dot"></div></div>',iconSize:[18,18],iconAnchor:[9,9]})}).addTo(map).bindTooltip('현재 위치'); map.setView(ll,12); }, ()=>{}, {timeout:5000}); }
 }
+/* ══════════════════════════════════════════════════════════
+   관제 콘솔 셸 — design_console.md 3·4·5·9장
+   ══════════════════════════════════════════════════════════ */
+
+/* ── 3.1 좌측 3탭 / 3.2 우측 패널 ── */
+function csLeftTab(k){
+  const map = {list:'paneList', layer:'paneLayer', res:'paneRes'};
+  const btn = {list:'ltList', layer:'ltLayer', res:'ltRes'};
+  for(const x of Object.keys(map)){
+    const pane = document.getElementById(map[x]), b = document.getElementById(btn[x]);
+    if(pane) pane.classList.toggle('on', x === k);
+    if(b){ b.classList.toggle('on', x === k); b.setAttribute('aria-selected', String(x === k)); }
+  }
+  if(k === 'layer') renderLayerPanel();
+}
+function csRightTab(k){
+  const map = {sel:'paneSel', new:'paneNew', jrn:'paneJrn'};
+  const btn = {sel:'rtSel', new:'rtNew', jrn:'rtJrn'};
+  for(const x of Object.keys(map)){
+    const pane = document.getElementById(map[x]), b = document.getElementById(btn[x]);
+    if(pane) pane.classList.toggle('on', x === k);
+    if(b){ b.classList.toggle('on', x === k); b.setAttribute('aria-selected', String(x === k)); }
+  }
+}
+
+/* ── 4.2 레이어 20종 · 4.1 순서는 상태로 저장한다 ──
+   z-order 를 코드에 고정하지 않고 배열 순서로 두고, 목록에서 위에 있는 레이어가 위에 렌더된다. */
+const LAYER_DEFS = [
+  {id:'cplBtn',   nm:'민원 핀',        grp:'상황',      fn:'toggleCpl'},
+  {id:'festBtn',  nm:'행사·인파',      grp:'상황',      fn:'toggleFest'},
+  {id:'stnBtn',   nm:'소방서·경찰서',   grp:'상황',      fn:'toggleStn'},
+  {id:'wxBtn',    nm:'기상 관제(Windy)', grp:'기상·환경', fn:'toggleWx'},
+  {id:'pmBtn',    nm:'미세먼지',        grp:'기상·환경', fn:'togglePm'},
+  {id:'rwBtn',    nm:'도로 기상',       grp:'기상·환경', fn:'toggleRoadWx'},
+  {id:'cctvBtn',  nm:'CCTV',           grp:'교통',      fn:'toggleCctv'},
+  {id:'incBtn',   nm:'돌발상황',        grp:'교통',      fn:'toggleInc'},
+  {id:'jjBtn',    nm:'지적(벡터타일)',  grp:'시설',      fn:'toggleJijeok'},
+  {id:'bldgBtn',  nm:'건축물대장',      grp:'시설',      fn:'toggleBldg'},
+  {id:'pharmBtn', nm:'심야약국',        grp:'시설',      fn:'togglePharm'},
+  {id:'emgBtn',   nm:'응급의료',        grp:'시설',      fn:"toggleSM('emg')"},
+  {id:'hospBtn',  nm:'병원',           grp:'시설',      fn:'toggleHosp'},
+  {id:'crimeBtn', nm:'범죄주의구간',    grp:'안전',      fn:'toggleCrime'},
+  {id:'safeBtn',  nm:'어린이 안전시설',  grp:'안전',      fn:'toggleSafe'},
+  {id:'waterBtn', nm:'물놀이',          grp:'안전',      fn:"toggleSM('water')"},
+  {id:'cnstBtn',  nm:'공사현장',        grp:'안전',      fn:"toggleSM('cnst')"},
+  {id:'bellBtn',  nm:'비상벨',          grp:'안전',      fn:"toggleSM('bell')"},
+  {id:'cptedBtn', nm:'CPTED',          grp:'안전',      fn:"toggleSM('cpted')"},
+  {id:'satBtn',   nm:'항공 배경',       grp:'배경',      fn:'toggleSat'},
+  {id:'nightBtn', nm:'야간 배경',       grp:'배경',      fn:'toggleNight'}
+];
+let LAYER_ORDER = LAYER_DEFS.map(l=>l.id);
+try{
+  const v = JSON.parse(localStorage.getItem('hs_layer_order') || 'null');
+  if(Array.isArray(v)){
+    /* 저장된 순서를 쓰되, 새로 생긴 레이어는 뒤에 붙인다 */
+    LAYER_ORDER = v.filter(id=>LAYER_DEFS.some(l=>l.id === id))
+      .concat(LAYER_DEFS.map(l=>l.id).filter(id=>v.indexOf(id) < 0));
+  }
+}catch(e){}
+function layerOrderSave(){ try{ localStorage.setItem('hs_layer_order', JSON.stringify(LAYER_ORDER)); }catch(e){} }
+function layerDef(id){ return LAYER_DEFS.find(l=>l.id === id); }
+function renderLayerPanel(){
+  const host = document.getElementById('layerList');
+  if(!host) return;
+  let html = '', lastGrp = '';
+  for(const id of LAYER_ORDER){
+    const d = layerDef(id); if(!d) continue;
+    const btn = document.getElementById(id);
+    const on = btn && btn.classList.contains('on');
+    if(d.grp !== lastGrp){ html += '<div class="ly-grp">' + d.grp + '</div>'; lastGrp = d.grp; }
+    html += '<div class="ly-row' + (on ? ' on' : '') + '" draggable="true" data-ly="' + id + '" ' +
+      'onclick="layerToggle(\'' + id + '\')" title="끌어서 순서 변경">' +
+      '<span class="eye">' + (on ? '👁' : '·') + '</span>' +
+      '<span class="nm">' + d.nm + '</span>' +
+      '<span class="gr">' + (on ? 'ON' : '') + '</span></div>';
+  }
+  host.innerHTML = html;
+  bindLayerDrag(host);
+}
+function layerToggle(id){
+  const btn = document.getElementById(id);
+  if(btn) btn.click();                    /* 기존 토글 함수를 그대로 쓴다 */
+  setTimeout(()=>{ renderLayerPanel(); layerApplyOrder(); }, 30);
+}
+/* 목록 순서를 실제 렌더 순서로 — 위에 있을수록 위에 그린다 */
+function layerApplyOrder(){
+  if(typeof map === 'undefined' || !map) return;
+  for(let i = LAYER_ORDER.length - 1; i >= 0; i--){
+    const d = layerDef(LAYER_ORDER[i]);
+    if(!d) continue;
+    const lyr = LAYER_REFS[d.id];
+    try{ if(lyr && lyr.bringToFront) lyr.bringToFront(); }catch(e){}
+  }
+}
+/* 토글 함수들이 만든 레이어를 이름으로 찾아 둔다(있으면 순서 적용에 쓴다) */
+const LAYER_REFS = {};
+function bindLayerDrag(host){
+  let src = null;
+  host.querySelectorAll('.ly-row').forEach(row=>{
+    row.addEventListener('dragstart', e=>{ src = row; row.classList.add('drag'); e.dataTransfer.effectAllowed = 'move'; });
+    row.addEventListener('dragend', ()=>{ if(src) src.classList.remove('drag'); host.querySelectorAll('.ly-row').forEach(r=>r.classList.remove('over')); });
+    row.addEventListener('dragover', e=>{ e.preventDefault(); if(row !== src) row.classList.add('over'); });
+    row.addEventListener('dragleave', ()=>row.classList.remove('over'));
+    row.addEventListener('drop', e=>{
+      e.preventDefault(); e.stopPropagation();
+      if(!src || row === src) return;
+      const from = LAYER_ORDER.indexOf(src.dataset.ly), to = LAYER_ORDER.indexOf(row.dataset.ly);
+      if(from < 0 || to < 0) return;
+      LAYER_ORDER.splice(to, 0, LAYER_ORDER.splice(from, 1)[0]);
+      layerOrderSave(); renderLayerPanel(); layerApplyOrder();
+      toast('레이어 순서를 저장했습니다');
+    });
+  });
+}
+
+/* ── 5장 시간 모델 · 9.2 필터 가시성 ── */
+let csLive = true;            /* LIVE: 선택 시각이 현재를 자동 추종 */
+let csRangeH = 24;            /* 시간 범위(시간) */
+let csCursor = null;          /* 선택 시각 (LIVE 면 null = 지금) */
+let csFlt = 'all';            /* 명령 바 필터 */
+let csPlayTimer = null, csSpd = 1;
+
+function csNow(){ return csCursor || Date.now(); }
+function csLiveToggle(){
+  csLive = !csLive;
+  if(csLive) csCursor = null;
+  const b = document.getElementById('csLive');
+  if(b){ b.classList.toggle('on', csLive); b.setAttribute('aria-pressed', String(csLive)); }
+  csApply();
+  toast(csLive ? 'LIVE — 현재 시각을 따라갑니다' : 'LIVE 해제 — 선택한 시각의 상태를 봅니다');
+}
+function csRange(h){
+  csRangeH = h;
+  for(const x of [1, 6, 24]){
+    const b = document.getElementById('rng' + x);
+    if(b) b.classList.toggle('on', x === h);
+  }
+  csApply();
+}
+function csFilter(k){
+  csFlt = k;
+  for(const x of ['all', 'urg', 'open']){
+    const b = document.getElementById('flt' + (x === 'all' ? 'All' : (x === 'urg' ? 'Urg' : 'Open')));
+    if(b) b.classList.toggle('on', x === k);
+  }
+  csApply();
+}
+/* 5.3 필터는 숨기지 않고 흐린다 — "필터에 걸린 것"과 "없는 것"이 구분돼야 한다 */
+function csPass(it){
+  if(csFlt === 'urg' && it.urg !== '긴급') return false;
+  if(csFlt === 'open' && it.st === '완료') return false;
+  const t = itemStart(it).getTime();
+  if(t > csNow()) return false;                              /* 선택 시각 이후는 아직 없던 민원 */
+  if(csNow() - t > csRangeH * 3600 * 1000) return false;     /* 시간 범위 밖 */
+  return true;
+}
+function csApply(){
+  let dim = 0;
+  /* 목록 */
+  document.querySelectorAll('#duty .item[data-id]').forEach(el=>{
+    const it = items.find(i=>i.id === Number(el.dataset.id));
+    const off = it && !csPass(it);
+    el.classList.toggle('flt-dim', !!off);
+    if(off) dim++;
+  });
+  /* 지도 핀 */
+  for(const id of Object.keys(mkById)){
+    const it = items.find(i=>i.id === Number(id));
+    const mk = mkById[id];
+    if(!it || !mk || !mk.getElement) continue;
+    const el = mk.getElement();
+    if(!el) continue;
+    const pin = el.querySelector('.pin');
+    if(pin) pin.classList.toggle('flt-dim', !csPass(it));
+  }
+  const note = document.getElementById('csDimNote');
+  if(note){
+    const on = csFlt !== 'all' || csRangeH !== 24 || !csLive;
+    note.textContent = on && dim ? '흐림 ' + dim + '건' : '';
+  }
+  csHud(); csStripRender();
+}
+/* 좌하단 HUD 지표 */
+function csHud(){
+  const box = document.getElementById('mapBox');
+  if(!box) return;
+  let hud = document.getElementById('mapHud');
+  if(!hud){
+    hud = document.createElement('div');
+    hud.id = 'mapHud';
+    box.appendChild(hud);
+  }
+  const live = scopeItems(realItems()).filter(i=>i.st !== '완료');
+  const urg = live.filter(i=>i.urg === '긴급').length;
+  const prog = live.filter(i=>i.st === '처리중').length;
+  const crew = live.reduce((a,i)=>a + ((i.crews || []).length), 0);
+  const avg = (typeof d10Stats === 'function') ? d10Stats().avg : 0;
+  hud.innerHTML =
+    '<div><div class="k">긴급</div><div class="v u">' + urg + '</div></div>' +
+    '<div><div class="k">처리중</div><div class="v p">' + prog + '</div></div>' +
+    '<div><div class="k">출동</div><div class="v o">' + crew + '</div></div>' +
+    '<div><div class="k">평균(분)</div><div class="v">' + avg + '</div></div>';
+}
+/* 하단 스트립 — 이벤트 · 시간대별 막대 · 지표 */
+function csStripRender(){
+  const tl = document.getElementById('csTimeline');
+  const ev = document.getElementById('csEvents');
+  const kp = document.getElementById('csKpis');
+  if(!tl) return;
+  const now = csNow(), span = csRangeH * 3600 * 1000, bins = 24;
+  const arr = new Array(bins).fill(0), urgArr = new Array(bins).fill(0);
+  for(const it of scopeItems(realItems())){
+    const t = itemStart(it).getTime();
+    const k = Math.floor((t - (now - span)) / (span / bins));
+    if(k < 0 || k >= bins) continue;
+    arr[k]++; if(it.urg === '긴급') urgArr[k]++;
+  }
+  const mx = Math.max(1, ...arr);
+  const curBin = Math.floor((now - (now - span)) / (span / bins));
+  tl.innerHTML = arr.map((v,i)=>{
+    const h = Math.round(v / mx * 100);
+    const cls = urgArr[i] ? ' u' : '';
+    return '<div class="cs-tlbar' + cls + (i === bins - 1 ? ' sel' : '') + '" style="height:' + Math.max(3, h) + '%" ' +
+      'title="' + csBinLabel(now, span, bins, i) + ' · ' + v + '건' + (urgArr[i] ? ' (긴급 ' + urgArr[i] + ')' : '') + '"></div>';
+  }).join('');
+  const lb = document.getElementById('csTlLabel');
+  if(lb) lb.textContent = '최근 ' + csRangeH + '시간 · 총 ' + arr.reduce((a,b)=>a+b,0) + '건';
+  if(ev){
+    const rows = [];
+    for(const it of scopeItems(realItems()).slice().sort((a,b)=>b.id - a.id).slice(0, 20)){
+      const last = (it.log && it.log.length) ? it.log[it.log.length - 1] : it.time + ' 접수';
+      rows.push('<div><span class="t">' + last.slice(0, 5) + '</span><b>#' + String(it.id).padStart(3,'0') + '</b> ' +
+        (it.urg === '긴급' ? '🚨 ' : '') + it.sub + ' — ' + last.replace(/^[0-9:]+ /, '') + '</div>');
+    }
+    ev.innerHTML = rows.join('') || '<div>표시할 이벤트가 없습니다.</div>';
+  }
+  if(kp){
+    const live = scopeItems(realItems()).filter(i=>i.st !== '완료');
+    const d = (typeof d10Stats === 'function') ? d10Stats() : {avg:0, p90:0};
+    kp.innerHTML =
+      '<div><div class="k">열린 민원</div><div class="v">' + live.length + '</div></div>' +
+      '<div><div class="k">긴급</div><div class="v" style="color:var(--urgent)">' + live.filter(i=>i.urg === '긴급').length + '</div></div>' +
+      '<div><div class="k">평균 처리</div><div class="v">' + d.avg + '분</div></div>' +
+      '<div><div class="k">지연 상위10%</div><div class="v">' + d.p90 + '분</div></div>';
+  }
+}
+function csBinLabel(now, span, bins, i){
+  const t = new Date(now - span + (span / bins) * i);
+  return String(t.getHours()).padStart(2,'0') + ':' + String(t.getMinutes()).padStart(2,'0');
+}
+function csStripToggle(){
+  const st = document.getElementById('csStrip'), b = document.getElementById('csStripBtn');
+  if(!st) return;
+  const off = st.classList.toggle('off');
+  if(b){ b.textContent = (off ? '▴' : '▾') + ' 타임라인'; b.setAttribute('aria-expanded', String(!off)); }
+  /* 5.5 접어도 시간 범위·필터·선택 시각은 계속 지도에 적용된다 */
+  mapResize();
+}
+/* 5.4 재생 */
+function csSpeed(x){
+  csSpd = x;
+  for(const v of [1, 5, 20]){
+    const b = document.getElementById('csSpd' + v);
+    if(b) b.classList.toggle('on', v === x);
+  }
+}
+function csPlay(){
+  const b = document.getElementById('csPlayBtn');
+  if(csPlayTimer){
+    clearInterval(csPlayTimer); csPlayTimer = null;
+    if(b) b.textContent = '▶ 재생';
+    return;
+  }
+  csLive = false;
+  const lv = document.getElementById('csLive');
+  if(lv){ lv.classList.remove('on'); lv.setAttribute('aria-pressed', 'false'); }
+  csCursor = Date.now() - csRangeH * 3600 * 1000;
+  if(b) b.textContent = '⏸ 정지';
+  csPlayTimer = setInterval(()=>{
+    csCursor += 60000 * csSpd;
+    if(csCursor >= Date.now()){ csCursor = Date.now(); csPlay(); csLiveToggle(); return; }
+    const lb = document.getElementById('csCursorLb');
+    if(lb) lb.textContent = new Date(csCursor).toTimeString().slice(0, 5);
+    csApply();
+  }, 200);
+}
+/* 명령 바 시계·근무대 */
+function csClockTick(){
+  const c = document.getElementById('csClock');
+  if(c){
+    const d = new Date();
+    c.textContent = (d.getMonth()+1) + '/' + d.getDate() + ' ' +
+      String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+  }
+  const sh = document.getElementById('csShift');
+  if(sh){ const h = new Date().getHours(); sh.textContent = (h >= 9 && h < 18) ? '일직' : '숙직'; }
+  const me = document.getElementById('csMeTxt');
+  if(me && typeof meLabel === 'function') me.textContent = meLabel();
+}
+
+/* ── 3.3 지도 캡처 — 보고서 삽입용 ── */
+function csCapture(){
+  try{
+    const cv = document.createElement('canvas');
+    const box = document.getElementById('mapBox');
+    const w = box.clientWidth, h = box.clientHeight;
+    cv.width = w; cv.height = h;
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#0a1628'; ctx.fillRect(0, 0, w, h);
+    /* 타일은 교차 출처라 캔버스로 못 옮긴다 — 지도 위 요소만 합성한다 */
+    const tiles = box.querySelectorAll('img.leaflet-tile');
+    let drawn = 0;
+    tiles.forEach(im=>{
+      try{
+        const r = im.getBoundingClientRect(), br = box.getBoundingClientRect();
+        ctx.drawImage(im, r.left - br.left, r.top - br.top, r.width, r.height);
+        drawn++;
+      }catch(e){}
+    });
+    const url = cv.toDataURL('image/png');
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '상황지도_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '_' + nowHM().replace(':','') + '.png';
+    document.body.appendChild(a); a.click(); a.remove();
+    toast(drawn ? '지도를 내려받았습니다 — 보고서에 붙여 넣으세요' : '타일 보안 정책으로 배경이 비어 있을 수 있습니다');
+  }catch(e){
+    console.warn('[캡처] 실패', e);
+    toast('지도 캡처에 실패했습니다 — 화면 캡처를 이용해 주세요');
+  }
+}
+/* ── 9.1 검색 (Ctrl+K) ── */
+function csSearch(){
+  const q = prompt('접수번호·위치·유형으로 찾기 (예: 1042, 향남, 포트홀)');
+  if(!q) return;
+  const k = q.trim();
+  const num = k.replace(/[^0-9]/g, '');
+  let hit = null;
+  if(num) hit = items.find(i=>i.id === Number(num));
+  if(!hit) hit = items.find(i=>[i.loc, i.sub, i.sum, i.field].join(' ').indexOf(k) >= 0);
+  if(!hit){ toast('"' + k + '" 에 해당하는 민원을 찾지 못했습니다'); return; }
+  csRightTab('sel'); csLeftTab('list'); selectItem(hit.id);
+}
+document.addEventListener('keydown', e=>{
+  if((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')){ e.preventDefault(); csSearch(); }
+});
+
 /* ══════════ D-M1 지도 전체화면 ══════════
    카드를 화면 전체로 펼친다. 레이어 바·배경 바는 이미 지도 위 오버레이라 그대로 따라 커지고,
    범례만 오버레이로 내려붙는다. Windy 기상 오버레이(#map 안 inset:0)도 부모를 따라 확대된다. */
@@ -1364,7 +1971,8 @@ function renderMap(){
   if(clusterDraw(drawList)) return;   // D-06: 넓게 볼 때는 묶어서 표시
   for(const it of drawList){   // S-11: 소속 범위 밖 민원은 지도에도 올리지 않는다
     const c = pinColor(it);
-    const pulse = it.st==='신규접수' ? ' pulse' : '';
+    /* 4.4: 점멸은 긴급 + 미배정(투입 0명)일 때만. 색은 긴급도·상태 축 하나만 쓴다 */
+    const pulse = (it.urg === '긴급' && !(it.dispN) && it.st !== '완료') ? ' pulse' : '';
     const sel = it.id===selId ? ' sel' : '';
     const dim = (hasSel && it.id!==selId) ? ' dim' : '';   // 선택 중이면 나머지 민원은 흐리게
     const emo = it.urg==="긴급" ? "🚨" : "📢";
@@ -1404,7 +2012,7 @@ function renderList(){
   const l = document.getElementById("list");
   const sorted = [...scopeItems()].filter(i=>i.st!=="완료").sort((a,b)=>{ const ua=a.urg==="긴급"?1:0, ub=b.urg==="긴급"?1:0; if(ua!==ub) return ub-ua; return b.id-a.id; });
   l.innerHTML = sorted.map(it=>
-    '<div class="item'+(it.id===selId?" sel":"")+(it.st==="신규접수"?" blink":"")+(scopeOther(it)?" other":"")+'" style="border-left-color:'+URG_BORDER[it.urg]+'" onclick="cardClick('+it.id+')">'+
+    '<div class="item'+(it.id===selId?" sel":"")+(it.st==="신규접수"?" blink":"")+(scopeOther(it)?" other":"")+'" data-id="'+it.id+'" style="border-left-color:'+URG_BORDER[it.urg]+'" onclick="cardClick('+it.id+')">'+
     '<div class="top"><span style="font-size:15px">'+(SRC_ICO[it.src]||"📞")+'</span>'+
     '<span class="badge '+stBadge(it)+'">'+it.st+(it.st==="신규접수"?"("+srcLabel(it)+")":"")+'</span>'+
     '<span class="badge b-cat">'+it.field+'</span>'+
@@ -1424,6 +2032,7 @@ function renderList(){
   document.getElementById("sNewDuty").textContent = sc.filter(i=>i.st==="신규접수" && i.src!=="시민접수").length;
   document.getElementById("sHand").textContent = sc.filter(i=>i.st==="처리중").length;
   document.getElementById("sDone").textContent = sc.filter(i=>i.st==="완료").length;
+  if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);   /* 필터 흐림·HUD·스트립 갱신 */
   /* S-11: 우리 처리·타 부서를 나눠 세고, 현재 범위 그대로 내려받게 한다 */
   const sm = document.getElementById("scSum");
   if(sm){
@@ -1447,6 +2056,7 @@ function cardClick(id){
 function selectItem(id){
   selId = id; renderMap(); renderList();
   dutySheetAuto();   // D-08: 폰에서는 업무 처리 시트를 자동으로 올린다
+  if(typeof csRightTab === 'function' && curMode === 'duty') csRightTab('sel');   // 조회와 지시를 한 자리에
   const it = items.find(i=>i.id===id);
   if(map && it.ll){ map.panTo(it.ll); if(mkById[it.id]) setTimeout(()=>mkById[it.id].openPopup(), 120); }
   const r = RULES[it.field] || RULES["기타"];
@@ -4266,6 +4876,7 @@ function clusterDraw(list){
     }
     const px = c.cnt >= 30 ? 52 : (c.cnt >= 10 ? 44 : 36);
     const icon = L.divIcon({className:'', iconSize:[px,px],
+      /* 4.4: 묶음 색은 내부 최고 심각도 — 긴급이 하나라도 있으면 긴급색 */
       html:'<div class="cl-pin' + (c.urg ? ' urg' : '') + '" style="width:' + px + 'px;height:' + px + 'px;font-size:' + (px/2.6).toFixed(0) + 'px">' + c.cnt + '</div>'});
     L.marker(c.ll, {icon:icon})
       .bindTooltip(c.cnt + '건 묶음 — 눌러서 펼치기', {direction:'top'})
@@ -4963,10 +5574,10 @@ function scopeExport(){
 
 /* ── D-08 폰 상황판: 지도 전체 + 하단 시트 ── */
 function dutySheet(which){
-  const l = document.querySelector('#duty .col-l'), r = document.querySelector('#duty .col-r');
+  const l = document.getElementById('csLeft'), r = document.getElementById('csRight');
   if(!l || !r) return;
-  l.classList.toggle('on', which === 'l');
-  r.classList.toggle('on', which === 'r');
+  l.classList.toggle('open', which === 'l');
+  r.classList.toggle('open', which === 'r');
   const map3 = {l:'dbList', r:'dbWork', null:'dbMap'};
   for(const k of ['dbList','dbWork','dbMap']){
     const b = document.getElementById(k);
@@ -5531,7 +6142,12 @@ function setMode(m, fromHash){
   if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
   bootFor(m);   // D-02: 이 모드에 필요한 것만 준비(중복 실행 없음)
   if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
-  if(m==="duty" && map){ dutyLayersInit(); setTimeout(()=>map.invalidateSize(),50); }
+  if(m==="duty" && map){
+    dutyLayersInit();
+    if(typeof renderLayerPanel === 'function') renderLayerPanel();
+    if(typeof csApply === 'function') csApply();
+    setTimeout(()=>map.invalidateSize(),50);
+  }
   if(m==="duty" && notifyQueue.length){
     const nid = notifyQueue.shift();
     const nit = items.find(i=>i.id===nid);
@@ -5594,6 +6210,11 @@ function bootDuty(){
   setInterval(loadAir, 15*60*1000);
   setTimeout(loadJournal, 0);
   meApply();   /* S-11: 소속 범위를 화면에 건다 */
+  /* 관제 셸 — 명령 바 시계·레이어 패널·필터·HUD·스트립 */
+  csClockTick(); setInterval(csClockTick, 1000);
+  renderLayerPanel();
+  csApply();
+  setInterval(()=>{ if(curMode === 'duty' && csLive) csApply(); }, 20000);
 }
 
 /* 시민 계열(신고·추적) 준비 — 시민 지도와 신고·추적에 필요한 것만 */
