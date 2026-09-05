@@ -441,6 +441,18 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
 .rule-state.review{background:#FFF3CD; color:#9A6700;}
 .rule-state.passed{background:#E1EBFA; color:#1D4994;}
 .rule-state.live{background:#DFF0E3; color:#1D8348;}
+/* ── S-10 현장 결과보고 ── */
+.rp-auto{background:var(--hs-blue-bg); border:1px solid var(--hs-blue-line); border-radius:8px; padding:12px;
+  font-size:13px; line-height:1.8; color:var(--hs-blue-dark);}
+.rp-photos{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:12px;}
+.rp-slot{border:1.5px dashed var(--line); border-radius:8px; padding:12px; text-align:center; font-size:13px; color:var(--muted);}
+.rp-slot img{max-width:100%; max-height:140px; border-radius:8px; display:block; margin:8px auto 0;}
+.rp-slot.on{border-style:solid; border-color:var(--hs-blue-line);}
+.rp-res{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;}
+.rp-res button{height:48px; border-radius:8px; font-size:13px; font-weight:700; background:#EEF1F4; color:var(--ink);}
+.rp-res button.on{background:var(--hs-blue); color:#fff;}
+.rp-warn{background:#FFF3CD; border:1px solid #E5D08A; color:#9A6700; border-radius:8px; padding:12px; font-size:13px; margin-top:12px; line-height:1.6;}
+.rp-queued{background:var(--st-new-bg); border:1px solid #E5B4AE; color:#B3261E; border-radius:8px; padding:12px; font-size:13px; margin-top:12px;}
 </style>
 </head>
 <body>
@@ -700,7 +712,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0220';
+const BUILD_VER = 'v0906-0222';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1398,6 +1410,7 @@ function selectItem(id){
     
     (it.field==="주택·건축"?'<div class="row"><a class="btn-g" style="text-align:center;line-height:24px;text-decoration:none" href="https://www.hub.go.kr" target="_blank" rel="noopener">🏢 건축물대장 조회(건축HUB)</a></div>':'')+
     '<div class="row"><button class="btn-p" onclick="askDispatch('+it.id+')">🛵 담당인력 투입'+(crewCnt?' (현장 '+crewCnt+'명 · 추가 투입)':'')+'</button></div>'+
+    '<div class="row"><button class="btn-o" onclick="reportOpen('+it.id+')">📝 현장 결과보고</button></div>'+
     '<div class="row"><button class="btn-p" onclick="nextStage('+it.id+')" '+(it.st==="완료"?'disabled style="opacity:.5"':'')+'>▶ 다음 단계로 ('+(it.st==="신규접수"?"처리중":it.st==="처리중"?"완료":"완료됨")+')</button></div>'+
     '<div class="row" style="align-items:center;margin-top:6px"><label style="flex:0 0 auto;font-size:13.5px;font-weight:600;color:var(--muted)">단계 선택(되돌리기)</label>'+
     '<select style="flex:1" onchange="setStatus('+it.id+', this.value)">'+["신규접수","처리중","완료"].map(s=>'<option'+(s===it.st?" selected":"")+'>'+s+'</option>').join("")+'</select></div>'+
@@ -4145,6 +4158,199 @@ function ruleBacktest(R){
   return {count: n, per30: per30, verdict: verdict};
 }
 
+/* ══════════ S-10 현장 결과보고 ══════════
+   직원이 넣는 것은 사진과 조치 결과뿐이다. 나머지는 자동으로 채운다.
+   제출하면 시민 화면 완료 전환 + 일일보고 반영 + 처리시간 집계가 한 번에 이뤄진다. */
+const RESULTS = [
+  {k:'조치 완료',      need:'after'},
+  {k:'임시 조치',      need:'after'},
+  {k:'타 부서 이관',   need:null},
+  {k:'현장 이상 없음', need:null}
+];
+let REPORTS = {};
+try{ const v = localStorage.getItem('hs_reports'); if(v) REPORTS = JSON.parse(v); }catch(e){}
+function reportsSave(){ try{ localStorage.setItem('hs_reports', JSON.stringify(REPORTS)); }catch(e){} }
+let RP_QUEUE = [];
+try{ const v = localStorage.getItem('hs_rp_queue'); if(v) RP_QUEUE = JSON.parse(v); }catch(e){}
+let rpDraft = null;
+
+function reportOpen(id){
+  const it = items.find(i=>i.id === id);
+  if(!it) return;
+  const a = deptOf(it);
+  const arrive = (it.log.find(l=>l.indexOf('현장 도착') >= 0) || '').slice(0, 5) || nowHM();
+  const mins = Math.max(1, minsBetween(it.time, arrive));
+  rpDraft = {id:id, before:null, after:null, result:null, memo:'', pubPhoto:true, gps:null};
+  showModal('<h2>📝 현장 결과보고 <span style="font-size:13px;font-weight:400;color:var(--muted)">#' + String(id).padStart(3,'0') + '</span></h2>' +
+    '<div class="rp-auto">자동 입력 — 직원이 넣는 것은 사진과 조치 결과뿐입니다.<br>' +
+    '민원번호 <b>#' + String(id).padStart(3,'0') + '</b> · 위치 <b>' + it.loc + '</b><br>' +
+    '도착시각 <b>' + arrive + '</b> · 담당 <b>' + a.actor.org + '</b> · 소요시간 <b>' + mins + '분</b></div>' +
+    '<div class="rp-photos">' +
+    '<label class="rp-slot" id="rpSlotB">조치 <b>전</b> 사진<br><span style="font-size:12px">누르면 촬영·선택</span>' +
+    '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="rpPhoto(this,\'before\')"></label>' +
+    '<label class="rp-slot" id="rpSlotA">조치 <b>후</b> 사진<br><span style="font-size:12px">누르면 촬영·선택</span>' +
+    '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="rpPhoto(this,\'after\')"></label></div>' +
+    '<div id="rpGpsWarn"></div>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:16px">조치 결과</label>' +
+    '<div class="rp-res">' + RESULTS.map((r,i)=>'<button id="rpRes' + i + '" onclick="rpPickResult(' + i + ')">' + r.k + '</button>').join('') + '</div>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">조치 내용 (선택)</label>' +
+    '<input id="rpMemo" placeholder="예) 임시 포장 후 재방문 예정" style="margin-top:6px">' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px">' +
+    '<input type="checkbox" id="rpPub" checked style="width:auto"> 사진을 시민 화면에 공개</label>' +
+    '<div id="rpPubNote" style="font-size:12px;color:var(--muted);margin-top:4px">사람 얼굴·차량번호가 담긴 사진은 공개하지 말아 주세요.</div>' +
+    '<div class="row"><button class="btn-o" onclick="reportSubmit()">제출</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>', true);
+  /* 촬영 위치가 신고 지점과 먼지 확인 */
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      if(!rpDraft) return;
+      rpDraft.gps = [pos.coords.latitude, pos.coords.longitude];
+      const tll = it.ll || it.pin;
+      if(!tll) return;
+      const d = distM(tll[0], tll[1], rpDraft.gps[0], rpDraft.gps[1]);
+      const w = document.getElementById('rpGpsWarn');
+      if(w && d > 300) w.innerHTML = '<div class="rp-warn">⚠️ 지금 계신 곳이 신고 지점에서 <b>' + Math.round(d) + 'm</b> 떨어져 있습니다. 현장에서 촬영한 사진이 맞는지 확인해 주세요.</div>';
+    }, ()=>{}, {timeout:6000});
+  }
+}
+function minsBetween(a, b){
+  const pa = String(a).split(':'), pb = String(b).split(':');
+  if(pa.length < 2 || pb.length < 2) return 1;
+  let m = (Number(pb[0]) * 60 + Number(pb[1])) - (Number(pa[0]) * 60 + Number(pa[1]));
+  if(m < 0) m += 24 * 60;
+  return m;
+}
+function rpPhoto(inp, which){
+  const f = inp.files && inp.files[0];
+  if(!f || !rpDraft) return;
+  const rd = new FileReader();
+  rd.onload = e=>{
+    const img = new Image();
+    img.onload = ()=>{
+      const cv = document.createElement('canvas');
+      const sc = Math.min(1, 900 / img.width);
+      cv.width = img.width * sc; cv.height = img.height * sc;
+      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+      rpDraft[which] = cv.toDataURL('image/jpeg', 0.7);
+      const slot = document.getElementById(which === 'before' ? 'rpSlotB' : 'rpSlotA');
+      if(slot){
+        slot.classList.add('on');
+        const old = slot.querySelector('img'); if(old) old.remove();
+        const im = document.createElement('img'); im.src = rpDraft[which]; slot.appendChild(im);
+      }
+    };
+    img.src = e.target.result;
+  };
+  rd.readAsDataURL(f);
+}
+function rpPickResult(i){
+  if(!rpDraft) return;
+  rpDraft.result = RESULTS[i].k;
+  RESULTS.forEach((r,j)=>{ const b = document.getElementById('rpRes' + j); if(b) b.classList.toggle('on', i === j); });
+}
+function reportSubmit(){
+  if(!rpDraft){ return; }
+  const it = items.find(i=>i.id === rpDraft.id);
+  if(!it) return;
+  if(!rpDraft.result){ toast('조치 결과를 골라 주세요'); return; }
+  const need = (RESULTS.find(r=>r.k === rpDraft.result) || {}).need;
+  if(need === 'after' && !rpDraft.after){ toast('조치 후 사진이 필요합니다'); return; }
+  rpDraft.memo = (document.getElementById('rpMemo') || {}).value || '';
+  rpDraft.pubPhoto = !!(document.getElementById('rpPub') || {}).checked;
+  const a = deptOf(it);
+  const arrive = (it.log.find(l=>l.indexOf('현장 도착') >= 0) || '').slice(0, 5) || nowHM();
+  const rec = {
+    id: it.id, at: new Date().toISOString(), hm: nowHM(), org: a.actor.org,
+    result: rpDraft.result, memo: rpDraft.memo, pub: rpDraft.pubPhoto,
+    before: rpDraft.before, after: rpDraft.after,
+    arrive: arrive, mins: Math.max(1, minsBetween(it.time, arrive))
+  };
+  /* 통신 실패 시 기기에 저장했다가 자동 재전송 */
+  if(!navigator.onLine){
+    RP_QUEUE.push(rec);
+    try{ localStorage.setItem('hs_rp_queue', JSON.stringify(RP_QUEUE)); }catch(e){}
+    closeModal();
+    toast('통신이 끊겨 기기에 저장했습니다 — 연결되면 자동으로 보냅니다');
+    return;
+  }
+  reportCommit(rec);
+  closeModal();
+}
+function reportCommit(rec){
+  const it = items.find(i=>i.id === rec.id);
+  if(!it) return;
+  REPORTS[rec.id] = rec; reportsSave();
+  it.log.push(nowHM() + ' 현장 결과보고: ' + rec.result + (rec.memo ? ' — ' + rec.memo : '') + ' (' + rec.org + ' · 소요 ' + rec.mins + '분)');
+  if(rec.result === '조치 완료' || rec.result === '현장 이상 없음'){
+    setStatus(it.id, '완료', true);          /* 시민 화면 완료 전환 + 대시보드 이관 */
+  } else if(rec.result === '임시 조치'){
+    it.st = '처리중';                         /* 신고는 열린 상태로 둔다 */
+    it.log.push(nowHM() + ' 재방문 일정 등록 (임시 조치 — 7일 이내)');
+    sbPush(it);
+  } else if(rec.result === '타 부서 이관'){
+    it.log.push(nowHM() + ' 타 부서 이관 — 소관 부서 알림 발송');
+    sbPush(it);
+    toast('소관 부서로 이관 알림을 보냈습니다 — 이력에 기록됨');
+  }
+  renderList(); renderMap(); trackSync(it.id);
+  if(curMode === 'dash') renderDash();
+  toast('결과보고를 제출했습니다 — 시민 화면·일일보고·처리시간 집계에 함께 반영');
+}
+/* 연결이 돌아오면 밀린 보고를 자동 재전송 */
+function rpFlush(){
+  if(!navigator.onLine || !RP_QUEUE.length) return;
+  const q = RP_QUEUE.slice();
+  RP_QUEUE = [];
+  try{ localStorage.setItem('hs_rp_queue', '[]'); }catch(e){}
+  for(const rec of q) reportCommit(rec);
+  toast('저장해 둔 결과보고 ' + q.length + '건을 전송했습니다');
+}
+window.addEventListener('online', rpFlush);
+setTimeout(rpFlush, 3000);
+/* 처리시간 집계 (D-10에서 대시보드가 쓴다) */
+function reportMins(){ return Object.values(REPORTS).map(r=>r.mins).filter(x=>x > 0); }
+
+/* ══════════ S-04 중장기 진행 공개 ══════════
+   5단계 고정. 신호등·횡단보도·단속장비는 경찰 심의 단계를 자동으로 넣는다. */
+const POLICE_RE = /(신호등|신호기|횡단보도|단속장비|과속|카메라|무인단속)/;
+function longStepsOf(it){
+  const base = LONG_STEPS.slice();
+  if(POLICE_RE.test([it.sub, it.sum, it.req].join(' ')) && base.indexOf('경찰 심의') < 0){
+    base.splice(2, 0, '경찰 심의');   /* 경찰 협의 다음에 심의 단계를 자동 삽입 */
+  }
+  return base;
+}
+function longNotice(it, from, to){
+  const steps = longStepsOf(it);
+  it.log.push(nowHM() + ' 중장기 단계 전환 안내 발송: ' + steps[from] + ' → ' + steps[to]);
+  sbPush(it);
+  trackSync(it.id);
+}
+/* 변화가 없어도 월 1회 현황 안내 */
+function longMonthly(){
+  const now = Date.now();
+  for(const it of realItems()){
+    if(triage(it) !== '중장기' || it.st === '완료') continue;
+    let last = 0;
+    try{ last = Number(localStorage.getItem('hs_long_notice_' + it.id) || 0); }catch(e){}
+    if(now - last < 30 * 24 * 3600 * 1000) continue;
+    try{ localStorage.setItem('hs_long_notice_' + it.id, String(now)); }catch(e){}
+    it.log.push(nowHM() + ' 월간 현황 안내 발송 (' + longStepsOf(it)[longStage(it)] + ' 단계 진행 중)');
+    sbPush(it);
+  }
+}
+setTimeout(longMonthly, 8000);
+/* 타당성 미달 종결 — 사유와 근거를 함께 안내 */
+function longDrop(id){
+  const it = items.find(i=>i.id === id);
+  if(!it) return;
+  const why = prompt('종결 사유와 근거를 적어 주세요 (시민에게 그대로 안내됩니다)', '교통량 분석 결과 설치 기준 미달 — 「교통신호기 설치 관리 매뉴얼」 기준 시간당 통행량 미충족');
+  if(!why) return;
+  it.log.push(nowHM() + ' 중장기 사업 종결(타당성 미달): ' + why);
+  setStatus(id, '완료', true);
+  toast('종결 사유를 시민 화면에 안내했습니다');
+}
+
 /* ══════════ S-09 보류 기록·재상신 ══════════
    사유 없이 보류할 수 없다. 보류 사유는 선택형이고, '오탐'은 규칙 개정 자료로 자동 전달된다. */
 const HOLD_REASONS = [
@@ -4914,14 +5120,22 @@ function trackShort(it, pub){
 }
 function trackLong(it, pub){
   const st = longStage(it);
+  const steps = longStepsOf(it);
+  const closed = it.st === '완료';
+  const drop = closed ? (it.log.filter(l=>l.indexOf('타당성 미달') >= 0).pop() || '') : '';
+  if(drop){
+    return '<div class="tk-card"><div class="tk-eta">📄 <b>사업이 종결되었습니다</b><br>' +
+      '<span style="font-size:14px">' + drop.replace(/^[0-9:]+ /, '') + '</span></div>' +
+      '<div class="tk-note">기준에 미치지 못해 진행하지 못하게 된 점 양해 부탁드립니다. 상황이 달라지면 다시 검토됩니다.</div></div>';
+  }
   return '<div class="tk-card">' +
-    '<div class="tk-eta">🏗️ <b>' + LONG_STEPS[st] + ' 단계 진행 중</b><br>' +
-    '설계·예산이 필요한 사업이라 시간이 걸립니다. 단계가 바뀌면 알려드립니다.</div>' +
-    '<ul class="tk-list">' + LONG_STEPS.map((nm,i)=>
+    '<div class="tk-eta">🏗️ <b>' + steps[Math.min(st, steps.length-1)] + ' 단계 진행 중</b><br>' +
+    '설계·예산이 필요한 사업이라 시간이 걸립니다. 단계가 바뀌면 알려드리고, 변화가 없어도 월 1회 현황을 안내합니다.</div>' +
+    '<ul class="tk-list">' + steps.map((nm,i)=>
       '<li><span class="k">' + (i+1) + '단계</span><span>' + nm + ' — <b style="color:' +
       (i < st ? '#1D8348' : (i === st ? 'var(--hs-orange)' : 'var(--muted)')) + '">' +
       (i < st ? '완료' : (i === st ? '진행 중' : '예정')) + '</b></span></li>').join('') + '</ul>' +
-    '<div class="tk-note">변화가 없어도 월 1회 현황을 안내해 드립니다.</div></div>';
+    '</div>';
 }
 /* 지도 — 신고 지점과 담당 인력의 대략 위치만 */
 function trackMapSetup(it, pub){
@@ -5046,10 +5260,19 @@ function longStage(it){
   return 0;
 }
 function longStageSet(id, n){
-  try{ localStorage.setItem('hs_stage_' + id, String(n)); }catch(e){}
   const it = items.find(i=>i.id===id);
-  if(it){ it.log.push(nowHM() + ' 중장기 진행 단계 → ' + LONG_STEPS[n]); sbPush(it); }
-  renderRoad(); toast('진행 단계를 ' + LONG_STEPS[n] + '(으)로 바꿨습니다');
+  const prev = it ? longStage(it) : 0;
+  try{ localStorage.setItem('hs_stage_' + id, String(n)); }catch(e){}
+  if(it){
+    const nm = longStepsOf(it)[n];
+    it.log.push(nowHM() + ' 중장기 진행 단계 → ' + nm);
+    if(nm === '경찰 심의' || longStepsOf(it)[prev] === '경찰 심의'){
+      it.log.push(nowHM() + ' 경찰 심의 일정·결과 기록 대상');
+    }
+    sbPush(it);
+    longNotice(it, prev, n);   /* S-04: 단계 전환 시 자동 통지 */
+    renderRoad(); toast('진행 단계를 ' + nm + '(으)로 바꿨습니다 — 시민에게 안내 발송');
+  }
 }
 
 /* 작업 묶음 제안 — 같은 읍면동·같은 유형의 단기처리 건이 쌓이면 한 번에 배정 */
@@ -5088,8 +5311,9 @@ function renderRoad(){
     const cards = rows.map(r=>{
       const a = deptOf(r.it);
       const steps = cls === '중장기'
-        ? '<div class="rd-steps">' + LONG_STEPS.map((nm,i)=>'<span class="' + (i < longStage(r.it) ? 'done' : (i === longStage(r.it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>' +
-          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px" onclick="event.stopPropagation();longStageSet(' + r.it.id + ',' + Math.min(4, longStage(r.it)+1) + ')">다음 단계로</button>'
+        ? '<div class="rd-steps">' + longStepsOf(r.it).map((nm,i)=>'<span class="' + (i < longStage(r.it) ? 'done' : (i === longStage(r.it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>' +
+          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px" onclick="event.stopPropagation();longStageSet(' + r.it.id + ',' + Math.min(longStepsOf(r.it).length-1, longStage(r.it)+1) + ')">다음 단계로</button>' +
+          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px;margin-left:4px" onclick="event.stopPropagation();longDrop(' + r.it.id + ')">타당성 미달 종결</button>'
         : '';
       return '<div class="rd-card ' + r.d.state + '" onclick="roadOpen(' + r.it.id + ')">' +
         '<div class="rd-t">' + (r.it.urg === '긴급' ? '🚨 ' : '') + r.it.sub + '</div>' +
