@@ -20,3 +20,6 @@ CLAUDE.md
 
 # === 개인 Claude Code 설정 (git 미추적) ===
 .claude/settings.local.json
+
+# === D-02 코드 분리로 떼어낸 앱 자산 (인라인 base64 대체 — 반드시 커밋) ===
+!data/icons/*.png
