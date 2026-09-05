@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>개발 설계 대시보드 — 당직 업무 통합플랫폼</title>
+<link rel="preconnect" href="https://cdn.jsdelivr.net">
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --blue:#1D4994; --blue-d:#143467; --orange:#F07B27;
+  --ink:#16233A; --muted:#5B7290; --line:#DCE4F0; --rail:#F2F5FA;
+  --red:#B3261E; --green:#12704F;
+  --sans:"Pretendard","맑은 고딕",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"Consolas",monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased}
+a{color:var(--blue)}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ── 헤더 ── */
+header{background:var(--blue);color:#fff;padding:22px 0 20px}
+header .wrap{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between}
+h1{margin:0;font-size:23px;font-weight:800;letter-spacing:-.02em}
+header p{margin:5px 0 0;font-size:13.5px;color:#BFD2EE}
+.meta{display:flex;gap:22px;font-size:12.5px;color:#BFD2EE}
+.meta b{display:block;font-family:var(--mono);font-size:15px;color:#fff;font-weight:600}
+
+/* ── 진단 ── */
+.diag{background:var(--rail);border-bottom:1px solid var(--line);padding:18px 0}
+.diag .wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.dcard{background:#fff;border:1px solid var(--line);border-left:3px solid var(--orange);border-radius:3px;padding:12px 14px}
+.dcard .n{font-family:var(--mono);font-size:21px;font-weight:700;color:var(--blue)}
+.dcard .t{font-size:13px;color:var(--muted);margin-top:2px}
+
+/* ── 필터 ── */
+.bar{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:12px 0}
+.bar .wrap{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{border:1px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:6px 13px;font-size:13px;font-family:var(--sans);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+.chip:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--orange);outline-offset:2px}
+#q{flex:1;min-width:180px;border:1px solid var(--line);border-radius:3px;padding:7px 11px;font-size:14px;font-family:var(--sans)}
+.count{font-size:13px;color:var(--muted);font-family:var(--mono)}
+
+/* ── 그룹 ── */
+main{padding:26px 0 60px}
+.grp{margin-bottom:34px}
+.grp>h2{font-size:15px;margin:0 0 3px;letter-spacing:-.01em}
+.grp>p{margin:0 0 14px;font-size:13.5px;color:var(--muted)}
+
+/* ── 항목 ── */
+.item{display:grid;grid-template-columns:88px 1fr;gap:0;border:1px solid var(--line);border-radius:4px;margin-bottom:10px;overflow:hidden;background:#fff}
+.item.done{opacity:.5}
+.idcol{background:var(--rail);border-right:1px solid var(--line);padding:13px 10px;text-align:center}
+.id{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--blue-d)}
+.pri{display:inline-block;margin-top:7px;font-size:11px;font-weight:700;padding:2px 7px;border-radius:2px}
+.p1{background:#FDECEA;color:var(--red)}
+.p2{background:#FDF0E4;color:#A0501A}
+.p3{background:#EEF2F8;color:var(--muted)}
+.body{padding:13px 16px}
+.ttl{font-size:15.5px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
+.now,.fix{font-size:13.5px;margin:0 0 3px;padding-left:15px;position:relative}
+.now::before{content:"현";position:absolute;left:0;font-size:10px;color:var(--muted);top:4px}
+.fix::before{content:"→";position:absolute;left:0;color:var(--orange);font-weight:700}
+.now{color:var(--muted)}
+.tags{margin-top:9px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tag{font-size:11.5px;color:var(--muted);border:1px solid var(--line);border-radius:2px;padding:2px 7px}
+.tag.slide{border-color:#C9D8EE;color:var(--blue);background:#F5F8FD}
+.act{margin-left:auto;display:flex;gap:6px}
+.btn{border:1px solid var(--line);background:#fff;color:var(--blue);border-radius:3px;padding:4px 11px;font-size:12.5px;font-family:var(--sans);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--blue)}
+.btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+
+/* ── 레퍼런스 ── */
+.refs{border-top:2px solid var(--blue);padding-top:24px;margin-top:10px}
+.reflist{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:12px;margin-top:16px}
+.ref{border:1px solid var(--line);border-radius:4px;padding:13px 15px}
+.ref h3{margin:0 0 2px;font-size:14.5px}
+.ref .src{font-size:12px;color:var(--muted);font-family:var(--mono)}
+.ref p{margin:7px 0 0;font-size:13.5px}
+.ref .use{margin-top:7px;font-size:13px;color:var(--blue-d);background:#F5F8FD;border-radius:3px;padding:6px 9px}
+footer{border-top:1px solid var(--line);margin-top:40px;padding:18px 0 40px;font-size:13px;color:var(--muted)}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 18px;border-radius:4px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .18s}
+.toast.show{opacity:1}
+@media (max-width:640px){
+  .item{grid-template-columns:1fr}
+  .idcol{display:flex;gap:10px;align-items:center;justify-content:flex-start;border-right:0;border-bottom:1px solid var(--line);padding:8px 14px}
+  .pri{margin-top:0}
+  .act{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div>
+      <h1>개발 설계 대시보드</h1>
+      <p>화성특례시 당직 업무 통합플랫폼 · 발표 시연 대비 개선 항목</p>
+    </div>
+    <div class="meta">
+      <div>저장소 기준<b id="mBuild">v0724-1310</b></div>
+      <div>index.html<b>5.36 MB</b></div>
+      <div>함수<b>191개</b></div>
+    </div>
+  </div>
+</header>
+
+<section class="diag">
+  <div class="wrap">
+    <div class="dcard"><div class="n">4.0 MB</div><div class="t">이미 대체된 표본 데이터가 첫 화면에서 그대로 다운로드됨</div></div>
+    <div class="dcard"><div class="n">0개</div><div class="t">로딩 화면 — 파일 받는 동안 빈 화면 노출</div></div>
+    <div class="dcard"><div class="n">4개</div><div class="t">반응형 규칙 — 폰 시연(9장) 대비 부족</div></div>
+    <div class="dcard"><div class="n">5분</div><div class="t">민원 유입 주기 — 시연 타이밍이 운에 좌우</div></div>
+  </div>
+</section>
+
+<div class="bar">
+  <div class="wrap">
+    <button class="chip" data-f="all" aria-pressed="true">전체</button>
+    <button class="chip" data-f="p1" aria-pressed="false">시연 필수</button>
+    <button class="chip" data-f="p2" aria-pressed="false">권장</button>
+    <button class="chip" data-f="p3" aria-pressed="false">여유되면</button>
+    <button class="chip" data-f="todo" aria-pressed="false">미완료만</button>
+    <input id="q" type="search" placeholder="항목 검색 (예: 로딩, 모바일, 히트맵)">
+    <span class="count" id="cnt"></span>
+  </div>
+</div>
+
+<main class="wrap">
+  <div id="board"></div>
+
+  <section class="refs">
+    <h2 style="margin:0;font-size:17px">참고 레퍼런스 10선</h2>
+    <p style="margin:4px 0 0;font-size:13.5px;color:var(--muted)">각 항목의 “가져올 것”은 위 개선 항목과 연결됩니다.</p>
+    <div class="reflist" id="refs"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  항목 ID를 그대로 말하면 됩니다 — 예: “D-01 진행해줘”, “F-03이랑 M-01 같이 해줘”.<br>
+  상태 표시는 이 브라우저에만 저장됩니다.
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const ITEMS=[
+{g:"A", id:"D-01", pri:1, t:"첫 화면 4MB 군살 제거",
+ now:"index.html 5.36MB 중 JIJEOK(2.89MB)·BLDGF(1.09MB) 표본이 인라인. 각각 코드에서 1곳만 참조하는 레거시 폴백.",
+ fix:"두 상수를 외부 JSON으로 분리하고 필요할 때만 불러오기. 전역 지적은 tiles/, 건물은 bldg_db/가 이미 담당.",
+ tags:["성능","1시간"], slide:"8장", eff:"첫 로딩 5.36MB → 약 1.3MB"},
+{g:"A", id:"D-02", pri:1, t:"로딩 화면 추가",
+ now:"파일을 받는 동안 흰 화면. 회선이 느린 발표장에서 “멈춘 것”으로 보임.",
+ fix:"로고·슬로건이 있는 스플래시와 진행 표시. 지도·DB 연결이 끝나면 사라짐.",
+ tags:["시연 안정성","1시간"], slide:"8장", eff:"대기 시간이 연출로 바뀜"},
+{g:"A", id:"D-03", pri:1, t:"시연 버튼 — 긴급 민원 즉시 주입",
+ now:"자동 유입이 5분 주기라 발표 타이밍과 어긋날 수 있음.",
+ fix:"숨김 단축키나 작은 버튼으로 긴급 민원 1건 즉시 접수 + 알림 팝업 → 인력 배정 → 출동까지 자동 재생.",
+ tags:["시연 안정성","2~3시간"], slide:"8장", eff:"시연 성공을 운에 맡기지 않음"},
+{g:"A", id:"D-04", pri:1, t:"네트워크 끊겨도 되는 시연 모드",
+ now:"현장 와이파이가 불안하면 지도 타일·API가 모두 실패.",
+ fix:"직전 상태를 스냅샷으로 저장해두고, 연결이 안 되면 그 화면으로 시연 진행.",
+ tags:["시연 안정성","3시간"], slide:"8·9장", eff:"발표 최악 시나리오 차단"},
+{g:"A", id:"D-05", pri:2, t:"프로젝터 가독성 모드",
+ now:"핀·글자 크기가 노트북 기준. 빔프로젝터에서는 뒷자리에서 안 보임.",
+ fix:"글자·핀·선 굵기를 키우는 발표용 토글. 대비도 함께 상향.",
+ tags:["시연 안정성","2시간"], slide:"7~11장", eff:"뒷자리에서도 읽히는 화면"},
+
+{g:"B", id:"P-01", pri:2, t:"앱 코드와 데이터 분리",
+ now:"HTML·CSS·JS·데이터·문서 서식이 한 파일. 한 줄만 고쳐도 5MB를 다시 받음.",
+ fix:"데이터·서식을 별도 파일로 빼서 브라우저 캐시가 듣게 만들기. 단일 파일 배포의 장점은 유지.",
+ tags:["구조","반나절"], slide:"", eff:"재방문 로딩이 즉시 수준으로"},
+{g:"B", id:"P-02", pri:2, t:"레이어 지연 로딩",
+ now:"쓰지 않는 레이어의 데이터·스크립트까지 처음에 함께 로드.",
+ fix:"버튼을 누른 순간에만 해당 레이어를 불러오기.",
+ tags:["성능","2시간"], slide:"8장", eff:"초기 로딩·메모리 절감"},
+{g:"B", id:"P-03", pri:3, t:"핀 묶음 표시(클러스터)",
+ now:"누적 400건 이상. 계속 쌓이면 축소 화면에서 핀이 겹쳐 판독 불가.",
+ fix:"가까운 핀을 숫자 뭉치로 묶고, 확대하면 펼쳐지는 방식.",
+ tags:["성능","3시간"], slide:"11장", eff:"1만 건까지 견디는 지도"},
+
+{g:"C", id:"M-01", pri:1, t:"휴대폰 화면 정비",
+ now:"반응형 규칙 4개뿐. 폰에서 여백·버튼 크기가 어긋나는 구간 존재.",
+ fix:"신고창구 3단계 위저드를 폰 기준으로 다시 잡기. 버튼은 한 손 조작 크기로.",
+ tags:["모바일","반나절"], slide:"9장", eff:"9장 라이브 시연 안정화"},
+{g:"C", id:"M-02", pri:2, t:"홈 화면에 추가(앱처럼 보이기)",
+ now:"앱 아이콘·이름 설정이 없어 브라우저 창 그대로.",
+ fix:"아이콘·앱 이름·테마색 설정 추가. 주소창 없이 전체화면으로 뜸.",
+ tags:["모바일","1시간"], slide:"9·13장", eff:"QR 접속 첫인상 개선"},
+{g:"C", id:"M-03", pri:2, t:"QR 접속은 신고창구로 바로",
+ now:"QR로 들어와도 당직자 화면이 먼저 뜸.",
+ fix:"주소 뒤에 표시를 붙여 신고창구가 바로 열리게. 발표용 QR은 그 주소로.",
+ tags:["모바일","30분"], slide:"13장", eff:"청중이 헤매지 않음"},
+
+{g:"D", id:"Q-01", pri:2, t:"버전 표기 자동 갱신",
+ now:"화면 버전이 v0724-1310로 멈춰 마지막 수정보다 과거. 구버전 판별이 안 됨.",
+ fix:"저장할 때 버전이 자동으로 바뀌게. 캐시로 옛 화면을 보는지 즉시 확인 가능.",
+ tags:["품질","1시간"], slide:"", eff:"“고쳤는데 안 고쳐졌다” 재발 방지"},
+{g:"D", id:"Q-02", pri:1, t:"오류 배너를 발표 중엔 숨기기",
+ now:"오류가 나면 화면 하단에 빨간 개발용 배너가 그대로 노출.",
+ fix:"평소에는 조용한 안내로, 개발 중일 때만 상세 표시.",
+ tags:["품질","1시간"], slide:"전체", eff:"발표 중 사고 화면 방지"},
+{g:"D", id:"Q-03", pri:3, t:"키보드 조작·화면낭독기 대응",
+ now:"버튼 역할 표시가 거의 없음. 공공 서비스 접근성 기준 미달.",
+ fix:"주요 버튼에 역할·상태 표시, 키보드 이동 순서와 초점 표시 정리.",
+ tags:["품질","반나절"], slide:"", eff:"공공 도입 요건 충족"},
+
+{g:"E", id:"F-01", pri:1, t:"AI 분류 신뢰도 표시",
+ now:"AI 분류 결과만 보임. “틀리면 어떻게 하나” 질문에 화면으로 답할 수 없음.",
+ fix:"분류마다 확신 정도를 함께 표시하고, 낮으면 당직자 확인을 요구. 확정 주체는 사람.",
+ tags:["기능","3시간"], slide:"7장", eff:"예상 질문에 화면으로 답변"},
+{g:"E", id:"F-02", pri:1, t:"처리시간 자동 집계",
+ now:"접수·완료 시각은 쌓이는데 평균 처리시간이 화면에 없음.",
+ fix:"접수→완료 간격을 자동 계산해 대시보드 지표로. 분야별·시간대별 비교까지.",
+ tags:["기능","3시간"], slide:"11장", eff:"“숫자로 설명” 근거 확보"},
+{g:"E", id:"F-03", pri:1, t:"상습 민원지점 밀도 표시",
+ now:"누적 지도가 개별 핀이라 “어디가 문제인지”가 한눈에 안 보임.",
+ fix:"밀집도를 색으로 보여주는 열지도. 분야·기간 필터와 함께.",
+ tags:["기능","3시간"], slide:"11장", eff:"11장의 결정적 한 장면"},
+{g:"E", id:"F-04", pri:3, t:"통계 내보내기",
+ now:"축적 데이터를 화면에서만 확인 가능.",
+ fix:"기간을 골라 엑셀·CSV로 내려받기. 보고서·예산 자료에 바로 사용.",
+ tags:["기능","2시간"], slide:"11·12장", eff:"데이터 연계 근거"},
+{g:"E", id:"F-05", pri:3, t:"당직 인수인계 요약",
+ now:"교대 시 미완료 건을 목록에서 눈으로 훑어야 함.",
+ fix:"교대 시각에 미완료·긴급 건을 요약 카드로 자동 생성.",
+ tags:["기능","3시간"], slide:"10장", eff:"제도 개편 취지와 직결"}
+];
+
+const GROUPS={
+ A:["발표 시연 안정성","10분 발표에서 사고가 날 수 있는 지점. 여기부터 처리하는 것을 권합니다."],
+ B:["성능·구조","로딩 속도와 앞으로의 확장을 좌우하는 부분."],
+ C:["모바일","9장 시민 신고창구 시연과 QR 접속 경험."],
+ D:["품질·신뢰성","발표 중 사고 방지와 공공 도입 요건."],
+ E:["기능 확장","발표 서사(7·11장)와 예상 질문을 화면으로 뒷받침."]
+};
+
+const REFS=[
+{n:"FixMyStreet", s:"github.com/mysociety/fixmystreet", d:"영국 mySociety가 2007년부터 운영하는 시민 신고 플랫폼. 지도에 핀을 꽂으면 관할 기관을 시스템이 판단해 접수한다.", u:"관할 자동 판정과 신고 상태 공개 방식 — M-01·M-03"},
+{n:"Open311 GeoReport v2", s:"open311.org", d:"도시 민원 신고의 국제 표준 규격. 여러 도시가 같은 형식으로 신고를 주고받는다.", u:"전국 표준모델 확산 논리의 기술 근거 — 12장"},
+{n:"Ushahidi Platform", s:"github.com/ushahidi/platform", d:"재난·위기 상황 제보를 모아 지도로 보여주는 오픈소스. 문자·웹·앱 제보를 한 곳에 모은다.", u:"다중 접수 경로 통합 구조"},
+{n:"서울 실시간 도시데이터", s:"data.seoul.go.kr", d:"인구 혼잡도·교통·날씨·재난정보를 5분 단위로 묶어 공개 API로 제공한다. 공공과 통신사 데이터를 결합한 사례.", u:"실시간 데이터 융합·인파 관리 — 8장 레이어 확장"},
+{n:"재난안전데이터 공유플랫폼", s:"safetydata.go.kr", d:"행안부가 재난안전 데이터를 한 곳에서 개방. 이미 안전시설·연합뉴스 연동에 사용 중.", u:"행안부 제안 시 데이터 연계 확대 근거"},
+{n:"MapLibre GL + PMTiles", s:"github.com/maplibre / protomaps", d:"벡터 지도 렌더링과, 타일 수천 개를 파일 하나로 묶어 서빙하는 방식.", u:"현재 지적 타일 2,304개 관리 부담 해소 — P-01"},
+{n:"deck.gl / kepler.gl", s:"deck.gl · kepler.gl", d:"수십만 건 위치 데이터를 열지도·격자로 시각화하는 라이브러리.", u:"상습 민원지점 밀도 표시 — F-03"},
+{n:"Leaflet.markercluster", s:"github.com/Leaflet/Leaflet.markercluster", d:"가까운 핀을 숫자 뭉치로 묶고 확대하면 펼치는 표준 방식.", u:"누적 민원 핀 성능 — P-03"},
+{n:"NYC 311 오픈데이터", s:"opendata.cityofnewyork.us", d:"민원 접수부터 처리까지 전 건을 공개. 유형·지역·처리시간 분석의 교과서격 사례.", u:"처리시간·상습지점 지표 설계 — F-02"},
+{n:"ArcGIS 재난대응 솔루션", s:"esri.com — Emergency Response", d:"상황실 운영을 위한 표준 화면 구성. 접수·자원 배정·상황 공유 화면이 정리돼 있다.", u:"상황판 정보 배치와 용어 — 8장"}
+];
+
+let ST={};
+try{ ST=JSON.parse(localStorage.getItem('hsdev')||'{}'); }catch(e){ ST={}; }
+function save(){ try{ localStorage.setItem('hsdev', JSON.stringify(ST)); }catch(e){} }
+
+let filter='all', query='';
+const board=document.getElementById('board');
+const PRI={1:['시연 필수','p1'],2:['권장','p2'],3:['여유되면','p3']};
+
+function render(){
+  board.innerHTML='';
+  let shown=0;
+  for(const g of Object.keys(GROUPS)){
+    const list=ITEMS.filter(i=>i.g===g).filter(i=>{
+      if(filter==='p1'&&i.pri!==1) return false;
+      if(filter==='p2'&&i.pri!==2) return false;
+      if(filter==='p3'&&i.pri!==3) return false;
+      if(filter==='todo'&&ST[i.id]==='done') return false;
+      if(query){
+        const hay=(i.id+i.t+i.now+i.fix+i.tags.join()+i.eff).toLowerCase();
+        if(!hay.includes(query)) return false;
+      }
+      return true;
+    });
+    if(!list.length) continue;
+    shown+=list.length;
+    const sec=document.createElement('section');
+    sec.className='grp';
+    sec.innerHTML='<h2>'+GROUPS[g][0]+'</h2><p>'+GROUPS[g][1]+'</p>';
+    for(const i of list){
+      const done=ST[i.id]==='done';
+      const el=document.createElement('article');
+      el.className='item'+(done?' done':'');
+      el.innerHTML=
+        '<div class="idcol"><div class="id">'+i.id+'</div>'+
+          '<span class="pri '+PRI[i.pri][1]+'">'+PRI[i.pri][0]+'</span></div>'+
+        '<div class="body">'+
+          '<h3 class="ttl">'+i.t+'</h3>'+
+          '<p class="now">'+i.now+'</p>'+
+          '<p class="fix">'+i.fix+'</p>'+
+          '<div class="tags">'+
+            i.tags.map(t=>'<span class="tag">'+t+'</span>').join('')+
+            (i.slide?'<span class="tag slide">발표 '+i.slide+'</span>':'')+
+            '<span class="tag">'+i.eff+'</span>'+
+            '<span class="act">'+
+              '<button class="btn" data-copy="'+i.id+'">지시문 복사</button>'+
+              '<button class="btn'+(done?' on':'')+'" data-done="'+i.id+'">'+(done?'완료됨':'완료 표시')+'</button>'+
+            '</span>'+
+          '</div>'+
+        '</div>';
+      sec.appendChild(el);
+    }
+    board.appendChild(sec);
+  }
+  const total=ITEMS.length, fin=ITEMS.filter(i=>ST[i.id]==='done').length;
+  document.getElementById('cnt').textContent=shown+' / '+total+'  ·  완료 '+fin;
+  if(!shown) board.innerHTML='<p style="color:var(--muted)">조건에 맞는 항목이 없습니다. 필터를 넓혀 보세요.</p>';
+}
+
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),1900);
+}
+
+document.addEventListener('click',e=>{
+  const c=e.target.closest('[data-copy]');
+  if(c){
+    const i=ITEMS.find(x=>x.id===c.dataset.copy);
+    const txt='['+i.id+'] '+i.t+'\n현재: '+i.now+'\n개선: '+i.fix+'\n기대: '+i.eff;
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject())
+      .then(()=>toast(i.id+' 지시문을 복사했습니다'))
+      .catch(()=>toast('복사 실패 — '+i.id+' 라고 말해도 됩니다'));
+    return;
+  }
+  const d=e.target.closest('[data-done]');
+  if(d){
+    const id=d.dataset.done;
+    ST[id]= ST[id]==='done' ? '' : 'done';
+    save(); render();
+    return;
+  }
+  const f=e.target.closest('.chip');
+  if(f){
+    filter=f.dataset.f;
+    document.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed', b===f));
+    render();
+  }
+});
+document.getElementById('q').addEventListener('input',e=>{ query=e.target.value.trim().toLowerCase(); render(); });
+
+document.getElementById('refs').innerHTML=REFS.map(r=>
+  '<div class="ref"><h3>'+r.n+'</h3><div class="src">'+r.s+'</div><p>'+r.d+'</p><div class="use">가져올 것 · '+r.u+'</div></div>'
+).join('');
+
+render();
+</script>
+</body>
+</html>

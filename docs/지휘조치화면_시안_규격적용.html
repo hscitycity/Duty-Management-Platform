@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도와드림QR — 지휘·조치 화면 시안 (규격 적용본)</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
+<style>
+:root{
+  /* HUD */
+  --hud-cyan:#38bdf8; --hud-cyan-soft:rgba(56,189,248,.85); --hud-bright:#f0f9ff;
+  --hud-navy:#0a1628;
+  --hud-grad:linear-gradient(135deg,rgba(15,23,42,.92) 0%,rgba(30,58,138,.82) 100%);
+  /* 라이트 UI */
+  --hdr-bg:#ffffff; --hdr-ink:#121314; --hdr-muted:#8d9299;
+  --hdr-line:rgba(18,19,20,.12); --hdr-hover:#f3f5fa;
+  /* 화성시 브랜드 */
+  --hs-blue:#1D4994; --hs-blue-d:#12305F; --hs-orange:#F07B27;
+  --hdr-primary:var(--hs-blue);
+  /* 상태 */
+  --st-done:#2B7DE0; --st-prog:#F5A623; --st-plan:#7A8CA0; --st-risk:#D63B1F;
+  /* KRDS 치수 */
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --r1:4px; --r2:8px; --r3:12px; --r4:16px;
+  --hdr-maxw:1190px;
+  --font-fallback:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#F7F9FC;color:var(--hdr-ink);
+  font-family:"Pretendard Variable",Pretendard,var(--font-fallback);font-size:15px;line-height:1.65}
+.wrap{max-width:var(--hdr-maxw);margin:0 auto;padding:0 28px}
+h2,h3{margin:0}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--hud-cyan);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ── 히어로 ── */
+.hero{position:relative;background-color:var(--hud-navy);overflow:hidden;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 72% -10%,rgba(43,125,224,.30) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 45% at 12% 115%,rgba(56,189,248,.16) 0%,transparent 55%),
+    linear-gradient(180deg,rgba(10,22,40,.50) 0%,rgba(10,22,40,.85) 100%);}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+  background-size:48px 48px;
+  -webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 30%,#000 20%,transparent 75%);
+  mask-image:radial-gradient(ellipse 70% 70% at 50% 30%,#000 20%,transparent 75%);}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(56,189,248,.5),transparent);}
+.hero-inner{position:relative;z-index:2;max-width:var(--hdr-maxw);margin:0 auto;padding:var(--s5) 28px var(--s7)}
+.hero-eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:2.5px;
+  color:var(--hud-cyan);background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);
+  border-radius:999px;padding:7px 18px;margin-bottom:var(--s5)}
+.hero-h1{font-family:"Paperlogy",var(--font-fallback);font-size:52px;font-weight:900;
+  line-height:1.12;letter-spacing:-1px;width:fit-content;margin:0;
+  background:linear-gradient(135deg,#ffffff 0%,#c9e2ff 45%,#7bb8ff 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-sub{font-size:17px;font-weight:500;color:rgba(200,220,240,.85);margin:var(--s3) 0 0;max-width:640px}
+
+/* ── 규격 바 ── */
+.spec{background:var(--hud-navy);border-top:1px solid rgba(56,189,248,.2);padding:var(--s4) 0}
+.spec .wrap{display:flex;gap:var(--s5);flex-wrap:wrap;align-items:center}
+.spec .g{display:flex;gap:var(--s2);align-items:center;font-size:12.5px;color:rgba(200,220,240,.7)}
+.sw{width:20px;height:20px;border-radius:var(--r1);border:1px solid rgba(255,255,255,.18)}
+
+/* ── 섹션 ── */
+main{padding:var(--s7) 0 80px}
+section{margin-bottom:var(--s7)}
+.sec-h{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s4);flex-wrap:wrap}
+.sec-n{font-family:"Paperlogy",var(--font-fallback);font-size:22px;font-weight:900;color:var(--hs-blue)}
+.sec-t{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.sec-d{font-size:13px;color:var(--hdr-muted);margin-left:auto}
+
+/* ── 카드 ── */
+.card{background:#fff;border:1px solid #E3EDF7;border-radius:var(--r4);padding:20px;
+  box-shadow:0 2px 10px rgba(40,90,160,.05);transition:box-shadow .2s,transform .2s,border-color .2s}
+.card.hoverable:hover{border-color:#9FC4EE;box-shadow:0 6px 24px rgba(40,90,160,.12);transform:translateY(-2px)}
+.grid{display:grid;gap:var(--s3)}
+.g3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+
+/* ── HUD 경보 ── */
+.alert{background:var(--hud-grad);border:1px solid rgba(56,189,248,.35);border-radius:var(--r3);
+  padding:var(--s4) var(--s5);color:#e8f2ff;
+  box-shadow:0 0 20px rgba(56,189,248,.2),inset 0 0 12px rgba(56,189,248,.15);margin-bottom:var(--s4)}
+.alert .eb{font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--hud-cyan);
+  text-shadow:0 0 8px rgba(56,189,248,.35)}
+.alert .ttl{font-size:17px;font-weight:600;margin-top:var(--s1)}
+.alert .sub{font-size:13px;color:rgba(200,220,240,.8);margin-top:var(--s1)}
+.alert .row{display:flex;gap:var(--s5);flex-wrap:wrap;align-items:center}
+.alert .met{text-align:right}
+.alert .met .v{font-size:30px;font-weight:700;color:var(--hud-bright);line-height:1.2;
+  text-shadow:0 0 8px rgba(56,189,248,.35)}
+.alert .met .k{font-size:12px;color:rgba(200,220,240,.7)}
+
+/* ── 버튼 ── */
+.btn{height:40px;padding:0 var(--s4);border-radius:var(--r2);border:1px solid var(--hdr-line);
+  background:#fff;color:var(--hdr-ink);display:inline-flex;align-items:center;gap:6px;
+  transition:background .2s,border-color .2s}
+.btn:hover{background:var(--hdr-hover);border-color:#9FC4EE}
+.btn-p{background:var(--hs-blue);border-color:var(--hs-blue);color:#fff}
+.btn-p:hover{background:var(--hs-blue-d);border-color:var(--hs-blue-d)}
+.btn-o{background:var(--hs-orange);border-color:var(--hs-orange);color:#fff}
+.btn-o:hover{filter:brightness(.94)}
+.btn-r{background:var(--st-risk);border-color:var(--st-risk);color:#fff}
+.btn-lg{height:48px;font-size:15px;font-weight:600;border-radius:var(--r3);width:100%;justify-content:center}
+.btn-sm{height:32px;font-size:13px;padding:0 var(--s3)}
+.stp{width:40px;height:40px;padding:0;justify-content:center;font-size:18px;border-radius:var(--r2)}
+
+/* ── 선택 카드 ── */
+.pick{border:1px solid #E3EDF7;border-radius:var(--r3);padding:var(--s4);background:#fff;
+  text-align:left;width:100%;display:block;transition:all .2s}
+.pick:hover{border-color:#9FC4EE}
+.pick[aria-pressed="true"]{border:2px solid var(--hs-blue);background:#F4F8FE;padding:calc(var(--s4) - 1px)}
+.pick .k{font-size:17px;font-weight:700}
+.pick .n{font-size:22px;font-weight:700;color:var(--hs-blue)}
+.pick .s{font-size:13px;color:var(--hdr-muted);margin-top:2px}
+.pick .d{font-size:12px;color:var(--hdr-muted);margin-top:var(--s2);line-height:1.5}
+
+/* ── 목록 행 ── */
+.row{display:flex;gap:var(--s3);align-items:center;padding:var(--s3) 0;border-bottom:1px solid var(--hdr-line)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:15px}
+.row .s{font-size:12px;color:var(--hdr-muted)}
+.num{font-size:17px;min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* ── 배지 ── */
+.bd{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:var(--r1)}
+.b-hi{background:#FDEEEA;color:#D63B1F}
+.b-mid{background:#FDF5E2;color:#B07A0A}
+.b-low{background:#EFF4F9;color:#2E3D50}
+.b-blue{background:#EAF1FB;color:var(--hs-blue)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+
+/* ── 통계 ── */
+.stat{background:#F7F9FC;border-radius:var(--r3);padding:var(--s3) var(--s4)}
+.stat .k{font-size:12.5px;color:var(--hdr-muted)}
+.stat .v{font-size:30px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+
+.note{font-size:13px;color:var(--hdr-muted);margin-top:var(--s2);min-height:20px}
+.warn{color:var(--st-risk)}
+.ok{color:var(--st-done)}
+.divider{border-top:1px solid var(--hdr-line);margin:var(--s4) 0 var(--s3)}
+
+/* ── 칸반 ── */
+.kan{background:#F2F6FB;border-radius:var(--r4);padding:var(--s3)}
+.kan .h{display:flex;align-items:baseline;gap:var(--s2);margin-bottom:var(--s3)}
+.kcard{background:#fff;border:1px solid #E3EDF7;border-radius:var(--r3);padding:var(--s3);margin-bottom:var(--s2)}
+.kcard.risk{border-color:#F3B7AC}
+
+/* ── 폰 프레임 ── */
+.phone{width:340px;margin:0 auto;background:#fff;border:8px solid #14202F;border-radius:28px;overflow:hidden}
+.ph-top{background:var(--hs-blue);color:#fff;padding:var(--s3) var(--s4)}
+.ph-body{padding:var(--s4)}
+.shot{height:110px;border:1.5px dashed var(--hdr-line);border-radius:var(--r3);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:var(--s1);
+  color:var(--hdr-muted);font-size:13px;background:#fff;width:100%}
+.shot.on{border-style:solid}
+textarea{width:100%;border:1px solid var(--hdr-line);border-radius:var(--r2);padding:10px;
+  font:inherit;font-size:14px;resize:none}
+label.chk{display:flex;gap:var(--s2);align-items:center;font-size:14px;padding:6px 0}
+
+@media (max-width:768px){
+  .wrap{padding:0 18px}.hero-inner{padding:var(--s4) 18px var(--s5)}
+  .hero-h1{font-size:34px}.hero-sub{font-size:15px}
+}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <span class="hero-eyebrow">HWASEONG DOWADRIM QR</span>
+    <h1 class="hero-h1">지휘·조치 화면</h1>
+    <p class="hero-sub">AI 급증 탐지부터 시장 조치지시, 현장 결과보고까지. KRDS 치수 체계에 화성시 색과 HUD 규격을 적용한 시안입니다.</p>
+  </div>
+</header>
+
+<div class="spec"><div class="wrap">
+  <span class="g"><i class="sw" style="background:#1D4994"></i>#1D4994 기본</span>
+  <span class="g"><i class="sw" style="background:#F07B27"></i>#F07B27 강조</span>
+  <span class="g"><i class="sw" style="background:#38bdf8"></i>#38bdf8 HUD</span>
+  <span class="g"><i class="sw" style="background:#D63B1F"></i>#D63B1F 위험</span>
+  <span class="g">간격 4·8·12·16·24·32·48</span>
+  <span class="g">버튼 32·40·48</span>
+  <span class="g">Pretendard · Paperlogy</span>
+</div></div>
+
+<main class="wrap">
+
+<section>
+  <div class="sec-h"><span class="sec-n">01</span><h2 class="sec-t">시장 조치지시</h2>
+    <span class="sec-d">AI 에이전트 상신 · 조치 유형 선택 · 부서별 인원 확정</span></div>
+
+  <div class="alert">
+    <div class="row">
+      <div style="flex:1;min-width:240px">
+        <div class="eb">SURGE DETECTED</div>
+        <div class="ttl">만세구 향남 일대 · 침수·배수 민원 급증</div>
+        <div class="sub">최근 40분 7건 · 반경 1.2km · 호우경보 발효 중 · 담당부서 자동 지정 완료</div>
+      </div>
+      <div class="met"><div class="v">6배</div><div class="k">같은 시간대 평균 대비</div></div>
+      <div class="met"><div class="v">7건</div><div class="k">40분 누적</div></div>
+    </div>
+  </div>
+
+  <div class="grid g3" id="coa" style="margin-bottom:var(--s4)"></div>
+
+  <div class="card">
+    <h3 style="font-size:17px;font-weight:700">부서별 투입 인원</h3>
+    <div id="rows"></div>
+    <div class="divider"></div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <span style="font-size:14px;color:var(--hdr-muted)">총 투입</span>
+      <span><span id="tot" style="font-size:30px;font-weight:700">18</span>
+        <span style="font-size:14px;color:var(--hdr-muted)">명 · 가용 34명 중</span></span>
+    </div>
+    <div class="note" id="warn"></div>
+    <div style="display:flex;gap:var(--s2);margin-top:var(--s3)">
+      <button class="btn btn-r btn-lg" id="send" style="flex:2">조치지시 하달</button>
+      <button class="btn btn-lg" id="hold" style="flex:1">보류</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">02</span><h2 class="sec-t">급증 탐지 규칙</h2>
+    <span class="sec-d">정책협의체 심의 · 개정 전 과거 데이터 검증</span></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2)">
+        <span class="bd b-mid">초안 3판</span>
+        <span style="font-size:13px;color:var(--hdr-muted);margin-left:auto">현재 시행 2판 · 2026-07-01</span>
+      </div>
+      <div id="prm"></div>
+      <div class="divider"></div>
+      <label class="chk"><input type="checkbox" id="c1" checked>특보 발효 시 건수 기준 1건 낮춤</label>
+      <label class="chk"><input type="checkbox" id="c2" checked>같은 지역 재발동 2시간 억제</label>
+      <label class="chk"><input type="checkbox" id="c3" checked>축제·행사 기간 제외</label>
+    </div>
+    <div class="card" style="background:#F7F9FC">
+      <div style="font-size:13px;color:var(--hdr-muted)">최근 30일 누적 민원에 적용</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:var(--s3)">
+        <div class="stat" style="background:#fff"><div class="k">발동</div><div class="v" id="n1">4회</div></div>
+        <div class="stat" style="background:#fff"><div class="k">시장 상신</div><div class="v" id="n2">2회</div></div>
+      </div>
+      <div class="note" id="judge"></div>
+      <button class="btn btn-p btn-lg" style="margin-top:var(--s3)">심의 상정</button>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">03</span><h2 class="sec-t">보류 기록</h2>
+    <span class="sec-d">사유 필수 · 자동 재상신 조건</span></div>
+  <div class="card">
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:var(--s2)">보류 사유</h3>
+    <div class="grid g4" id="rs"></div>
+    <h3 style="font-size:15px;font-weight:700;margin:var(--s4) 0 var(--s2)">재검토 시점</h3>
+    <div style="display:flex;gap:var(--s2);flex-wrap:wrap" id="tm"></div>
+    <div class="divider"></div>
+    <h3 style="font-size:15px;font-weight:700;margin-bottom:var(--s2)">자동 재상신 조건</h3>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))" id="cond"></div>
+    <button class="btn btn-lg" id="okHold" style="margin-top:var(--s4)">보류로 기록</button>
+    <div class="note" id="hfoot">보류도 결정으로 기록됩니다. 일일보고와 감사 자료에 포함됩니다.</div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">04</span><h2 class="sec-t">현장 결과보고</h2>
+    <span class="sec-d">모바일 · 조치 전후 사진 · 촬영 위치 검증</span></div>
+  <div class="phone">
+    <div class="ph-top">
+      <div style="font-size:12px;opacity:.8">2026-0725-431 · 도로파손</div>
+      <div style="font-size:17px;font-weight:600">향남읍 발안로 123</div>
+      <div style="font-size:12px;opacity:.8;margin-top:2px">도착 21:31 · 향남 순찰조 · 소요 17분</div>
+    </div>
+    <div class="ph-body">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:var(--s2)">현장 사진</h3>
+      <div class="grid" style="grid-template-columns:1fr 1fr">
+        <button class="shot" data-p="0"><span style="font-size:20px">＋</span>조치 전</button>
+        <button class="shot" data-p="1"><span style="font-size:20px">＋</span>조치 후</button>
+      </div>
+      <div class="note" id="geo"></div>
+      <h3 style="font-size:14px;font-weight:700;margin:var(--s3) 0 var(--s2)">조치 결과</h3>
+      <div class="grid" id="res" style="gap:var(--s2)"></div>
+      <h3 style="font-size:14px;font-weight:700;margin:var(--s3) 0 var(--s2)">특이사항 <span style="font-weight:400;color:var(--hdr-muted);font-size:12px">선택</span></h3>
+      <textarea rows="2" placeholder="추가로 남길 내용"></textarea>
+      <label class="chk"><input type="checkbox" checked>신고인에게 사진 공개</label>
+      <div style="font-size:12px;color:var(--hdr-muted);margin-bottom:var(--s3)">사람 얼굴·차량 번호가 담긴 사진은 공개하지 않습니다.</div>
+      <button class="btn btn-o btn-lg" id="subR">결과보고 제출</button>
+      <div class="note" id="rfoot" style="text-align:center">제출하면 신고인 화면이 완료로 바뀌고 일일보고에 반영됩니다.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">05</span><h2 class="sec-t">읍면동 결과보고</h2>
+    <span class="sec-d">소속 기준 자동 범위 · 타 부서 처리 건 구분</span></div>
+  <div class="card">
+    <div style="display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;margin-bottom:var(--s3)">
+      <div style="width:40px;height:40px;border-radius:50%;background:#EAF1FB;color:var(--hs-blue);
+        display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">매송</div>
+      <div><div style="font-size:15px;font-weight:600">매송면사무소 · 면장</div>
+        <div style="font-size:12px;color:var(--hdr-muted)">관내 민원 결과보고 · 이번 달</div></div>
+      <button class="btn btn-sm" style="margin-left:auto">보고자료 내려받기</button>
+    </div>
+    <div style="display:flex;gap:var(--s2);margin-bottom:var(--s3)" id="tabs"></div>
+    <div class="grid g4" id="estat" style="margin-bottom:var(--s3)"></div>
+    <div id="elist"></div>
+  </div>
+</section>
+
+<section>
+  <div class="sec-h"><span class="sec-n">06</span><h2 class="sec-t">신속기동단 작업판</h2>
+    <span class="sec-d">즉시 4시간 · 단기 7일 · 중장기 6개월</span></div>
+  <div class="card" style="border-color:#CFE0F5;background:#F4F8FE;margin-bottom:var(--s3)">
+    <div style="display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap">
+      <span class="bd b-blue">묶음 제안</span>
+      <span style="font-size:14px;flex:1;min-width:240px">매송면 포트홀 3건이 반경 800m 안에 있습니다. 한 번에 처리하면 이동 2회를 줄일 수 있습니다.</span>
+      <button class="btn btn-p btn-sm">묶어서 배정</button>
+    </div>
+  </div>
+  <div class="grid g3" id="kan"></div>
+</section>
+
+</main>
+
+<script>
+var D=[{n:'도로관리팀',r:'침수 도로 통제·배수',av:9,v:[2,6,9]},
+{n:'하수도팀',r:'빗물받이·역류 처리',av:7,v:[2,5,7]},
+{n:'향남읍 행정팀',r:'주민 안내·대피 지원',av:11,v:[1,4,8]},
+{n:'재난상황실',r:'상황 관리·보고',av:7,v:[1,3,4]}];
+var C=[{k:'일반민원',s:'담당부서 통상 처리',d:'접수 순서대로 순차 처리. 비번 소집 없음'},
+{k:'긴급민원',s:'즉시 출동',d:'신고 지점 우선 배치. 야간 대기조 포함'},
+{k:'선제조치',s:'인접 지역 예방 배치',d:'신고 없는 저지대까지 사전 점검. 비번 소집 필요'}];
+var pick=1;
+var coa=document.getElementById('coa'),rows=document.getElementById('rows');
+C.forEach(function(c,i){var t=D.reduce(function(a,d){return a+d.v[i];},0);
+var b=document.createElement('button');b.className='pick';b.dataset.i=i;b.setAttribute('aria-pressed',i===pick);
+b.innerHTML='<div style="display:flex;align-items:baseline;justify-content:space-between">'+
+'<span class="k">'+c.k+'</span><span class="n">'+t+'명</span></div>'+
+'<div class="s">'+c.s+'</div><div class="d">'+c.d+'</div>';coa.appendChild(b);});
+function paintCoa(reset){
+ [].forEach.call(coa.children,function(b,i){b.setAttribute('aria-pressed',i===pick);});
+ rows.innerHTML='';var s=0;
+ D.forEach(function(d,i){if(reset||d.cur===undefined)d.cur=d.v[pick];s+=d.cur;
+  var w=document.createElement('div');w.className='row';
+  w.innerHTML='<div style="flex:1;min-width:0"><div class="t">'+d.n+'</div><div class="s">'+d.r+' · 가용 '+d.av+'명</div></div>'+
+  '<button class="btn stp" data-a="-1" data-i="'+i+'" aria-label="'+d.n+' 줄이기">−</button>'+
+  '<span class="num">'+d.cur+'명</span>'+
+  '<button class="btn stp" data-a="1" data-i="'+i+'" aria-label="'+d.n+' 늘리기">＋</button>';
+  rows.appendChild(w);});
+ document.getElementById('tot').textContent=s;
+ var w=document.getElementById('warn');
+ w.textContent=s>26?'가용 인력의 76%를 넘습니다. 비번 소집과 초과근무가 발생합니다.'
+  :s<6?'대응 인원이 부족합니다. 추가 신고 시 처리 지연이 예상됩니다.':'';
+ w.className='note warn';}
+coa.addEventListener('click',function(e){var b=e.target.closest('.pick');if(!b)return;pick=+b.dataset.i;paintCoa(true);});
+rows.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;
+ var d=D[+b.dataset.i];d.cur=Math.max(0,Math.min(d.av,d.cur+(+b.dataset.a)));paintCoa(false);});
+document.getElementById('send').onclick=function(){this.textContent='하달 완료 · 수신확인 대기';
+ this.style.background='var(--st-done)';this.style.borderColor='var(--st-done)';};
+paintCoa(true);
+
+var P=[{k:'반경',u:'m',v:1000,min:300,max:3000,st:100,d:'이 거리 안의 신고를 한 사안으로 봅니다'},
+{k:'시간창',u:'분',v:40,min:10,max:180,st:10,d:'이 시간 안에 들어온 신고만 셉니다'},
+{k:'최소 건수',u:'건',v:3,min:2,max:15,st:1,d:'이 건수 이상이면 발동 후보'},
+{k:'평소 대비',u:'배',v:4,min:2,max:12,st:1,d:'같은 시간대 평균의 몇 배'},
+{k:'시장 상신',u:'건',v:6,min:3,max:30,st:1,d:'이 건수부터 시장에게 상신'}];
+var prm=document.getElementById('prm');
+function drawP(){prm.innerHTML='';
+P.forEach(function(p,i){var w=document.createElement('div');w.className='row';
+w.innerHTML='<div style="flex:1;min-width:0"><div class="t">'+p.k+'</div><div class="s">'+p.d+'</div></div>'+
+'<button class="btn stp" data-b="-1" data-i="'+i+'" aria-label="'+p.k+' 줄이기">−</button>'+
+'<span class="num" style="min-width:78px">'+p.v.toLocaleString()+p.u+'</span>'+
+'<button class="btn stp" data-b="1" data-i="'+i+'" aria-label="'+p.k+' 늘리기">＋</button>';
+prm.appendChild(w);});sim();}
+function sim(){var r=P[0].v,t=P[1].v,n=P[2].v,x=P[3].v,m=P[4].v;
+var b=(r/1000)*(t/40)*9/Math.pow(n,1.35)*(4/x);
+if(document.getElementById('c1').checked)b*=1.25;
+if(document.getElementById('c2').checked)b*=0.72;
+if(document.getElementById('c3').checked)b*=0.9;
+var f=Math.max(0,Math.round(b*10)/10),e=Math.max(0,Math.round(f*Math.min(1,(n/m)*1.1)*10)/10);
+document.getElementById('n1').textContent=f+'회';document.getElementById('n2').textContent=e+'회';
+var j=document.getElementById('judge');
+if(f>12){j.textContent='발동이 잦습니다. 담당자 피로와 경보 무시가 우려됩니다.';j.className='note warn';}
+else if(f<1){j.textContent='거의 발동하지 않습니다. 실제 상황을 놓칠 수 있습니다.';j.className='note warn';}
+else{j.textContent='월 1~12회 범위로 운영 가능한 수준입니다.';j.className='note ok';}}
+prm.addEventListener('click',function(e){var b=e.target.closest('[data-b]');if(!b)return;
+var p=P[+b.dataset.i];p.v=Math.max(p.min,Math.min(p.max,p.v+p.st*(+b.dataset.b)));drawP();});
+['c1','c2','c3'].forEach(function(id){document.getElementById(id).onchange=sim;});
+drawP();
+
+var R=[{k:'담당부서 자체 처리 가능'},{k:'이미 조치 진행 중'},{k:'현장 확인 필요',n:'정보 부족'},
+{k:'기상 호전 예상'},{k:'가용 인력 부족',n:'대체 수단 검토'},{k:'오탐',n:'규칙 개정 근거로 전달'}];
+var T=['30분 후','1시간 후','2시간 후','상황 종료까지'];
+var CD=[{k:'추가 신고 3건 이상',on:1},{k:'특보 단계 상승',on:1},{k:'인접 읍면동으로 확산',on:1},
+{k:'미처리 5건 이상 유지',on:0},{k:'인명 관련 신고 접수 시 즉시',on:1,fix:1}];
+var pr=-1,pt=1,rs=document.getElementById('rs'),tmE=document.getElementById('tm'),cond=document.getElementById('cond');
+R.forEach(function(r,i){var b=document.createElement('button');b.className='pick';b.dataset.r=i;
+b.style.padding='var(--s3)';b.innerHTML='<div style="font-size:14px;font-weight:600">'+r.k+'</div>'+
+(r.n?'<div class="s">'+r.n+'</div>':'');rs.appendChild(b);});
+T.forEach(function(k,i){var b=document.createElement('button');b.className='btn btn-sm';b.dataset.t=i;
+b.textContent=k;tmE.appendChild(b);});
+CD.forEach(function(c){var l=document.createElement('label');l.className='chk';
+l.innerHTML='<input type="checkbox"'+(c.on?' checked':'')+(c.fix?' disabled':'')+'><span>'+c.k+
+(c.fix?' <span class="bd b-hi" style="font-size:11px">해제 불가</span>':'')+'</span>';cond.appendChild(l);});
+function paintHold(){
+ [].forEach.call(rs.children,function(b,i){b.setAttribute('aria-pressed',i===pr);});
+ [].forEach.call(tmE.children,function(b,i){var on=i===pt;
+  b.style.background=on?'var(--hs-blue)':'#fff';b.style.color=on?'#fff':'var(--hdr-ink)';
+  b.style.borderColor=on?'var(--hs-blue)':'var(--hdr-line)';});
+ var f=document.getElementById('hfoot');f.className='note';
+ f.textContent=pr===5?'오탐으로 기록하면 탐지 규칙 개정 자료에 자동 반영됩니다.'
+  :pt===3?'상황 종료 시까지 유지됩니다. 아래 조건에 해당하면 즉시 다시 상신됩니다.'
+  :'보류도 결정으로 기록됩니다. 일일보고와 감사 자료에 포함됩니다.';}
+rs.addEventListener('click',function(e){var b=e.target.closest('[data-r]');if(!b)return;pr=+b.dataset.r;paintHold();});
+tmE.addEventListener('click',function(e){var b=e.target.closest('[data-t]');if(!b)return;pt=+b.dataset.t;paintHold();});
+document.getElementById('okHold').onclick=function(){var f=document.getElementById('hfoot');
+ if(pr<0){f.textContent='보류 사유를 먼저 선택하세요.';f.className='note warn';return;}
+ this.textContent='보류 기록 완료 · '+T[pt]+' 재검토';this.className='btn btn-lg btn-p';paintHold();};
+paintHold();
+
+var RES=[{k:'조치 완료',d:'현장 처리 종료'},{k:'임시 조치',d:'재방문 필요'},
+{k:'타 부서 이관',d:'소관 부서로 넘김'},{k:'현장 이상 없음',d:'조치 불필요'}];
+var rp=-1,shot=[0,0],resE=document.getElementById('res');
+RES.forEach(function(r,i){var b=document.createElement('button');b.className='pick';b.dataset.x=i;
+b.style.padding='10px var(--s3)';b.innerHTML='<div style="font-size:14px;font-weight:600">'+r.k+'</div><div class="s">'+r.d+'</div>';
+resE.appendChild(b);});
+document.querySelectorAll('.shot').forEach(function(el){el.onclick=function(){
+ var i=+this.dataset.p;shot[i]=1;this.classList.add('on');
+ this.style.background=i?'#EDF7E6':'#FDEEEA';this.style.borderColor=i?'#9CCB78':'#F3B7AC';
+ this.style.color=i?'#2C5E12':'#8C2A16';
+ this.innerHTML='<span style="font-size:20px">✓</span>'+(i?'조치 후':'조치 전')+' 촬영됨';
+ var g=document.getElementById('geo');g.className='note ok';
+ g.textContent='촬영 위치 확인 · 신고 지점에서 '+(i?6:8)+'m';};});
+resE.addEventListener('click',function(e){var b=e.target.closest('[data-x]');if(!b)return;rp=+b.dataset.x;
+ [].forEach.call(resE.children,function(x,i){x.setAttribute('aria-pressed',i===rp);});
+ var f=document.getElementById('rfoot');f.className='note';f.style.textAlign='center';
+ f.textContent=rp===1?'재방문 일정이 자동 등록되고 신고는 열린 상태로 유지됩니다.'
+  :rp===2?'이관 사유를 담은 알림이 소관 부서로 전달됩니다.'
+  :rp===3?'신고인에게 확인 결과가 안내됩니다.'
+  :'제출하면 신고인 화면이 완료로 바뀌고 일일보고에 반영됩니다.';});
+document.getElementById('subR').onclick=function(){var f=document.getElementById('rfoot');
+ if(rp<0){f.textContent='조치 결과를 선택하세요.';f.className='note warn';return;}
+ if(rp===0&&!shot[1]){f.textContent='조치 후 사진이 필요합니다.';f.className='note warn';return;}
+ this.textContent='제출 완료 · 21:48';this.className='btn btn-lg btn-p';
+ f.className='note ok';f.textContent='신고인에게 결과가 전송되었습니다. 일일보고에 반영되었습니다.';};
+
+var A=[{t:'포트홀 보수',l:'매송면 원평리 312',d:1,w:'매송면사무소',mine:1,s:'완료',dt:'07-24 15:20'},
+{t:'불법주정차',l:'매송면 어천리 88',d:0,w:'매송면사무소',mine:1,s:'완료',dt:'07-24 09:05'},
+{t:'가로등 소등',l:'매송면 천천리 4',d:0,w:'매송면사무소',mine:1,s:'완료',dt:'07-23 21:40'},
+{t:'신호등 고장',l:'매송면 어천교차로',d:0,w:'도로교통과',mine:0,s:'완료',dt:'07-23 18:12'},
+{t:'보도블록 파손',l:'매송면 야목리 21',d:1,w:'매송면사무소',mine:1,s:'재방문 예정',dt:'07-22 14:30'},
+{t:'횡단보도 신설',l:'매송면 원평초 앞',d:2,w:'도로교통과',mine:0,s:'경찰 협의 중',dt:'06-30 접수'}];
+var DV=[{k:'즉시',c:'b-hi'},{k:'단기',c:'b-mid'},{k:'중장기',c:'b-low'}];
+var etab=0,tabs=document.getElementById('tabs');
+['우리 면 전체','우리가 처리한 건'].forEach(function(k,i){var b=document.createElement('button');
+b.className='btn btn-sm';b.dataset.e=i;b.textContent=k;tabs.appendChild(b);});
+function paintE(){
+ [].forEach.call(tabs.children,function(b,i){var on=i===etab;
+  b.style.background=on?'var(--hs-blue)':'#fff';b.style.color=on?'#fff':'var(--hdr-ink)';
+  b.style.borderColor=on?'var(--hs-blue)':'var(--hdr-line)';});
+ var r=A.filter(function(a){return etab===0||a.mine;});
+ var mine=r.filter(function(a){return a.mine;}).length;
+ document.getElementById('estat').innerHTML=
+ '<div class="stat"><div class="k">표시 건수</div><div class="v">'+r.length+'</div></div>'+
+ '<div class="stat"><div class="k">우리 처리</div><div class="v">'+mine+'</div></div>'+
+ '<div class="stat"><div class="k">타 부서</div><div class="v">'+(r.length-mine)+'</div></div>';
+ var L=document.getElementById('elist');L.innerHTML='';
+ r.forEach(function(a){var w=document.createElement('div');w.className='row';
+  if(!a.mine)w.style.opacity='.68';
+  w.innerHTML='<div style="width:48px;height:48px;border-radius:var(--r2);background:#F2F6FB;flex:none;'+
+  'display:flex;align-items:center;justify-content:center;color:var(--hdr-muted);font-size:18px">▣</div>'+
+  '<div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'+
+  '<span class="t">'+a.t+'</span><span class="bd '+DV[a.d].c+'">'+DV[a.d].k+'</span>'+
+  (a.mine?'':'<span class="bd b-low">'+a.w+' 처리</span>')+'</div>'+
+  '<div class="s">'+a.l+' · '+a.dt+'</div></div>'+
+  '<span style="font-size:13px;color:'+(a.s==='완료'?'var(--st-done)':'var(--st-prog)')+'">'+a.s+'</span>';
+  L.appendChild(w);});}
+tabs.addEventListener('click',function(e){var b=e.target.closest('[data-e]');if(!b)return;etab=+b.dataset.e;paintE();});
+paintE();
+
+var K=[{k:'즉시처리',c:'b-hi',s:'남은 시간',i:[['신호등 소등','봉담읍 와우리','1시간 12분 남음',1,'출동 중'],
+['도로 낙하물','향남읍 발안로','42분 남음',2,'배정 대기'],['동물사체','매송면 어천리','3시간 05분',0,'출동 중']]},
+{k:'단기처리',c:'b-mid',s:'작업 일정',i:[['포트홀 보수','매송면 원평리 외 2','07-28 예정',0,'묶음 후보'],
+['보도블록 파손','동탄 반송동','07-26 예정',1,'자재 대기'],['반사경 각도','정남면 문학리','기한 D-1',2,'미배정']]},
+{k:'중장기',c:'b-low',s:'진행 단계',i:[['횡단보도 신설','매송면 원평초 앞','경찰 협의 2/5',0,'협의 중'],
+['회전교차로','봉담 상리 교차로','설계 3/5',0,'설계 중'],['신호주기 조정','병점 중심상가','교통분석 1/5',0,'분석 중']]}];
+var kanE=document.getElementById('kan');
+K.forEach(function(c){var w=document.createElement('div');w.className='kan';
+var h='<div class="h"><span class="bd '+c.c+'">'+c.k+'</span>'+
+'<span style="font-size:12.5px;color:var(--hdr-muted);margin-left:auto">'+c.s+'</span></div>';
+c.i.forEach(function(it){var col=it[3]===2?'var(--st-risk)':it[3]===1?'var(--st-prog)':'var(--hdr-muted)';
+h+='<div class="kcard'+(it[3]===2?' risk':'')+'"><div class="t">'+it[0]+'</div>'+
+'<div class="s">'+it[1]+'</div><div style="display:flex;align-items:center;gap:6px;margin-top:6px">'+
+'<span style="font-size:12.5px;color:'+col+'">'+it[2]+'</span>'+
+'<span style="font-size:12px;color:var(--hdr-muted);margin-left:auto">'+it[4]+'</span></div></div>';});
+w.innerHTML=h;kanE.appendChild(w);});
+</script>
+</body>
+</html>

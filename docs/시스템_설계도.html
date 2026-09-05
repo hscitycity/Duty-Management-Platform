@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>시스템 설계도 — 당직 업무 통합플랫폼</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --blue:#1D4994; --blue-d:#12305F; --orange:#F07B27;
+  --ink:#16233A; --muted:#5F758F; --line:#DBE3EF; --rail:#F4F7FB; --sel:#E8F0FC;
+  --red:#B3261E; --amber:#9A6212; --green:#12704F;
+  --sans:"Pretendard","맑은 고딕",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);font-size:14px;line-height:1.6}
+
+.top{background:var(--blue);color:#fff;padding:13px 18px;display:flex;flex-wrap:wrap;gap:14px;align-items:baseline}
+.top h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em}
+.top .sub{font-size:12.5px;color:#B9CDEB}
+.top .stat{margin-left:auto;display:flex;gap:16px;font-size:12px;color:#B9CDEB;font-family:var(--mono)}
+.top .stat b{color:#fff;font-weight:600}
+
+.tools{display:flex;gap:8px;align-items:center;padding:9px 18px;border-bottom:1px solid var(--line);background:var(--rail);flex-wrap:wrap}
+#q{flex:1;min-width:160px;border:1px solid var(--line);border-radius:3px;padding:6px 10px;font:inherit;font-size:13.5px;background:#fff}
+.tb{border:1px solid var(--line);background:#fff;border-radius:3px;padding:5px 11px;font:inherit;font-size:12.5px;color:var(--muted);cursor:pointer}
+.tb:hover{border-color:var(--blue);color:var(--blue)}
+.tb:focus-visible,#q:focus-visible,.node:focus-visible{outline:2px solid var(--orange);outline-offset:1px}
+
+.split{display:grid;grid-template-columns:minmax(340px,1fr) minmax(320px,420px);height:calc(100vh - 108px)}
+.tree{overflow:auto;padding:10px 8px 60px;border-right:1px solid var(--line)}
+.pane{overflow:auto;padding:18px 20px 60px;background:var(--rail)}
+
+/* 트리 */
+ul.t{list-style:none;margin:0;padding:0 0 0 14px}
+ul.t.root{padding-left:0}
+li.n{margin:0}
+.node{display:flex;gap:7px;align-items:baseline;padding:3px 7px;border-radius:3px;cursor:pointer;border:1px solid transparent;width:100%;text-align:left;background:none;font:inherit;color:inherit}
+.node:hover{background:var(--sel)}
+.node.on{background:var(--sel);border-color:#B9CFEE}
+.tw{width:12px;flex:none;color:var(--muted);font-size:10px;font-family:var(--mono);line-height:1.9}
+.lbl{font-size:13.5px}
+.node.lv0 .lbl{font-weight:800;font-size:14.5px}
+.node.lv1 .lbl{font-weight:700}
+.anc{font-family:var(--mono);font-size:11.5px;color:var(--blue);opacity:.85}
+.badge{font-size:10.5px;padding:1px 6px;border-radius:2px;font-weight:700;flex:none}
+.b-legacy{background:#FDECEA;color:var(--red)}
+.b-check{background:#FBF1E0;color:var(--amber)}
+.b-live{background:#E4F2EC;color:var(--green)}
+.kids{display:none}
+.kids.open{display:block}
+
+/* 상세 */
+.pane h2{margin:0 0 2px;font-size:19px;letter-spacing:-.02em}
+.pane .path{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-bottom:14px}
+.row{background:#fff;border:1px solid var(--line);border-radius:4px;padding:10px 13px;margin-bottom:9px}
+.row .k{font-size:11.5px;color:var(--muted);margin-bottom:2px}
+.row .v{font-size:13.5px}
+.row .v.mono{font-family:var(--mono);font-size:12.5px;word-break:break-all;color:var(--blue-d)}
+.desc{font-size:14px;margin:0 0 14px}
+.note{border-left:3px solid var(--orange);background:#fff;padding:9px 12px;font-size:13.5px;border-radius:0 4px 4px 0;margin-bottom:12px}
+.cp{width:100%;border:1px solid var(--blue);background:var(--blue);color:#fff;border-radius:3px;padding:9px;font:inherit;font-size:13.5px;cursor:pointer;margin-top:4px}
+.cp:hover{background:var(--blue-d)}
+.empty{color:var(--muted);font-size:13.5px;margin-top:40px;text-align:center}
+.toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:9px 17px;border-radius:4px;font-size:13.5px;opacity:0;pointer-events:none;transition:opacity .18s}
+.toast.show{opacity:1}
+@media (max-width:860px){
+  .split{grid-template-columns:1fr;height:auto}
+  .tree{border-right:0;border-bottom:1px solid var(--line);max-height:52vh}
+  .pane{min-height:44vh}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <h1>시스템 설계도</h1>
+    <div class="sub">화성특례시 당직 업무 통합플랫폼 · 화면·기능·데이터 구조</div>
+  </div>
+  <div class="stat">
+    <div>index.html <b>5.36MB</b></div>
+    <div>함수 <b>191</b></div>
+    <div>버튼 <b>84</b></div>
+    <div>레이어 <b>20</b></div>
+    <div>빌드 <b>v0724-1310</b></div>
+  </div>
+</div>
+
+<div class="tools">
+  <input id="q" type="search" placeholder="요소 검색 (예: 지적, 문자, 대시보드, 접수)">
+  <button class="tb" id="expand">모두 펼치기</button>
+  <button class="tb" id="collapse">모두 접기</button>
+  <button class="tb" id="legacy">점검·정리 대상만</button>
+</div>
+
+<div class="split">
+  <nav class="tree" id="tree" aria-label="시스템 구조"></nav>
+  <aside class="pane" id="pane"><div class="empty">왼쪽에서 요소를 선택하면<br>담당 함수·데이터·수정 지점이 표시됩니다.</div></aside>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* 실제 index.html에서 추출한 구조 */
+const TREE=[
+{id:"UI", l:"화면 구조", d:"3개 모드와 공통 오버레이로 구성. 상단 탭으로 전환한다.", anc:"setMode", k:[
+
+ {id:"UI-H", l:"상단 헤더", anc:"setMode / BUILD_VER", d:"모드 전환 탭 3개, 현재 시각·당직 편성 표시, 빌드 버전 표기.", k:[
+   {id:"UI-H1", l:"당직자 상황판 탭", anc:"#tabDuty → setMode", d:"기본 진입 화면."},
+   {id:"UI-H2", l:"종합현황 대시보드 탭", anc:"#tabDash → setMode", d:"누적 데이터 분석 화면."},
+   {id:"UI-H3", l:"시민 접수창구 탭", anc:"#tabCit → setMode", d:"모바일 신고 화면. 발표 9장 시연 대상."},
+   {id:"UI-H4", l:"당직 편성 표시", anc:"시간대 자동 전환", d:"일직·숙직을 시각에 따라 자동 전환하고 편성표를 토글로 표시."},
+   {id:"UI-H5", l:"빌드 버전 표기", anc:"BUILD_VER", d:"현재 v0724-1310. 마지막 커밋보다 과거라 구버전 판별이 어긋난다.", s:"check"}
+ ]},
+
+ {id:"UI-D", l:"① 당직자 상황판", anc:"#duty", d:"좌측 정보 · 중앙 지도 · 우측 처리의 3열 구조.", k:[
+   {id:"UI-D-L", l:"좌측 정보 열", anc:"#duty 좌측", d:"현재 상황을 읽는 영역.", k:[
+     {id:"UI-D-L1", l:"기상·대기 카드", anc:"#wxCard / #wxBody / #airBody ← loadWeather, loadAir", d:"기상청 실황·특보와 미세먼지 농도."},
+     {id:"UI-D-L2", l:"접수 통계 5종", anc:"#sTot #sNewCit #sNewDuty #sHand #sDone", d:"전체·시민접수·전화접수·인계·완료 건수."},
+     {id:"UI-D-L3", l:"민원 목록", anc:"#list ← renderList", d:"긴급 우선·최신순 정렬. 카드 클릭 시 지도 포커스와 조치 안내 팝업."},
+     {id:"UI-D-L4", l:"가용 인력 현황", anc:"#staffCard / #staffBody", d:"기관별 대기 인력. 출동 배정의 기준."},
+     {id:"UI-D-L5", l:"용역업체 목록", anc:"#svcCard / #svcBody", d:"분야별 담당 업체. 문자 인계 대상."},
+     {id:"UI-D-L6", l:"실시간 이슈", anc:"#feed ← loadFeed, /api/naver", d:"네이버 뉴스 최대 100건 스크롤."},
+     {id:"UI-D-L7", l:"API 오류 안내", anc:"#apiErrBox / #apiErrList", d:"연동 실패한 API와 조치 방법 표시. 발표 중엔 노출되지 않게 정리 필요.", s:"check"}
+   ]},
+   {id:"UI-D-M", l:"중앙 지도", anc:"#map ← initMap, renderMap", d:"상황 관제의 중심. 레이어 20종을 겹쳐 본다.", k:[
+     {id:"UI-D-M1", l:"민원 핀·팝업", anc:"renderMap / mkById", d:"긴급·일반 구분, 상태별 테두리. 완료 건은 지도에서 제외."},
+     {id:"UI-D-M2", l:"레이어 바", anc:"lb 버튼 20개", d:"좌측 데이터 레이어 · 우측 화면 모드로 정렬."},
+     {id:"UI-D-M3", l:"지도 클릭 라우팅", anc:"map.on('click') → bldgQuery / jjQuery / mapPlace", d:"건축물대장 → 지적 → 접수 위치 지정 순으로 우선 배정."},
+     {id:"UI-D-M4", l:"주소 검색", anc:"#adrRes ← jusoDuty, pickJusoDuty", d:"도로명주소 검색 후 좌표 변환."},
+     {id:"UI-D-M5", l:"선택 배너·포커스", anc:"#selBanner", d:"선택 민원 강조, 나머지 디밍. 재클릭으로 해제."},
+     {id:"UI-D-M6", l:"출동 경로 재생", anc:"fetchRoute (OSRM)", d:"실제 도로를 따라 이동하는 애니메이션. 발표 8장의 핵심 장면."}
+   ]},
+   {id:"UI-D-R", l:"우측 처리 열", anc:"#duty 우측", d:"접수부터 조치까지 수행하는 영역.", k:[
+     {id:"UI-D-R1", l:"AI 접수 서기", anc:"#aiAsk → parseDuty → #parsedForm → registerItem", d:"자유 기록을 유형·긴급도·위치로 구조화. 발표 7장."},
+     {id:"UI-D-R2", l:"재난상황일지", anc:"#journalCard / #jForm → parseJournal", d:"자유 서술을 일일보고 표 항목으로 정리."},
+     {id:"UI-D-R3", l:"업무 처리 패널", anc:"#detail ← selectItem", d:"선택 민원의 상세와 조치 버튼 모음."},
+     {id:"UI-D-R4", l:"문자 인계", anc:"openHandoff → smsSend", d:"담당 용역업체 처리요청. 수신번호 자동 인식."},
+     {id:"UI-D-R5", l:"인력 투입", anc:"askDispatch → dispatchCrew", d:"최근접 가용인력 자동 선정, 다른 인력 선택 가능."},
+     {id:"UI-D-R6", l:"단계 진행·종결", anc:"nextStage / setStatus", d:"신규접수 → 처리중 → 완료. 인력 미투입 종결 시 확인 절차."}
+   ]},
+   {id:"UI-D-F", l:"문서·매뉴얼", anc:"openReport / openManual", d:"당직 산출물과 참고 자료.", k:[
+     {id:"UI-D-F1", l:"일일보고 생성", anc:"openReport → dlDaily (TPL_DAILY)", d:"기상·특보·접수 실데이터를 현행 한글 양식에 자동 기입. 발표 10장."},
+     {id:"UI-D-F2", l:"민원접수서 생성", anc:"formChooser → dlShift → buildHwpxMulti", d:"일직·숙직 자동 분류, 1건당 1페이지."},
+     {id:"UI-D-F3", l:"당직메뉴얼 검색", anc:"openManual / manSearch / manFull", d:"82쪽 매뉴얼 123개 항목 색인 검색."}
+   ]}
+ ]},
+
+ {id:"UI-B", l:"② 종합현황 대시보드", anc:"#dash ← renderDash", d:"축적 데이터를 지표와 그래프로. 발표 11장.", k:[
+   {id:"UI-B1", l:"핵심 지표", anc:"#dKpis", d:"누적·완료·긴급 등 6종. 평균 처리시간 지표는 아직 없음.", s:"check"},
+   {id:"UI-B2", l:"추이 그래프", anc:"#dTrend / #dHour / #dUrg", d:"7일 추이, 시간대별, 긴급도 분포."},
+   {id:"UI-B3", l:"누적 지도", anc:"#dashMap ← initDashMap", d:"재난이력·완료 건 표시. 밀도(열지도) 표현은 미구현.", s:"check"},
+   {id:"UI-B4", l:"분야·관할 분포", anc:"#dField / #dGu ← dashClick", d:"클릭하면 아래 표가 해당 조건으로 필터링."},
+   {id:"UI-B5", l:"이력 표", anc:"#dDisaster / #dDone", d:"재난 이력과 처리완료 민원 2단 표."},
+   {id:"UI-B6", l:"백업 내보내기", anc:"exportData", d:"현재 데이터를 파일로 저장."}
+ ]},
+
+ {id:"UI-C", l:"③ 시민 접수창구", anc:"#citizen", d:"3단계 위저드. QR 접속 시 첫 화면이 되도록 조정 여지.", k:[
+   {id:"UI-C1", l:"1단계 위치 지정", anc:"#citStep1 / #citMap ← citMyLoc, citPick, jusoCit", d:"GPS 원터치·지도 핀(드래그 조정)·주소 검색 3방식."},
+   {id:"UI-C2", l:"관할 검증", anc:"outOfCity", d:"화성시 밖이면 접수 차단. 읍면동 2.5km 오차 허용."},
+   {id:"UI-C3", l:"2단계 유형 선택", anc:"#citStep2 / #citCats / #citSubs ← citCat, citSub", d:"8분야 버튼과 세부 유형. 직접 작성 칸 포함."},
+   {id:"UI-C4", l:"3단계 확인·접수", anc:"#citStep3 / #citConfirm → citSubmit", d:"내용 확인 후 접수. 즉시 당직 상황판에 알림."},
+   {id:"UI-C5", l:"접수 완료", anc:"#citDone → citReset", d:"접수번호 안내와 새 신고 시작."}
+ ]},
+
+ {id:"UI-O", l:"공통 오버레이", anc:"#ovl / #modalBody / #toast", d:"모든 화면에서 쓰는 팝업·알림.", k:[
+   {id:"UI-O1", l:"모달 팝업", anc:"showModal / closeModal", d:"신규 민원 알림, 조치 안내, 문서 선택 등 대부분의 안내."},
+   {id:"UI-O2", l:"토스트 알림", anc:"toast", d:"짧은 상태 안내."},
+   {id:"UI-O3", l:"오류 배너", anc:"window.onerror", d:"화면 하단 빨간 개발용 배너. 발표 중 노출 위험.", s:"check"}
+ ]}
+]},
+
+{id:"LY", l:"지도 레이어 20종", d:"레이어 바 버튼과 각 데이터 출처의 대응.", anc:"toggle* 20개", k:[
+ {id:"LY01", l:"🚨 민원", anc:"#cplBtn → toggleCpl", d:"접수된 민원 핀. 내부 데이터."},
+ {id:"LY02", l:"🎪 행사·인파", anc:"#festBtn → refreshFestivals", d:"화성시 관광포털 크롤링 + 밀집등급."},
+ {id:"LY03", l:"🚓🚒 소방서·경찰서", anc:"#stnBtn → toggleStn", d:"관내 관서 위치. 내장 좌표."},
+ {id:"LY04", l:"🚨 범죄주의", anc:"#crimeBtn → toggleCrime", d:"생활안전지도 범죄주의구간."},
+ {id:"LY05", l:"🏥 병원", anc:"#hospBtn → toggleHosp, nearbyHosp", d:"응급의료기관 야간운영·병상."},
+ {id:"LY06", l:"💨 미세먼지", anc:"#pmBtn → togglePm, loadAir", d:"에어코리아 측정소."},
+ {id:"LY07", l:"🛣️ 도로날씨", anc:"#rwBtn → toggleRoadWx", d:"도로기상 관측."},
+ {id:"LY08", l:"📹 CCTV", anc:"#cctvBtn → toggleCctv", d:"국가교통정보센터 + 경찰청 UTIC 병합, 인라인 영상 재생."},
+ {id:"LY09", l:"🏢 건축물대장", anc:"#bldgBtn → toggleBldg, bldgQuery, bfShow", d:"건축HUB 대장·인허가. 실패 시 bldg_db 로컬 폴백."},
+ {id:"LY10", l:"📐 지적", anc:"#jjBtn → toggleJijeok, jjMakeWMS, jjQuery", d:"자체 벡터타일로 전역 필지·지번. 팝업에서 바로 접수 가능."},
+ {id:"LY11", l:"🧒 안전시설", anc:"#safeBtn → toggleSafe", d:"어린이 안전시설. data/safety_children.json 정적."},
+ {id:"LY12", l:"🌊 물놀이 / 🏗️ 공사현장 / 🔔 비상벨 / 🚑 응급의료 / 🛡️ CPTED", anc:"toggleSM (5종)", d:"생활안전지도 WMS 5개 레이어."},
+ {id:"LY13", l:"⚠️ 돌발상황", anc:"#incBtn → toggleInc, incFetchAll", d:"교통 돌발정보. /api/utic 경유."},
+ {id:"LY14", l:"💊 심야약국", anc:"#pharmBtn → togglePharm, pharmAllLoad", d:"공공심야약국 내장. 일반약국은 심평원 승인 시 활성.", s:"check"},
+ {id:"LY15", l:"🛰️ 항공 / 🌦️ 기상 / 🌙 야간모드", anc:"toggleSat / toggleWx / toggleNight", d:"배경 전환과 기상 관제 오버레이(Windy 9종)."}
+]},
+
+{id:"DT", l:"데이터·연동", d:"외부 API와 내장 데이터의 구성.", anc:"viaProxy / api/", k:[
+ {id:"DT-S", l:"Supabase (중앙 DB)", anc:"sbInit / sbPush / sbMerge / sbPoll", d:"complaints·scenarios·emd_cent 3개 표. 실시간 구독 + 20초 확인 이중화.", s:"live", k:[
+   {id:"DT-S1", l:"complaints", anc:"17개 항목", d:"접수·처리 기록. 누적 431건 이상."},
+   {id:"DT-S2", l:"scenarios", anc:"46종", d:"자동 유입용 가상 민원 풀. 소진 시 재순환."},
+   {id:"DT-S3", l:"emd_cent", anc:"읍면동 20지점", d:"자동 유입 좌표의 기준점."}
+ ]},
+ {id:"DT-A", l:"AI 분류", anc:"api.anthropic.com ← aiStructure, parseJournal", d:"접수 구조화와 일지 정리. 실패 시 규칙기반 폴백으로 전환.", s:"live"},
+ {id:"DT-P", l:"자체 중계 서버", anc:"/api/proxy · /api/utic · /api/naver · /api/safety", d:"브라우저가 직접 못 부르는 공공 API를 대신 호출하고 응답을 캐시.", s:"live"},
+ {id:"DT-G", l:"공공데이터포털", anc:"apis.data.go.kr ← toggleHosp, loadAir, toggleRoadWx, bldgExtra", d:"기상·대기·병원·건축HUB·도로기상."},
+ {id:"DT-V", l:"VWorld", anc:"api.vworld.kr ← initMap, addrToLL, jjQuery, bldgQuery", d:"배경지도 3종·주소↔좌표 변환. 서비스 URL은 배포 주소로 등록됨."},
+ {id:"DT-J", l:"도로명주소 검색", anc:"business.juso.go.kr ← jusoDuty, jusoCit", d:"개발키 90일. 2026-07-24 발급 → 10월 하순 만료.", s:"check"},
+ {id:"DT-I", l:"교통정보", anc:"openapi.its.go.kr · www.utic.go.kr", d:"CCTV·돌발. UTIC은 서버 경유 필요."},
+ {id:"DT-M", l:"기타 외부", anc:"safemap · OSRM · Open-Meteo · Windy · 화성시 포털", d:"생활안전지도, 경로 탐색, 보조 기상, 기상 관제, 행사·예약 정보."},
+ {id:"DT-L", l:"내장 데이터", anc:"index.html 상수", d:"파일에 함께 포함되는 데이터.", k:[
+   {id:"DT-L1", l:"MANUAL", anc:"123청크 · 0.08MB", d:"당직메뉴얼 전문 색인."},
+   {id:"DT-L2", l:"TPL_DAILY / TPL_FORM", anc:"0.13MB", d:"한글 문서 서식 원본."},
+   {id:"DT-L3", l:"JIJEOK", anc:"2.89MB · jijeokAt 1곳만 사용", d:"옛 지적 표본. 전역 벡터타일로 대체됐으나 그대로 남아 첫 화면에서 다운로드됨.", s:"legacy"},
+   {id:"DT-L4", l:"BLDGF", anc:"1.09MB · bfShow 1곳만 사용", d:"옛 건물 표본. bldg_db로 대체됨.", s:"legacy"},
+   {id:"DT-L5", l:"GEO / HIST", anc:"경계·과거이력", d:"관할 판정용 경계와 대시보드 시드 데이터."}
+ ]},
+ {id:"DT-F", l:"저장소 대용량 자산", anc:"tiles/ · bldg_db/ · data/", d:"타일 2,304개(119MB), 건축물대장 원본(36MB), 안전시설 정적 데이터."}
+]},
+
+{id:"OP", l:"자동화·운영", d:"사람이 조작하지 않아도 도는 부분.", anc:"pg_cron · Actions · Vercel", k:[
+ {id:"OP1", l:"민원 자동 유입", anc:"pg_cron hs-inflow → inflow_once()", d:"5분마다 시나리오 1건을 접수로 전환. 좌표는 읍면동 중심에 난수를 더해 매번 새로 생성.", s:"live"},
+ {id:"OP2", l:"시나리오 적재", anc:".github/workflows/seed.yml", d:"scenarios/ 폴더에 JSON을 올리면 자동으로 DB에 적재."},
+ {id:"OP3", l:"백업 유입·연결 유지", anc:"inflow.yml", d:"보조 유입과 DB 일시정지 방지."},
+ {id:"OP4", l:"연합뉴스 수집", anc:"scripts/yna_collect.mjs → yna_news", d:"등록 IP(사무실 회선)에서만 동작. 표는 생성 완료, 수집기 가동은 미확인.", s:"check"},
+ {id:"OP5", l:"배포", anc:"Vercel icn1 · main 브랜치", d:"index.html 푸시 시 약 1분 뒤 자동 반영."}
+]}
+];
+
+const S={legacy:["정리 대상","b-legacy"],check:["점검 필요","b-check"],live:["운영 중","b-live"]};
+const tree=document.getElementById('tree'), pane=document.getElementById('pane');
+let onlyFlag=false, q='';
+
+function match(n){
+  if(!q && !onlyFlag) return true;
+  const hay=((n.l||'')+(n.anc||'')+(n.d||'')+(n.id||'')).toLowerCase();
+  const qok = !q || hay.includes(q);
+  const fok = !onlyFlag || n.s==='legacy' || n.s==='check';
+  const self = qok && fok;
+  return self || (n.k||[]).some(match);
+}
+function build(nodes, lv){
+  const ul=document.createElement('ul');
+  ul.className='t'+(lv===0?' root':'');
+  for(const n of nodes){
+    if(!match(n)) continue;
+    const li=document.createElement('li'); li.className='n';
+    const has=(n.k||[]).length>0;
+    const btn=document.createElement('button');
+    btn.className='node lv'+lv; btn.dataset.id=n.id;
+    btn.innerHTML='<span class="tw">'+(has?'▸':'·')+'</span>'+
+      '<span class="lbl">'+n.l+'</span>'+
+      (n.anc?'<span class="anc">'+n.anc.split('←')[0].split('→')[0].trim().slice(0,34)+'</span>':'')+
+      (n.s?'<span class="badge '+S[n.s][1]+'">'+S[n.s][0]+'</span>':'');
+    li.appendChild(btn);
+    if(has){
+      const kid=document.createElement('div');
+      kid.className='kids'+((q||onlyFlag||lv===0)?' open':'');
+      kid.appendChild(build(n.k, lv+1));
+      li.appendChild(kid);
+      if(kid.classList.contains('open')) btn.querySelector('.tw').textContent='▾';
+    }
+    NODES[n.id]=n;
+    ul.appendChild(li);
+  }
+  return ul;
+}
+const NODES={};
+function draw(){ tree.innerHTML=''; tree.appendChild(build(TREE,0)); }
+
+function show(n){
+  const path=[]; (function find(list,tr){ for(const x of list){ const t=tr.concat(x.l); if(x.id===n.id){ path.push(...t); return true;} if(x.k&&find(x.k,t)) return true;} return false; })(TREE,[]);
+  pane.innerHTML=
+    '<h2>'+n.l+'</h2>'+
+    '<div class="path">'+path.join('  ›  ')+'</div>'+
+    (n.d?'<p class="desc">'+n.d+'</p>':'')+
+    (n.s?'<div class="note"><b>'+S[n.s][0]+'</b> — '+(n.s==='legacy'?'대체된 기능이 남아 있어 정리하면 로딩이 가벼워집니다.':n.s==='check'?'발표 전에 확인하거나 손볼 지점입니다.':'현재 정상 동작 중입니다.')+'</div>':'')+
+    '<div class="row"><div class="k">코드에서 찾을 위치</div><div class="v mono">'+(n.anc||'—')+'</div></div>'+
+    '<div class="row"><div class="k">요소 번호</div><div class="v mono">'+n.id+'</div></div>'+
+    ((n.k||[]).length?'<div class="row"><div class="k">하위 요소</div><div class="v">'+n.k.map(x=>x.l).join(' · ')+'</div></div>':'')+
+    '<button class="cp" id="cpBtn">이 요소 수정 지시문 복사</button>';
+  document.getElementById('cpBtn').onclick=()=>{
+    const t='['+n.id+'] '+n.l+'\n위치: '+(n.anc||'')+'\n설명: '+(n.d||'')+'\n요청: ';
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject())
+      .then(()=>toast(n.id+' 복사됨 — 뒤에 원하는 수정을 적으세요'))
+      .catch(()=>toast('복사 실패 — "'+n.id+' 고쳐줘"라고 말해도 됩니다'));
+  };
+}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2000);}
+
+tree.addEventListener('click',e=>{
+  const b=e.target.closest('.node'); if(!b) return;
+  tree.querySelectorAll('.node.on').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  const kid=b.parentElement.querySelector('.kids');
+  if(kid){ kid.classList.toggle('open'); b.querySelector('.tw').textContent=kid.classList.contains('open')?'▾':'▸'; }
+  show(NODES[b.dataset.id]);
+});
+document.getElementById('q').addEventListener('input',e=>{q=e.target.value.trim().toLowerCase();draw();});
+document.getElementById('expand').onclick=()=>{tree.querySelectorAll('.kids').forEach(k=>k.classList.add('open'));tree.querySelectorAll('.tw').forEach(t=>{if(t.textContent==='▸')t.textContent='▾';});};
+document.getElementById('collapse').onclick=()=>{tree.querySelectorAll('.kids').forEach((k,i)=>{if(i)k.classList.remove('open')});tree.querySelectorAll('.node').forEach(b=>{const k=b.parentElement.querySelector('.kids');if(k)b.querySelector('.tw').textContent=k.classList.contains('open')?'▾':'▸';});};
+document.getElementById('legacy').onclick=e=>{onlyFlag=!onlyFlag;e.target.style.cssText=onlyFlag?'background:#1D4994;color:#fff;border-color:#1D4994':'';draw();};
+draw();
+</script>
+</body>
+</html>

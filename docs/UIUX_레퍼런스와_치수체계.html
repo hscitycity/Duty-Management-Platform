@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UI/UX 레퍼런스와 치수 체계 — 당직 업무 통합플랫폼</title>
+<link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" rel="stylesheet">
+<style>
+:root{
+  --blue:#1D4994; --blue-d:#12305F; --blue-l:#EAF1FB; --orange:#F07B27;
+  --ink:#161F2E; --muted:#65788F; --line:#E1E8F2; --bg:#F6F8FB;
+  --red:#C1352B; --green:#127A50;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --sans:"Pretendard","맑은 고딕",system-ui,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#fff;color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.65}
+.wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+header{background:var(--blue);color:#fff;padding:26px 0}
+header h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em}
+header p{margin:6px 0 0;font-size:13.5px;color:#BCD0EC;max-width:640px}
+nav{position:sticky;top:0;z-index:9;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid var(--line);padding:10px 0}
+nav .wrap{display:flex;gap:6px;flex-wrap:wrap}
+nav a{font-size:13px;color:var(--muted);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+nav a:hover{border-color:var(--blue);color:var(--blue)}
+h2{font-size:19px;margin:38px 0 4px;letter-spacing:-.02em}
+h2+.lead{margin:0 0 18px;color:var(--muted);font-size:14px}
+h3{font-size:15.5px;margin:24px 0 8px}
+
+/* 레퍼런스 */
+.ref{border:1px solid var(--line);border-left:3px solid var(--blue);border-radius:0 6px 6px 0;padding:14px 16px;margin-bottom:10px}
+.ref.gold{border-left-color:var(--orange);background:#FFFAF5}
+.ref .t{font-weight:800;font-size:15.5px}
+.ref .u{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:1px}
+.ref p{margin:8px 0 0;font-size:14px}
+.ref .take{margin-top:8px;font-size:13.5px;background:var(--blue-l);border-radius:4px;padding:7px 10px;color:var(--blue-d)}
+.ref.gold .take{background:#FFF0E2;color:#8C4514}
+
+/* 토큰 표 */
+table{width:100%;border-collapse:collapse;margin:10px 0 6px;font-size:13.5px}
+th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:600}
+td.mono,th.mono{font-family:var(--mono);font-size:12.5px}
+.bar{background:var(--blue);height:12px;border-radius:2px;display:block}
+.swatch{width:26px;height:26px;border-radius:4px;display:inline-block;vertical-align:middle;border:1px solid rgba(0,0,0,.08)}
+
+/* 비교 */
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}
+.box{border:1px solid var(--line);border-radius:6px;padding:14px;background:var(--bg)}
+.box .h{font-size:12px;font-weight:700;margin-bottom:10px}
+.box.bad .h{color:var(--red)}
+.box.good .h{color:var(--green)}
+.demo-btn{display:inline-block;border-radius:6px;background:#fff;border:1px solid var(--line);margin:0 4px 4px 0;color:var(--blue)}
+.bad .b1{padding:5px 9px;font-size:12px}
+.bad .b2{padding:9px 14px;font-size:14px}
+.bad .b3{padding:4px 16px;font-size:13px}
+.good .demo-btn{height:36px;padding:0 12px;font-size:13px;display:inline-flex;align-items:center}
+.note{border-left:3px solid var(--orange);background:var(--bg);padding:10px 13px;font-size:13.5px;border-radius:0 4px 4px 0;margin:12px 0}
+.tgt{display:flex;gap:10px;align-items:flex-end;margin:10px 0}
+.tgt div{background:var(--blue-l);border:1px solid #C6D9F2;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--blue-d);font-family:var(--mono)}
+footer{border-top:1px solid var(--line);margin-top:44px;padding:20px 0 60px;color:var(--muted);font-size:13px}
+@media (max-width:640px){.cmp{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header><div class="wrap">
+  <h1>UI/UX 레퍼런스와 치수 체계</h1>
+  <p>화면마다 버튼 높이와 여백이 조금씩 다른 문제는 감각이 아니라 기준이 없어서 생깁니다. 참고할 곳과, 이 플랫폼에 적용할 구체적 수치를 정리했습니다.</p>
+</div></header>
+
+<nav><div class="wrap">
+  <a href="#pub">공공 표준</a><a href="#app">앱 기본기</a><a href="#ops">상황판·데이터</a>
+  <a href="#tok">적용 치수</a><a href="#fix">고칠 지점</a>
+</div></nav>
+
+<div class="wrap">
+
+<h2 id="pub">1. 공공 서비스 표준</h2>
+<p class="lead">행안부 제안까지 염두에 두면, 이 계열은 참고가 아니라 근거가 됩니다.</p>
+
+<div class="ref gold">
+  <div class="t">KRDS — 대한민국 정부 디자인 시스템</div>
+  <div class="u">krds.go.kr · 행정안전부</div>
+  <p>행정안전부가 배포한 디지털 정부서비스 UI/UX 가이드라인. 색·타이포·간격을 코드값(디자인 토큰)으로 정의하고 컴포넌트 키트까지 제공합니다. 2023년 전자정부 이용 실태조사에서 나온 “표현이 일관되지 않아 쓰기 어렵다”는 지적이 출발점이었습니다.</p>
+  <div class="take">가져올 것 · 토큰 이름과 수치 체계를 그대로 채택. 행안부 과제 제안서에 “KRDS 준수”를 명시하면 심사 관점에서 가장 강한 한 줄이 됩니다. 무료·공식이라 채택 비용도 없습니다.</div>
+</div>
+
+<div class="ref">
+  <div class="t">GOV.UK Design System</div>
+  <div class="u">design-system.service.gov.uk</div>
+  <p>영국 정부 표준. 화려함을 버리고 “한 화면에 한 가지 질문”을 원칙으로 삼습니다. 오류 메시지·양식·단계별 진행 화면의 문안까지 규정돼 있습니다.</p>
+  <div class="take">가져올 것 · 시민 신고 3단계 위저드의 단계 표시와 오류 문안 방식</div>
+</div>
+
+<div class="ref">
+  <div class="t">U.S. Web Design System (USWDS)</div>
+  <div class="u">designsystem.digital.gov</div>
+  <p>미국 연방 표준. 8px 간격 체계와 접근성 검사 기준이 문서·코드로 함께 배포됩니다. 재난 관련 정부 사이트 다수가 이 위에 올라가 있습니다.</p>
+  <div class="take">가져올 것 · 간격 체계와 대비·초점 표시 검사 기준</div>
+</div>
+
+<h2 id="app">2. 앱 기본기 — 크기와 터치</h2>
+<p class="lead">“크기가 안 맞는다”는 문제를 직접 푸는 문서들입니다.</p>
+
+<div class="ref gold">
+  <div class="t">Material Design 3</div>
+  <div class="u">m3.material.io</div>
+  <p>구글 표준. 4px 배수 간격, 타입 스케일 15단계, 터치 영역 최소 48×48, 하단 시트·스낵바 같은 모바일 패턴이 수치와 함께 정의돼 있습니다. 배민을 포함한 국내 앱 다수가 이 체계 위에 있습니다.</p>
+  <div class="take">가져올 것 · 4·8px 배수 규칙, 터치 48px, 하단 시트 구조 — 시민 창구 재설계의 뼈대</div>
+</div>
+
+<div class="ref">
+  <div class="t">Apple Human Interface Guidelines</div>
+  <div class="u">developer.apple.com/design</div>
+  <p>터치 영역 최소 44pt, 안전 영역(노치·홈 인디케이터) 처리, 한 손 조작을 위한 하단 배치 원칙.</p>
+  <div class="take">가져올 것 · 아이폰에서 하단 버튼이 잘리지 않는 안전 영역 처리</div>
+</div>
+
+<div class="ref">
+  <div class="t">8-Point Grid System</div>
+  <div class="u">spec.fm / 디자인 커뮤니티 통용 규칙</div>
+  <p>모든 여백·크기를 8의 배수(작은 값은 4)로만 쓰는 규칙. 값을 고민하지 않게 되고, 화면이 저절로 정렬됩니다. 지금처럼 여백이 7·9·13px씩 섞이는 상태를 없애는 가장 빠른 방법입니다.</p>
+  <div class="take">가져올 것 · 간격 후보를 4·8·12·16·24·32·48 일곱 개로 제한</div>
+</div>
+
+<div class="ref">
+  <div class="t">Nielsen Norman Group — 사용성 원칙</div>
+  <div class="u">nngroup.com</div>
+  <p>시스템 상태 가시성, 사용자 언어, 오류 예방 등 10가지 원칙. 배민 주문추적이 왜 안심을 주는지를 설명하는 이론적 근거(상태 가시성)이기도 합니다.</p>
+  <div class="take">가져올 것 · 처리 추적 화면의 설계 논리, 발표 답변 근거</div>
+</div>
+
+<h2 id="ops">3. 상황판·데이터 화면</h2>
+<p class="lead">정보 밀도가 높은 화면은 일반 웹과 규칙이 다릅니다.</p>
+
+<div class="ref gold">
+  <div class="t">IBM Carbon Design System</div>
+  <div class="u">carbondesignsystem.com</div>
+  <p>업무용·관제용 화면에 특화된 체계. 좁은 행 높이, 표·지표 카드, 다중 패널 배치 규칙이 정의돼 있습니다. 지금 상황판처럼 3열에 정보를 빽빽하게 담는 화면의 정석입니다.</p>
+  <div class="take">가져올 것 · 좌·중·우 3열 폭 비율, 카드 안쪽 여백, 표 행 높이</div>
+</div>
+
+<div class="ref">
+  <div class="t">Ant Design</div>
+  <div class="u">ant.design</div>
+  <p>관리자 화면 컴포넌트가 가장 촘촘한 체계. 목록·필터·상태 배지·빈 화면 처리까지 사례가 많습니다.</p>
+  <div class="take">가져올 것 · 상태 배지 색 규칙, 목록 필터 배치</div>
+</div>
+
+<div class="ref">
+  <div class="t">Grafana / 관제 대시보드 패턴</div>
+  <div class="u">grafana.com</div>
+  <p>지표를 크게, 그래프는 작게, 시간 범위 선택을 상단 고정. 야간 근무를 전제한 어두운 화면 배색 기준도 참고할 만합니다.</p>
+  <div class="take">가져올 것 · 대시보드 지표 카드 크기 위계, 야간모드 배색</div>
+</div>
+
+<div class="ref">
+  <div class="t">Esri ArcGIS 재난대응 화면</div>
+  <div class="u">esri.com — Emergency Response</div>
+  <p>지도가 중심이고 정보 패널이 접히는 상황실 표준 배치. 지도 위 도구 모음을 어디에 두는지가 잘 정리돼 있습니다.</p>
+  <div class="take">가져올 것 · 지도 위 레이어 도구 배치와 접기 방식</div>
+</div>
+
+<h2 id="tok">4. 이 플랫폼에 적용할 치수</h2>
+<p class="lead">위 표준을 이 시스템에 맞게 좁힌 값입니다. 앞으로 모든 화면은 이 표 안의 값만 씁니다.</p>
+
+<h3>간격 — 일곱 개만 사용</h3>
+<table>
+  <tr><th class="mono">이름</th><th class="mono">값</th><th>쓰는 곳</th><th style="width:36%">크기</th></tr>
+  <tr><td class="mono">s1</td><td class="mono">4px</td><td>아이콘과 글자 사이</td><td><i class="bar" style="width:4px"></i></td></tr>
+  <tr><td class="mono">s2</td><td class="mono">8px</td><td>버튼 사이, 배지 안쪽</td><td><i class="bar" style="width:8px"></i></td></tr>
+  <tr><td class="mono">s3</td><td class="mono">12px</td><td>목록 항목 사이</td><td><i class="bar" style="width:12px"></i></td></tr>
+  <tr><td class="mono">s4</td><td class="mono">16px</td><td>카드 안쪽 여백(기본)</td><td><i class="bar" style="width:16px"></i></td></tr>
+  <tr><td class="mono">s5</td><td class="mono">24px</td><td>카드 사이, 구역 구분</td><td><i class="bar" style="width:24px"></i></td></tr>
+  <tr><td class="mono">s6</td><td class="mono">32px</td><td>큰 구역 사이</td><td><i class="bar" style="width:32px"></i></td></tr>
+  <tr><td class="mono">s7</td><td class="mono">48px</td><td>화면 상하 여백</td><td><i class="bar" style="width:48px"></i></td></tr>
+</table>
+
+<h3>글자 크기 — 여섯 단계</h3>
+<table>
+  <tr><th class="mono">이름</th><th class="mono">값</th><th>쓰는 곳</th><th style="width:40%">보기</th></tr>
+  <tr><td class="mono">t-xs</td><td class="mono">12px</td><td>배지, 보조 설명</td><td style="font-size:12px">향남읍 발안로 123</td></tr>
+  <tr><td class="mono">t-sm</td><td class="mono">13px</td><td>표 내용, 목록 부가정보</td><td style="font-size:13px">향남읍 발안로 123</td></tr>
+  <tr><td class="mono">t-md</td><td class="mono">15px</td><td>본문 기본</td><td style="font-size:15px">향남읍 발안로 123</td></tr>
+  <tr><td class="mono">t-lg</td><td class="mono">17px</td><td>카드 제목</td><td style="font-size:17px;font-weight:700">향남읍 발안로 123</td></tr>
+  <tr><td class="mono">t-xl</td><td class="mono">22px</td><td>화면 제목</td><td style="font-size:22px;font-weight:800">향남읍 발안로 123</td></tr>
+  <tr><td class="mono">t-num</td><td class="mono">30px</td><td>지표 숫자, 도착 예정</td><td style="font-size:30px;font-weight:800;letter-spacing:-.02em">12분</td></tr>
+</table>
+
+<h3>버튼·입력 높이 — 세 종류</h3>
+<div class="tgt">
+  <div style="height:32px;width:110px">32 · 보조</div>
+  <div style="height:40px;width:130px">40 · 기본</div>
+  <div style="height:48px;width:150px">48 · 주요·모바일</div>
+</div>
+<div class="note">모바일에서 손가락이 닿는 버튼은 <b>48px 이상</b>이 기준입니다(구글 48, 애플 44). 지금 시민 창구의 유형 선택 버튼과 지도 위 레이어 버튼이 이 기준보다 작은 구간이 있습니다.</div>
+
+<h3>색 — 역할이 정해진 값만</h3>
+<table>
+  <tr><th>색</th><th class="mono">값</th><th>역할</th></tr>
+  <tr><td><i class="swatch" style="background:#1D4994"></i></td><td class="mono">#1D4994</td><td>기본 · 제목 · 주요 버튼</td></tr>
+  <tr><td><i class="swatch" style="background:#F07B27"></i></td><td class="mono">#F07B27</td><td>강조 · 진행 중 · 행동 유도</td></tr>
+  <tr><td><i class="swatch" style="background:#C1352B"></i></td><td class="mono">#C1352B</td><td>긴급 · 오류</td></tr>
+  <tr><td><i class="swatch" style="background:#127A50"></i></td><td class="mono">#127A50</td><td>완료 · 정상</td></tr>
+  <tr><td><i class="swatch" style="background:#65788F"></i></td><td class="mono">#65788F</td><td>보조 설명</td></tr>
+  <tr><td><i class="swatch" style="background:#E1E8F2"></i></td><td class="mono">#E1E8F2</td><td>선·구분</td></tr>
+</table>
+
+<h3>모서리 둥글기 · 화면 폭</h3>
+<table>
+  <tr><td class="mono" style="width:120px">4px</td><td>배지·작은 버튼</td></tr>
+  <tr><td class="mono">8px</td><td>카드·입력창</td></tr>
+  <tr><td class="mono">12px</td><td>모바일 큰 버튼·타일</td></tr>
+  <tr><td class="mono">16px</td><td>하단 시트 위쪽</td></tr>
+  <tr><td class="mono">640 / 1024 / 1440</td><td>화면 전환 기준 폭 — 이 세 값에서만 배치가 바뀜</td></tr>
+</table>
+
+<h2 id="fix">5. 지금 고칠 지점</h2>
+<p class="lead">설계도의 요소 번호와 연결했습니다.</p>
+
+<div class="cmp">
+  <div class="box bad">
+    <div class="h">지금 — 값이 제각각</div>
+    <span class="demo-btn b1">🚨 민원</span>
+    <span class="demo-btn b2">🎪 행사·인파</span>
+    <span class="demo-btn b3">📐 지적</span>
+    <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">글자 크기와 안쪽 여백이 버튼마다 달라 높이가 어긋납니다.</p>
+  </div>
+  <div class="box good">
+    <div class="h">기준 적용 — 높이 36px 고정</div>
+    <span class="demo-btn">🚨 민원</span>
+    <span class="demo-btn">🎪 행사·인파</span>
+    <span class="demo-btn">📐 지적</span>
+    <p style="font-size:12.5px;color:var(--muted);margin:10px 0 0">높이를 고정하고 좌우 여백만 12px로 통일합니다.</p>
+  </div>
+</div>
+
+<table>
+  <tr><th style="width:90px">요소</th><th>손볼 내용</th></tr>
+  <tr><td class="mono">UI-D-M2</td><td>레이어 버튼 20개 — 높이 36px 고정, 좌우 여백 12px, 줄 간격 8px</td></tr>
+  <tr><td class="mono">UI-C3</td><td>시민 창구 유형 버튼 — 최소 48px, 타일 형태로 두 칸 배치</td></tr>
+  <tr><td class="mono">UI-D-L*</td><td>좌측 카드 7종 — 안쪽 여백 16px, 카드 사이 24px로 통일</td></tr>
+  <tr><td class="mono">UI-B1</td><td>대시보드 지표 카드 — 숫자 30px, 설명 12px로 위계 분리</td></tr>
+  <tr><td class="mono">UI-C1</td><td>모바일 하단 버튼 — 안전 영역 처리로 홈 인디케이터에 가리지 않게</td></tr>
+  <tr><td class="mono">전체</td><td>여백을 위 일곱 값으로만 교체 — 7·9·13·18px 같은 값 제거</td></tr>
+</table>
+
+<div class="note">순서를 권한다면 <b>치수 값을 먼저 한곳에 정의</b>하고, 화면을 하나씩 그 값으로 바꾸는 방식입니다. 한 번에 전부 바꾸면 무엇이 틀어졌는지 확인이 어렵습니다.</div>
+
+</div>
+
+<footer class="wrap">
+  참고한 표준 · KRDS(행정안전부) · GOV.UK · USWDS · Material Design 3 · Apple HIG · IBM Carbon · Ant Design · Grafana · Esri · NN/g · 8-Point Grid
+</footer>
+
+</body>
+</html>

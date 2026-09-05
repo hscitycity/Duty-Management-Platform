@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>도와드림QR — 개선 통합 시안</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/fonts-archive/Paperlogy/subsets/Paperlogy-dynamic-subset.css">
+<style>
+:root{
+  --hud-cyan:#38bdf8;--hud-bright:#f0f9ff;--hud-navy:#0a1628;
+  --hud-grad:linear-gradient(135deg,rgba(15,23,42,.92) 0%,rgba(30,58,138,.82) 100%);
+  --hdr-ink:#121314;--hdr-muted:#8d9299;--hdr-line:rgba(18,19,20,.12);--hdr-hover:#f3f5fa;
+  --hs-blue:#1D4994;--hs-blue-d:#12305F;--hs-orange:#F07B27;
+  --st-done:#2B7DE0;--st-prog:#F5A623;--st-plan:#7A8CA0;--st-risk:#D63B1F;
+  --s1:4px;--s2:8px;--s3:12px;--s4:16px;--s5:24px;--s6:32px;--s7:48px;
+  --r1:4px;--r2:8px;--r3:12px;--r4:16px;--maxw:1190px;
+  --ff:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#F7F9FC;color:var(--hdr-ink);font-family:"Pretendard Variable",Pretendard,var(--ff);font-size:15px;line-height:1.65}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+h2,h3,h4{margin:0}
+button{font:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--hud-cyan);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+.hero{position:relative;background-color:var(--hud-navy);overflow:hidden;
+ background-image:radial-gradient(ellipse 80% 60% at 72% -10%,rgba(43,125,224,.30) 0%,transparent 60%),
+ radial-gradient(ellipse 50% 45% at 12% 115%,rgba(56,189,248,.16) 0%,transparent 55%),
+ linear-gradient(180deg,rgba(10,22,40,.5) 0%,rgba(10,22,40,.85) 100%)}
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;
+ background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);
+ background-size:48px 48px;-webkit-mask-image:radial-gradient(ellipse 70% 70% at 50% 30%,#000 20%,transparent 75%);
+ mask-image:radial-gradient(ellipse 70% 70% at 50% 30%,#000 20%,transparent 75%)}
+.hero::after{content:"";position:absolute;left:0;right:0;bottom:0;height:1px;background:linear-gradient(90deg,transparent,rgba(56,189,248,.5),transparent)}
+.hero-inner{position:relative;z-index:2;max-width:var(--maxw);margin:0 auto;padding:var(--s5) 28px var(--s6)}
+.eyebrow{display:inline-block;font-size:12.5px;font-weight:700;letter-spacing:2.5px;color:var(--hud-cyan);
+ background:rgba(56,189,248,.12);border:1px solid rgba(56,189,248,.3);border-radius:999px;padding:7px 18px;margin-bottom:var(--s4)}
+.hero-h1{font-family:"Paperlogy",var(--ff);font-size:52px;font-weight:900;line-height:1.12;letter-spacing:-1px;width:fit-content;margin:0;
+ background:linear-gradient(135deg,#fff 0%,#c9e2ff 45%,#7bb8ff 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+.hero-sub{font-size:17px;font-weight:500;color:rgba(200,220,240,.85);margin:var(--s3) 0 0;max-width:700px}
+
+.nav{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-bottom:1px solid var(--hdr-line);padding:10px 0}
+.nav .wrap{display:flex;gap:6px;flex-wrap:wrap}
+.nav a{font-size:12.5px;color:var(--hdr-muted);text-decoration:none;border:1px solid var(--hdr-line);border-radius:999px;padding:5px 12px}
+.nav a:hover{border-color:var(--hs-blue);color:var(--hs-blue)}
+
+main{padding:var(--s6) 0 80px}
+section{margin-bottom:var(--s7);scroll-margin-top:60px}
+.sec-h{display:flex;align-items:baseline;gap:var(--s3);margin-bottom:var(--s4);flex-wrap:wrap}
+.sec-n{font-family:"Paperlogy",var(--ff);font-size:22px;font-weight:900;color:var(--hs-blue)}
+.sec-t{font-size:22px;font-weight:700;letter-spacing:-.5px}
+.sec-d{font-size:13px;color:var(--hdr-muted);margin-left:auto}
+
+.card{background:#fff;border:1px solid #E3EDF7;border-radius:var(--r4);padding:20px;box-shadow:0 2px 10px rgba(40,90,160,.05)}
+.grid{display:grid;gap:var(--s3)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+
+.alert{background:var(--hud-grad);border:1px solid rgba(56,189,248,.35);border-radius:var(--r3);padding:var(--s4) var(--s5);color:#e8f2ff;
+ box-shadow:0 0 20px rgba(56,189,248,.2),inset 0 0 12px rgba(56,189,248,.15);margin-bottom:var(--s4)}
+.alert .eb{font-size:12px;font-weight:700;letter-spacing:1.5px;color:var(--hud-cyan);text-shadow:0 0 8px rgba(56,189,248,.35)}
+.alert .ttl{font-size:17px;font-weight:600;margin-top:var(--s1)}
+.alert .sub{font-size:13px;color:rgba(200,220,240,.8);margin-top:var(--s1)}
+.alert .met{text-align:right}
+.alert .met .v{font-size:30px;font-weight:700;color:var(--hud-bright);line-height:1.2;text-shadow:0 0 8px rgba(56,189,248,.35)}
+.alert .met .k{font-size:12px;color:rgba(200,220,240,.7)}
+.flex{display:flex;gap:var(--s5);flex-wrap:wrap;align-items:center}
+
+.btn{height:40px;padding:0 var(--s4);border-radius:var(--r2);border:1px solid var(--hdr-line);background:#fff;color:var(--hdr-ink);
+ display:inline-flex;align-items:center;justify-content:center;gap:6px;transition:background .2s,border-color .2s}
+.btn:hover{background:var(--hdr-hover);border-color:#9FC4EE}
+.btn-p{background:var(--hs-blue);border-color:var(--hs-blue);color:#fff}
+.btn-p:hover{background:var(--hs-blue-d);border-color:var(--hs-blue-d)}
+.btn-o{background:var(--hs-orange);border-color:var(--hs-orange);color:#fff}
+.btn-r{background:var(--st-risk);border-color:var(--st-risk);color:#fff}
+.btn-lg{height:48px;font-size:15px;font-weight:600;border-radius:var(--r3);width:100%}
+.btn-sm{height:32px;font-size:13px;padding:0 var(--s3)}
+.stp{width:40px;height:40px;padding:0;font-size:18px}
+
+.pick{border:1px solid #E3EDF7;border-radius:var(--r3);padding:var(--s4);background:#fff;text-align:left;width:100%;display:block;transition:all .2s}
+.pick:hover{border-color:#9FC4EE}
+.pick[aria-pressed="true"]{border:2px solid var(--hs-blue);background:#F4F8FE;padding:calc(var(--s4) - 1px)}
+.pick .k{font-size:17px;font-weight:700}
+.pick .n{font-size:22px;font-weight:700;color:var(--hs-blue)}
+.pick .s{font-size:13px;color:var(--hdr-muted);margin-top:2px}
+.pick .d{font-size:12px;color:var(--hdr-muted);margin-top:var(--s2);line-height:1.5}
+
+.row{display:flex;gap:var(--s3);align-items:center;padding:var(--s3) 0;border-bottom:1px solid var(--hdr-line)}
+.row:last-child{border-bottom:0}
+.row .t{font-size:15px}.row .s{font-size:12px;color:var(--hdr-muted)}
+.num{font-size:17px;min-width:52px;text-align:center;font-variant-numeric:tabular-nums}
+.bd{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:var(--r1)}
+.b-hi{background:#FDEEEA;color:#D63B1F}.b-mid{background:#FDF5E2;color:#B07A0A}
+.b-low{background:#EFF4F9;color:#2E3D50}.b-blue{background:#EAF1FB;color:var(--hs-blue)}
+.b-new{background:#E6F6EE;color:#0F7A57}
+.stat{background:#F7F9FC;border-radius:var(--r3);padding:var(--s3) var(--s4)}
+.stat .k{font-size:12.5px;color:var(--hdr-muted)}
+.stat .v{font-size:30px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--hdr-muted);margin-top:var(--s2);min-height:20px}
+.warn{color:var(--st-risk)}.ok{color:var(--st-done)}
+.divider{border-top:1px solid var(--hdr-line);margin:var(--s4) 0 var(--s3)}
+.lead{font-size:14px;color:var(--hdr-muted);margin:0 0 var(--s3)}
+
+.phones{display:flex;gap:var(--s4);overflow-x:auto;padding-bottom:var(--s3)}
+.pcol{flex:none;width:290px}
+.pcap{font-size:13px;font-weight:700;margin-bottom:2px}
+.pwhy{font-size:12px;color:var(--hdr-muted);min-height:46px;margin-bottom:var(--s2)}
+.phone{width:290px;height:560px;background:#fff;border:7px solid #14202F;border-radius:26px;overflow:hidden;display:flex;flex-direction:column}
+.ph-top{background:var(--hs-blue);color:#fff;padding:10px var(--s3)}
+.ph-body{padding:var(--s3);overflow:hidden;flex:1}
+.map-ph{flex:1;position:relative;background:
+ radial-gradient(circle at 26% 30%,#DFEADB 0 16%,transparent 16%),
+ radial-gradient(circle at 76% 62%,#DFEADB 0 13%,transparent 13%),
+ linear-gradient(90deg,transparent 44%,#E9EEF4 44% 51%,transparent 51%),
+ linear-gradient(0deg,transparent 56%,#E9EEF4 56% 62%,transparent 62%),#F2F5F9}
+.fab{position:absolute;width:48px;height:48px;border-radius:50%;background:#fff;border:1px solid var(--hdr-line);
+ box-shadow:0 3px 10px rgba(20,35,60,.22);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.fab.rep{left:var(--s3);bottom:var(--s3);background:var(--hs-orange);color:#fff;border-color:var(--hs-orange)}
+.fab.gps{right:var(--s3);bottom:var(--s3);color:var(--hs-blue)}
+.near{position:absolute;left:var(--s3);right:var(--s3);top:var(--s3);background:#fff;border-radius:10px;
+ box-shadow:0 2px 8px rgba(20,35,60,.14);padding:7px 10px;display:flex;gap:7px;align-items:center;font-size:12px}
+.sheet{background:#fff;border-radius:var(--r4) var(--r4) 0 0;box-shadow:0 -3px 14px rgba(20,35,60,.12);padding:var(--s2) var(--s3) var(--s3)}
+.grab{width:32px;height:4px;border-radius:2px;background:#D9E0EA;margin:0 auto var(--s3)}
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s3);margin-bottom:var(--s3)}
+.ty .cir{width:50px;height:50px;border-radius:50%;margin:0 auto var(--s1);display:flex;align-items:center;justify-content:center;font-size:21px;color:#fff}
+.ty .nm{font-size:12px;font-weight:700;text-align:center}
+.pinC{position:absolute;left:50%;top:44%;transform:translate(-50%,-100%);font-size:30px}
+.trk .pb{position:relative;height:6px;border-radius:3px;background:#E7ECF3;margin:26px 0 var(--s2)}
+.trk .pb i{position:absolute;inset:0 auto 0 0;width:58%;border-radius:3px;background:var(--hs-orange);display:block}
+.trk .pb .rd{position:absolute;left:58%;top:-24px;transform:translateX(-50%);font-size:20px}
+.plabs{display:flex;justify-content:space-between;font-size:11px;color:#A9B6C6}
+.plabs .dn{color:var(--hs-blue);font-weight:700}.plabs .on{color:var(--hs-orange);font-weight:700}
+.stepv{display:grid;grid-template-columns:20px 1fr;gap:var(--s2)}
+.stepv .dt{width:10px;height:10px;border-radius:50%;background:#D6DEE9;margin:6px auto 0}
+.stepv.dn .dt{background:var(--hs-blue)}.stepv.cu .dt{background:var(--hs-orange);box-shadow:0 0 0 4px rgba(240,123,39,.2)}
+.stepv .tx{padding-bottom:var(--s3)}
+.kan{background:#F2F6FB;border-radius:var(--r4);padding:var(--s3)}
+.kcard{background:#fff;border:1px solid #E3EDF7;border-radius:var(--r3);padding:var(--s3);margin-bottom:var(--s2)}
+.kcard.risk{border-color:#F3B7AC}
+.lbdemo{display:flex;gap:var(--s2);flex-wrap:wrap}
+.lb{height:36px;padding:0 var(--s3);border-radius:var(--r2);border:1px solid #C9D8EE;background:#fff;color:var(--hs-blue);font-size:13px;display:inline-flex;align-items:center}
+.lb.bad{height:auto;padding:5px 9px;font-size:12px}
+.lb.bad:nth-child(2){padding:9px 14px;font-size:14px}
+.lb.bad:nth-child(3){padding:4px 16px;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{border-bottom:1px solid var(--hdr-line);padding:9px 6px;text-align:left;vertical-align:top}
+th{font-size:12px;color:var(--hdr-muted);font-weight:600}
+td.c{font-family:ui-monospace,monospace;font-size:12.5px;color:var(--hs-blue);width:66px}
+@media(max-width:768px){.wrap{padding:0 18px}.hero-h1{font-size:34px}.hero-inner{padding:var(--s4) 18px var(--s5)}}
+</style>
+</head>
+<body>
+
+<header class="hero"><div class="hero-inner">
+  <span class="eyebrow">DOWADRIM QR — TARGET DESIGN</span>
+  <h1 class="hero-h1">개선 통합 시안</h1>
+  <p class="hero-sub">당직 업무 플랫폼에서 위치기반 민원접수플랫폼으로. 지금까지 논의한 화면과 규칙을 한 벌로 정리했습니다. KRDS 치수 체계 · 화성시 색 · HUD 규격 적용.</p>
+</div></header>
+
+<nav class="nav"><div class="wrap">
+  <a href="#s1">01 진입 분기</a><a href="#s2">02 시민 신고</a><a href="#s3">03 처리 현황</a>
+  <a href="#s4">04 중장기 공개</a><a href="#s5">05 상황판 정비</a><a href="#s6">06 부서 지정</a>
+  <a href="#s7">07 조치지시</a><a href="#s8">08 탐지 규칙</a><a href="#s9">09 보류</a>
+  <a href="#s10">10 결과보고</a><a href="#s11">11 읍면동</a><a href="#s12">12 기동단</a><a href="#s13">13 개선 목록</a>
+</div></nav>
+
+<main class="wrap">
+
+<section id="s1">
+  <div class="sec-h"><span class="sec-n">01</span><h2 class="sec-t">단일 주소, 갈라지는 첫 화면</h2>
+    <span class="sec-d">앱 설치 없음 · QR 하나</span></div>
+  <p class="lead">주소는 하나로 두되 받는 파일을 나눕니다. 시민은 신고에 필요한 것만, 당직자는 전부. 지금은 시민도 지도 레이어 20종과 매뉴얼까지 내려받습니다.</p>
+  <div class="grid g3">
+    <div class="card"><span class="bd b-blue">폰 · QR 접속</span>
+      <h3 style="font-size:17px;margin-top:var(--s2)">시민 신고창구</h3>
+      <p class="note">약 200KB만 받음. 신고 3단계와 처리 현황 추적. 당직 매뉴얼·연락처·인력 정보는 전송되지 않습니다.</p></div>
+    <div class="card"><span class="bd b-blue">PC · 소속 로그인</span>
+      <h3 style="font-size:17px;margin-top:var(--s2)">당직 상황판</h3>
+      <p class="note">전체 기능. 레이어·문서·매뉴얼 포함. 순찰 중 폰 접속도 가능(상단 전환).</p></div>
+    <div class="card"><span class="bd b-blue">소속별 기본 화면</span>
+      <h3 style="font-size:17px;margin-top:var(--s2)">읍면동 · 기동단</h3>
+      <p class="note">읍면동장은 결과보고 목록, 신속기동단은 작업판이 첫 화면. 주소 표시(#road 등)가 있으면 그것이 우선.</p></div>
+  </div>
+</section>
+
+<section id="s2">
+  <div class="sec-h"><span class="sec-n">02</span><h2 class="sec-t">시민 신고 — 티맵 제보 방식</h2>
+    <span class="sec-d">유형 먼저 · 위치는 자동</span></div>
+  <div class="phones">
+    <div class="pcol"><div class="pcap">① 지도가 첫 화면</div>
+      <div class="pwhy">제보 메뉴로 들어가지 않습니다. 지도 위 버튼에서 바로. 상단에 근처 신고가 먼저 보입니다.</div>
+      <div class="phone"><div class="ph-top"><div style="font-size:15px;font-weight:600">화성시 신고</div>
+        <div style="font-size:11px;opacity:.85">지금 당직 근무 중 · 24시간 접수</div></div>
+        <div class="map-ph">
+          <div class="near"><span style="width:8px;height:8px;border-radius:50%;background:var(--hs-orange)"></span>
+            <span><b>근처 신고 3건</b> · 최근 12분 전</span><span style="margin-left:auto;color:var(--hs-blue);font-weight:700">보기</span></div>
+          <div style="position:absolute;left:50%;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:#2D7FF9;border:2.5px solid #fff"></div>
+          <div class="fab rep"><span style="font-size:17px">⚠</span><span style="font-size:9px;font-weight:800">신고</span></div>
+          <div class="fab gps">◎</div>
+        </div></div></div>
+
+    <div class="pcol"><div class="pcap">② 유형 한 번에</div>
+      <div class="pwhy">야간 다발 5종 + 그 밖. 색 원형으로 글자보다 색이 먼저 읽히게. 지금은 8분야 2계층이라 두 번 눌러야 합니다.</div>
+      <div class="phone"><div class="ph-top" style="padding-bottom:8px"><div style="font-size:15px;font-weight:600">신고 유형</div></div>
+        <div class="map-ph" style="filter:brightness(.98)"></div>
+        <div class="sheet"><div class="grab"></div>
+          <div style="font-size:16px;font-weight:700;text-align:center;margin-bottom:var(--s3)">무엇을 신고할까요?</div>
+          <div class="types">
+            <div class="ty"><div class="cir" style="background:#C1352B">🕳</div><div class="nm">도로파손</div></div>
+            <div class="ty"><div class="cir" style="background:#2D7FF9">💧</div><div class="nm">침수·배수</div></div>
+            <div class="ty"><div class="cir" style="background:#E8A33D">🌳</div><div class="nm">쓰러진나무</div></div>
+            <div class="ty"><div class="cir" style="background:#7A5AB8">💡</div><div class="nm">가로등</div></div>
+            <div class="ty"><div class="cir" style="background:#5C6B7F">🦌</div><div class="nm">동물사체</div></div>
+            <div class="ty"><div class="cir" style="background:#9AA7B8">⋯</div><div class="nm">그 밖</div></div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:var(--s2)">
+            <button class="btn btn-sm" style="height:48px;border-radius:var(--r3)">근처 신고</button>
+            <button class="btn btn-o" style="height:48px;border-radius:var(--r3);font-weight:700">신고하기</button>
+          </div></div></div></div>
+
+    <div class="pcol"><div class="pcap">③ 위치 확인</div>
+      <div class="pwhy">배민 주소 확인 구조. 지도는 크게, 조작은 아래. 핀 고정 + 지도 이동 방식.</div>
+      <div class="phone"><div class="ph-top" style="padding-bottom:8px"><div style="font-size:15px;font-weight:600">위치가 맞나요?</div></div>
+        <div class="map-ph"><div class="pinC">📍</div><div class="fab gps">◎</div></div>
+        <div class="sheet"><div class="grab"></div>
+          <span class="bd b-hi" style="margin-bottom:var(--s2);display:inline-block">🕳 도로파손</span>
+          <div style="font-size:16px;font-weight:700">향남읍 발안로 123</div>
+          <div style="font-size:12px;color:var(--hdr-muted);margin-bottom:var(--s3)">만세구 · 위치 정확도 12m</div>
+          <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:var(--s2)">
+            <button class="btn btn-sm" style="height:48px;border-radius:var(--r3)">주소 검색</button>
+            <button class="btn btn-o" style="height:48px;border-radius:var(--r3);font-weight:700">이 위치로</button>
+          </div></div></div></div>
+
+    <div class="pcol"><div class="pcap">④ 접수 완료</div>
+      <div class="pwhy">여기서 끝내지 않습니다. 배민이 주문 직후 배달현황으로 넘기듯 처리 현황으로 안내.</div>
+      <div class="phone"><div class="ph-top"><div style="font-size:15px;font-weight:600">접수 완료</div></div>
+        <div class="ph-body" style="text-align:center">
+          <div style="width:60px;height:60px;border-radius:50%;background:#E6F6EE;color:#0F7A57;display:flex;align-items:center;justify-content:center;font-size:28px;margin:var(--s4) auto var(--s3)">✓</div>
+          <div style="font-size:17px;font-weight:700">신고가 접수되었습니다</div>
+          <div style="font-size:13px;color:var(--hdr-muted);margin-bottom:var(--s4)">만세구 당직실에서 확인하고 있습니다</div>
+          <div style="background:#F7F9FC;border-radius:var(--r3);padding:var(--s3);text-align:left;font-size:13px;margin-bottom:var(--s3)">
+            <div>접수번호 · 2026-0725-431</div><div>유형 · 도로파손</div><div>위치 · 향남읍 발안로 123</div></div>
+          <button class="btn btn-p btn-lg">처리 현황 보기</button>
+        </div></div></div>
+  </div>
+</section>
+
+<section id="s3">
+  <div class="sec-h"><span class="sec-n">03</span><h2 class="sec-t">처리 현황 추적 — 배민 방식</h2>
+    <span class="sec-d">신규 화면 · 지금 없음</span></div>
+  <p class="lead">진행 막대 위에 담당자가 올라가고 도착 예정 시각이 함께 붙습니다. 인력 이동은 부드러운 이동·진행 방향 회전·지나온 길 흐리게·도착 임박 표시를 항상 적용하고, 화면 자동 추적만 선택입니다.</p>
+  <div class="phones">
+    <div class="pcol"><div class="pcap">즉시처리 · 4시간</div><div class="pwhy">도착 예정 시각과 이동 중인 담당자.</div>
+      <div class="phone"><div class="ph-top">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div><div style="font-size:11px;opacity:.85">2026-0725-431</div><div style="font-size:15px;font-weight:600">🕳 도로파손</div></div>
+          <div style="text-align:right"><div style="font-size:10.5px;opacity:.85">도착 예정</div><div style="font-size:19px;font-weight:700">21:31</div></div></div></div>
+        <div class="ph-body trk">
+          <div class="pb"><i></i><span class="rd">🛻</span></div>
+          <div class="plabs"><span class="dn">접수</span><span class="on">출동 중</span><span>현장 확인</span><span>완료</span></div>
+          <div style="display:flex;gap:var(--s2);align-items:center;border:1px solid var(--hdr-line);border-radius:var(--r3);padding:var(--s2);margin-top:var(--s4)">
+            <div style="width:34px;height:34px;border-radius:50%;background:#EAF1FB;display:flex;align-items:center;justify-content:center">🛻</div>
+            <div><div style="font-size:13.5px;font-weight:700">향남 순찰조</div><div style="font-size:11.5px;color:var(--hdr-muted)">2.4km 남음</div></div></div>
+          <div class="map-ph" style="height:150px;border-radius:var(--r3);margin-top:var(--s3);flex:none;position:relative">
+            <div style="position:absolute;left:38%;top:52%;font-size:22px">🛻</div>
+            <div style="position:absolute;left:72%;top:34%;width:13px;height:13px;border-radius:50%;background:#2D7FF9;border:2.5px solid #fff"></div>
+            <div style="position:absolute;left:41%;top:50%;width:32%;height:3px;background:var(--hs-orange);transform:rotate(-22deg);border-radius:2px"></div></div>
+        </div></div></div>
+
+    <div class="pcol"><div class="pcap">단기처리 · 7일</div><div class="pwhy">예정일과 대기 순번. 도착 시계가 아니라 일정이 기준.</div>
+      <div class="phone"><div class="ph-top">
+        <div style="font-size:11px;opacity:.85">2026-0722-118</div><div style="font-size:15px;font-weight:600">🧱 보도블록 파손</div>
+        <div style="font-size:13px;margin-top:var(--s2);opacity:.9">7월 28일까지 보수 예정</div></div>
+        <div class="ph-body">
+          <div class="stepv dn"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">신고 접수</div><div style="font-size:12px;color:var(--hdr-muted)">07-22 14:30</div></div></div>
+          <div class="stepv dn"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">현장 확인</div><div style="font-size:12px;color:var(--hdr-muted)">07-23 · 보수 대상 확정</div></div></div>
+          <div class="stepv cu"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">작업 일정 배정 <span class="bd b-mid">현재</span></div><div style="font-size:12px;color:var(--hdr-muted)">대기 3번째 · 자재 확보 완료</div></div></div>
+          <div class="stepv"><div class="dt"></div><div class="tx"><div style="font-size:14px;color:var(--hdr-muted)">보수 시행</div><div style="font-size:12px;color:var(--hdr-muted)">07-28 예정</div></div></div>
+          <div style="background:#F7F9FC;border-radius:var(--r3);padding:var(--s3);font-size:12.5px;color:var(--hdr-muted);margin-top:var(--s2)">
+            같은 지역 3건을 함께 처리합니다. 일정이 바뀌면 알려드립니다.</div>
+        </div></div></div>
+  </div>
+</section>
+
+<section id="s4">
+  <div class="sec-h"><span class="sec-n">04</span><h2 class="sec-t">중장기 과제 진행 공개</h2>
+    <span class="sec-d">민원 불만이 가장 쌓이는 구간</span></div>
+  <p class="lead">6개월간 소식이 없으면 묵살로 느껴집니다. 단계가 바뀔 때마다 자동으로 알립니다. 신호등·횡단보도는 경찰 소관이라 협의 단계를 명시합니다.</p>
+  <div class="grid g2">
+    <div class="phone" style="height:auto;min-height:420px">
+      <div class="ph-top"><div style="font-size:11px;opacity:.85">2026-0630-042 · 중장기 과제</div>
+        <div style="font-size:15px;font-weight:600">🚸 횡단보도 신설 요청</div>
+        <div style="font-size:12px;opacity:.85;margin-top:2px">매송면 원평초 앞 · 접수 6월 30일</div></div>
+      <div class="ph-body">
+        <div class="stepv dn"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">접수·검토 착수</div><div style="font-size:12px;color:var(--hdr-muted)">06-30 · 도로교통과 배정</div></div></div>
+        <div class="stepv dn"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">교통량 분석</div><div style="font-size:12px;color:var(--hdr-muted)">07-15 완료 · 설치 타당 판단</div></div></div>
+        <div class="stepv cu"><div class="dt"></div><div class="tx"><div style="font-size:14px;font-weight:700">경찰 협의 <span class="bd b-mid">현재</span></div>
+          <div style="font-size:12px;color:var(--hdr-muted)">교통안전시설 심의 상정 · 8월 심의 예정</div></div></div>
+        <div class="stepv"><div class="dt"></div><div class="tx"><div style="font-size:14px;color:var(--hdr-muted)">설계·예산 확보</div></div></div>
+        <div class="stepv"><div class="dt"></div><div class="tx"><div style="font-size:14px;color:var(--hdr-muted)">공사 시행</div></div></div>
+        <div style="background:#F4F8FE;border-radius:var(--r3);padding:var(--s3);font-size:12.5px;color:var(--hs-blue);margin-top:var(--s2)">
+          횡단보도 설치는 경찰 심의를 거쳐야 합니다. 심의 결과가 나오면 바로 알려드립니다.</div>
+      </div></div>
+    <div class="card">
+      <h3 style="font-size:17px">설계 원칙</h3>
+      <table style="margin-top:var(--s2)">
+        <tr><td class="c">단계</td><td>교통분석 → 경찰 협의 → 설계 → 예산 → 공사 5단계 고정</td></tr>
+        <tr><td class="c">알림</td><td>단계 전환 시 자동 통지. 변화 없으면 월 1회 현황 안내</td></tr>
+        <tr><td class="c">협의</td><td>신호등·횡단보도·단속장비는 경찰 심의 단계를 자동 삽입</td></tr>
+        <tr><td class="c">불가</td><td>타당성 미달로 종결 시 사유와 근거를 함께 안내</td></tr>
+        <tr><td class="c">목록</td><td>완료된 결과보고와 섞지 않고 진행 과제로 분리</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="s5">
+  <div class="sec-h"><span class="sec-n">05</span><h2 class="sec-t">당직 상황판 정비</h2>
+    <span class="sec-d">치수 통일 · 진단 장치</span></div>
+  <div class="grid g2">
+    <div class="card"><h3 style="font-size:15px;color:var(--st-risk)">지금 — 값이 제각각</h3>
+      <div class="lbdemo" style="margin-top:var(--s3)">
+        <span class="lb bad">🚨 민원</span><span class="lb bad">🎪 행사·인파</span><span class="lb bad">📐 지적</span></div>
+      <p class="note">글자 크기와 안쪽 여백이 버튼마다 달라 높이가 어긋납니다.</p></div>
+    <div class="card"><h3 style="font-size:15px;color:var(--st-done)">기준 적용 — 높이 36px 고정</h3>
+      <div class="lbdemo" style="margin-top:var(--s3)">
+        <span class="lb">🚨 민원</span><span class="lb">🎪 행사·인파</span><span class="lb">📐 지적</span></div>
+      <p class="note">높이 고정, 좌우 여백 12px, 줄 간격 8px으로 통일합니다.</p></div>
+  </div>
+  <div class="card" style="margin-top:var(--s3)">
+    <table>
+      <tr><th style="width:80px">요소</th><th>정비 내용</th></tr>
+      <tr><td class="c">레이어바</td><td>버튼 20종 높이 36px·여백 12px 통일, 5개씩 그리드</td></tr>
+      <tr><td class="c">좌측 카드</td><td>안쪽 여백 16px, 카드 사이 24px</td></tr>
+      <tr><td class="c">지표</td><td>숫자 30px·설명 12px로 위계 분리, 평균 처리시간 지표 신설</td></tr>
+      <tr><td class="c">로딩</td><td>첫 화면 스플래시 신설 — 현재 흰 화면 노출</td></tr>
+      <tr><td class="c">버전</td><td>저장 시 BUILD_VER 자동 갱신(현재 수동·정지 상태)</td></tr>
+      <tr><td class="c">오류</td><td>빨간 개발용 배너는 개발 모드에서만 표시</td></tr>
+      <tr><td class="c">누적 지도</td><td>상습지점 열지도 추가, 핀 묶음 표시로 성능 확보</td></tr>
+    </table>
+  </div>
+</section>
+
+<section id="s6">
+  <div class="sec-h"><span class="sec-n">06</span><h2 class="sec-t">AI 담당부서 지정</h2>
+    <span class="sec-d">조례·위임규칙·도로등급 근거</span></div>
+  <p class="lead">유형 매핑표 대신 규정을 근거로 배정하고, 근거 문구를 함께 남깁니다. 소관 부서와 실제 처리 주체를 분리해 표시합니다.</p>
+  <div class="grid g2">
+    <div class="card">
+      <div style="display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap">
+        <span class="bd b-hi">즉시처리</span><span class="bd b-new">배정 완료</span></div>
+      <h3 style="font-size:17px;margin-top:var(--s2)">도로 파손 · 매송면 원평리 312</h3>
+      <div class="divider"></div>
+      <table>
+        <tr><td class="c">도로 등급</td><td>시도 · 관리청 시장 <span style="color:var(--hdr-muted)">(좌표 기준 자동 판정)</span></td></tr>
+        <tr><td class="c">법적 소관</td><td>도로과 <span style="color:var(--hdr-muted)">— 조례 별표 8 분장사무 「도로 유지·보수」</span></td></tr>
+        <tr><td class="c">처리 주체</td><td>매송면사무소 <span style="color:var(--hdr-muted)">— 소규모 보수 현장처리 기준</span></td></tr>
+        <tr><td class="c">처리구분</td><td>단기처리 7일 이내 <span style="color:var(--hdr-muted)">— 포트홀 보수 유형</span></td></tr>
+      </table>
+      <div style="display:flex;gap:var(--s2);margin-top:var(--s3)">
+        <button class="btn btn-p" style="flex:1">배정 확정</button>
+        <button class="btn" style="flex:1">부서 변경</button></div>
+      <p class="note">확신이 낮으면 담당자 확인을 요청하고, 변경 이력은 학습 자료로 남습니다.</p>
+    </div>
+    <div class="card">
+      <h3 style="font-size:17px">배정 근거 데이터</h3>
+      <table style="margin-top:var(--s2)">
+        <tr><td class="c">조례</td><td>행정기구 조례 별표 8 — 본청 65개 부서 분장사무 1,892건</td></tr>
+        <tr><td class="c">위임규칙</td><td>별표 1~3 — 구청장·읍면장·동장 재위임 사무</td></tr>
+        <tr><td class="c">도로등급</td><td>고속국도(도로공사) / 국도·지방도·시도(시장) / 마을도로(읍면동)</td></tr>
+        <tr><td class="c">마을도로</td><td>shp 자료 입력 후 좌표 판정에 반영 예정</td></tr>
+        <tr><td class="c">소규모 기준</td><td>읍면동 현장처리 경계값 — 화면에서 조정 가능하게</td></tr>
+      </table>
+      <div style="background:#FDF5E2;border-radius:var(--r3);padding:var(--s3);font-size:13px;color:#7A5308;margin-top:var(--s3)">
+        고속국도 등 시 소관이 아닌 신고는 접수 단계에서 안내하고 이관합니다. 당직자가 설명하던 일이 자동화됩니다.</div>
+    </div>
+  </div>
+</section>
+
+<section id="s7">
+  <div class="sec-h"><span class="sec-n">07</span><h2 class="sec-t">시장 조치지시</h2>
+    <span class="sec-d">급증 탐지 시에만 상신</span></div>
+  <div class="alert"><div class="flex">
+    <div style="flex:1;min-width:240px">
+      <div class="eb">SURGE DETECTED</div>
+      <div class="ttl">만세구 향남 일대 · 침수·배수 민원 급증</div>
+      <div class="sub">최근 40분 7건 · 반경 1.2km · 호우경보 발효 중 · 담당부서 자동 지정 완료</div></div>
+    <div class="met"><div class="v">6배</div><div class="k">같은 시간대 평균 대비</div></div>
+    <div class="met"><div class="v">7건</div><div class="k">40분 누적</div></div>
+  </div></div>
+  <div class="grid g3" id="coa" style="margin-bottom:var(--s4)"></div>
+  <div class="card">
+    <h3 style="font-size:17px">부서별 투입 인원</h3>
+    <div id="rows"></div>
+    <div class="divider"></div>
+    <div style="display:flex;align-items:baseline;justify-content:space-between">
+      <span style="font-size:14px;color:var(--hdr-muted)">총 투입</span>
+      <span><span id="tot" style="font-size:30px;font-weight:700">18</span><span style="font-size:14px;color:var(--hdr-muted)">명 · 가용 34명 중</span></span></div>
+    <div class="note" id="warn"></div>
+    <div style="display:flex;gap:var(--s2);margin-top:var(--s3)">
+      <button class="btn btn-r btn-lg" id="send" style="flex:2">조치지시 하달</button>
+      <button class="btn btn-lg" style="flex:1">보류</button></div>
+  </div>
+</section>
+
+<section id="s8">
+  <div class="sec-h"><span class="sec-n">08</span><h2 class="sec-t">급증 탐지 규칙</h2>
+    <span class="sec-d">정책협의체 심의 · 과거 데이터 검증</span></div>
+  <div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)">
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:var(--s2)"><span class="bd b-mid">초안 3판</span>
+        <span style="font-size:13px;color:var(--hdr-muted);margin-left:auto">현재 시행 2판 · 2026-07-01</span></div>
+      <div id="prm"></div>
+      <div class="divider"></div>
+      <label style="display:flex;gap:var(--s2);align-items:center;font-size:14px;padding:6px 0"><input type="checkbox" id="c1" checked>특보 발효 시 건수 기준 1건 낮춤</label>
+      <label style="display:flex;gap:var(--s2);align-items:center;font-size:14px;padding:6px 0"><input type="checkbox" id="c2" checked>같은 지역 재발동 2시간 억제</label>
+      <label style="display:flex;gap:var(--s2);align-items:center;font-size:14px;padding:6px 0"><input type="checkbox" id="c3" checked>축제·행사 기간 제외</label>
+    </div>
+    <div class="card" style="background:#F7F9FC">
+      <div style="font-size:13px;color:var(--hdr-muted)">최근 30일 누적 민원에 적용</div>
+      <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:var(--s3)">
+        <div class="stat" style="background:#fff"><div class="k">발동</div><div class="v" id="n1">4회</div></div>
+        <div class="stat" style="background:#fff"><div class="k">시장 상신</div><div class="v" id="n2">2회</div></div></div>
+      <div class="note" id="judge"></div>
+      <button class="btn btn-p btn-lg" style="margin-top:var(--s3)">심의 상정</button>
+    </div>
+  </div>
+</section>
+
+<section id="s9">
+  <div class="sec-h"><span class="sec-n">09</span><h2 class="sec-t">보류 기록·재상신</h2>
+    <span class="sec-d">사유 필수 · 인명 조건 해제 불가</span></div>
+  <div class="card">
+    <h3 style="font-size:15px;margin-bottom:var(--s2)">보류 사유</h3>
+    <div class="grid g4" id="rs"></div>
+    <div class="divider"></div>
+    <h3 style="font-size:15px;margin-bottom:var(--s2)">자동 재상신 조건</h3>
+    <div class="grid g3">
+      <div class="row"><span class="t">추가 신고 3건 이상</span><span class="bd b-low" style="margin-left:auto">사용</span></div>
+      <div class="row"><span class="t">특보 단계 상승</span><span class="bd b-low" style="margin-left:auto">사용</span></div>
+      <div class="row"><span class="t">인접 읍면동 확산</span><span class="bd b-low" style="margin-left:auto">사용</span></div>
+      <div class="row"><span class="t">미처리 5건 이상 유지</span><span class="bd b-low" style="margin-left:auto">해제</span></div>
+      <div class="row"><span class="t">인명 관련 신고 접수</span><span class="bd b-hi" style="margin-left:auto">해제 불가</span></div>
+      <div class="row"><span class="t">재상신 2회 미결 시 부시장 병행 통보</span><span class="bd b-low" style="margin-left:auto">사용</span></div>
+    </div>
+    <p class="note" id="hfoot">보류도 결정으로 기록됩니다. 오탐 선택은 탐지 규칙 개정 자료로 넘어갑니다.</p>
+  </div>
+</section>
+
+<section id="s10">
+  <div class="sec-h"><span class="sec-n">10</span><h2 class="sec-t">현장 결과보고</h2>
+    <span class="sec-d">전후 사진 · 촬영 위치 검증</span></div>
+  <div class="grid g2">
+    <div class="phone" style="height:auto;min-height:460px">
+      <div class="ph-top"><div style="font-size:11px;opacity:.85">2026-0725-431 · 도로파손</div>
+        <div style="font-size:15px;font-weight:600">향남읍 발안로 123</div>
+        <div style="font-size:11px;opacity:.85;margin-top:2px">도착 21:31 · 향남 순찰조 · 소요 17분</div></div>
+      <div class="ph-body">
+        <h4 style="font-size:14px;margin-bottom:var(--s2)">현장 사진</h4>
+        <div class="grid" style="grid-template-columns:1fr 1fr">
+          <div style="height:96px;border:1.5px solid #F3B7AC;background:#FDEEEA;color:#8C2A16;border-radius:var(--r3);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px">✓<span>조치 전</span></div>
+          <div style="height:96px;border:1.5px solid #9CCB78;background:#EDF7E6;color:#2C5E12;border-radius:var(--r3);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:13px">✓<span>조치 후</span></div></div>
+        <p class="note ok">촬영 위치 확인 · 신고 지점에서 6m</p>
+        <h4 style="font-size:14px;margin:var(--s3) 0 var(--s2)">조치 결과</h4>
+        <div class="grid" style="gap:var(--s2)">
+          <div class="pick" aria-pressed="true" style="padding:9px var(--s3)"><div style="font-size:14px;font-weight:700">조치 완료</div><div class="s">현장 처리 종료</div></div>
+          <div class="pick" style="padding:9px var(--s3)"><div style="font-size:14px;font-weight:700">임시 조치</div><div class="s">재방문 필요 · 일정 자동 등록</div></div>
+          <div class="pick" style="padding:9px var(--s3)"><div style="font-size:14px;font-weight:700">타 부서 이관</div><div class="s">소관 부서로 알림</div></div></div>
+        <button class="btn btn-o btn-lg" style="margin-top:var(--s3)">결과보고 제출</button>
+      </div></div>
+    <div class="card">
+      <h3 style="font-size:17px">규칙</h3>
+      <table style="margin-top:var(--s2)">
+        <tr><td class="c">자동 입력</td><td>민원번호·위치·도착시각·담당자·소요시간</td></tr>
+        <tr><td class="c">필수</td><td>완료 처리 시 조치 후 사진 필수</td></tr>
+        <tr><td class="c">검증</td><td>촬영 위치가 신고 지점과 멀면 경고</td></tr>
+        <tr><td class="c">공개</td><td>사람 얼굴·차량번호 포함 시 비공개</td></tr>
+        <tr><td class="c">오프라인</td><td>전송 실패 시 기기 저장 후 자동 재전송</td></tr>
+        <tr><td class="c">연동</td><td>제출 즉시 시민 화면 완료 전환 + 일일보고 반영 + 처리시간 집계</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="s11">
+  <div class="sec-h"><span class="sec-n">11</span><h2 class="sec-t">읍면동 결과보고</h2>
+    <span class="sec-d">소속 기준 자동 범위</span></div>
+  <div class="card">
+    <div style="display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap;margin-bottom:var(--s3)">
+      <div style="width:40px;height:40px;border-radius:50%;background:#EAF1FB;color:var(--hs-blue);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700">매송</div>
+      <div><div style="font-size:15px;font-weight:600">매송면사무소 · 면장</div>
+        <div style="font-size:12px;color:var(--hdr-muted)">관내 민원 결과보고 · 이번 달</div></div>
+      <button class="btn btn-sm" style="margin-left:auto">보고자료 내려받기</button></div>
+    <div style="display:flex;gap:var(--s2);margin-bottom:var(--s3)" id="tabs"></div>
+    <div class="grid g4" id="estat" style="margin-bottom:var(--s3)"></div>
+    <div id="elist"></div>
+  </div>
+</section>
+
+<section id="s12">
+  <div class="sec-h"><span class="sec-n">12</span><h2 class="sec-t">신속기동단 작업판</h2>
+    <span class="sec-d">별도 화면 · 기한이 중심</span></div>
+  <div class="card" style="border-color:#CFE0F5;background:#F4F8FE;margin-bottom:var(--s3)">
+    <div style="display:flex;gap:var(--s3);align-items:center;flex-wrap:wrap">
+      <span class="bd b-blue">묶음 제안</span>
+      <span style="font-size:14px;flex:1;min-width:240px">매송면 포트홀 3건이 반경 800m 안에 있습니다. 한 번에 처리하면 이동 2회를 줄일 수 있습니다.</span>
+      <button class="btn btn-p btn-sm">묶어서 배정</button></div></div>
+  <div class="grid g3" id="kan"></div>
+</section>
+
+<section id="s13">
+  <div class="sec-h"><span class="sec-n">13</span><h2 class="sec-t">구조·성능 개선</h2>
+    <span class="sec-d">화면 밖 작업</span></div>
+  <div class="card">
+    <table>
+      <tr><th style="width:70px">코드</th><th>내용</th><th style="width:150px">효과</th></tr>
+      <tr><td class="c">D-01</td><td>JIZEOK·BLDGF 인라인 표본 제거 — 벡터타일·bldg_db로 이미 대체됨</td><td>첫 로딩 5.36MB → 약 1.3MB</td></tr>
+      <tr><td class="c">D-02</td><td>시민·당직 코드 분리 로드</td><td>QR 접속 시 약 200KB</td></tr>
+      <tr><td class="c">D-03</td><td>로딩 스플래시 신설</td><td>흰 화면 노출 제거</td></tr>
+      <tr><td class="c">D-04</td><td>시연 버튼 — 긴급 민원 즉시 주입 후 출동까지 재생</td><td>발표 타이밍 확보</td></tr>
+      <tr><td class="c">D-05</td><td>레이어 지연 로딩</td><td>초기 로딩·메모리 절감</td></tr>
+      <tr><td class="c">D-06</td><td>핀 묶음 표시(클러스터)</td><td>누적 1만 건까지 대응</td></tr>
+      <tr><td class="c">D-07</td><td>BUILD_VER 자동 갱신, 오류 배너 개발 모드 한정</td><td>구버전 판별·발표 사고 방지</td></tr>
+      <tr><td class="c">D-08</td><td>반응형 정비 + 홈 화면 추가(선택), QR은 신고창구로 직접 진입</td><td>모바일 시연 안정화</td></tr>
+      <tr><td class="c">D-09</td><td>권한·소속 기반 범위 필터 도입</td><td>부서별 화면 분리의 전제</td></tr>
+      <tr><td class="c">D-10</td><td>처리시간·상습지점 집계 신설</td><td>데이터 근거 확보</td></tr>
+    </table>
+  </div>
+</section>
+
+</main>
+
+<script>
+var D=[{n:'도로관리팀',r:'침수 도로 통제·배수',av:9,v:[2,6,9]},{n:'하수도팀',r:'빗물받이·역류 처리',av:7,v:[2,5,7]},
+{n:'향남읍 행정팀',r:'주민 안내·대피 지원',av:11,v:[1,4,8]},{n:'재난상황실',r:'상황 관리·보고',av:7,v:[1,3,4]}];
+var C=[{k:'일반민원',s:'담당부서 통상 처리',d:'접수 순서대로 순차 처리. 비번 소집 없음'},
+{k:'긴급민원',s:'즉시 출동',d:'신고 지점 우선 배치. 야간 대기조 포함'},
+{k:'선제조치',s:'인접 지역 예방 배치',d:'신고 없는 저지대까지 사전 점검. 비번 소집 필요'}];
+var pick=1,coa=document.getElementById('coa'),rows=document.getElementById('rows');
+C.forEach(function(c,i){var t=D.reduce(function(a,d){return a+d.v[i];},0);var b=document.createElement('button');
+b.className='pick';b.dataset.i=i;b.setAttribute('aria-pressed',i===pick);
+b.innerHTML='<div style="display:flex;align-items:baseline;justify-content:space-between"><span class="k">'+c.k+'</span><span class="n">'+t+'명</span></div><div class="s">'+c.s+'</div><div class="d">'+c.d+'</div>';
+coa.appendChild(b);});
+function pc(reset){[].forEach.call(coa.children,function(b,i){b.setAttribute('aria-pressed',i===pick);});
+rows.innerHTML='';var s=0;
+D.forEach(function(d,i){if(reset||d.cur===undefined)d.cur=d.v[pick];s+=d.cur;
+var w=document.createElement('div');w.className='row';
+w.innerHTML='<div style="flex:1;min-width:0"><div class="t">'+d.n+'</div><div class="s">'+d.r+' · 가용 '+d.av+'명</div></div>'+
+'<button class="btn stp" data-a="-1" data-i="'+i+'" aria-label="'+d.n+' 줄이기">−</button><span class="num">'+d.cur+'명</span>'+
+'<button class="btn stp" data-a="1" data-i="'+i+'" aria-label="'+d.n+' 늘리기">＋</button>';rows.appendChild(w);});
+document.getElementById('tot').textContent=s;var w=document.getElementById('warn');
+w.textContent=s>26?'가용 인력의 76%를 넘습니다. 비번 소집과 초과근무가 발생합니다.':s<6?'대응 인원이 부족합니다.':'';w.className='note warn';}
+coa.addEventListener('click',function(e){var b=e.target.closest('.pick');if(!b)return;pick=+b.dataset.i;pc(true);});
+rows.addEventListener('click',function(e){var b=e.target.closest('[data-a]');if(!b)return;
+var d=D[+b.dataset.i];d.cur=Math.max(0,Math.min(d.av,d.cur+(+b.dataset.a)));pc(false);});
+document.getElementById('send').onclick=function(){this.textContent='하달 완료 · 수신확인 대기';this.style.background='var(--st-done)';this.style.borderColor='var(--st-done)';};
+pc(true);
+
+var P=[{k:'반경',u:'m',v:1000,min:300,max:3000,st:100,d:'이 거리 안의 신고를 한 사안으로'},
+{k:'시간창',u:'분',v:40,min:10,max:180,st:10,d:'이 시간 안의 신고만 집계'},
+{k:'최소 건수',u:'건',v:3,min:2,max:15,st:1,d:'이 건수 이상이면 발동 후보'},
+{k:'평소 대비',u:'배',v:4,min:2,max:12,st:1,d:'같은 시간대 평균의 몇 배'},
+{k:'시장 상신',u:'건',v:6,min:3,max:30,st:1,d:'이 건수부터 시장 상신'}];
+var prm=document.getElementById('prm');
+function dp(){prm.innerHTML='';P.forEach(function(p,i){var w=document.createElement('div');w.className='row';
+w.innerHTML='<div style="flex:1;min-width:0"><div class="t">'+p.k+'</div><div class="s">'+p.d+'</div></div>'+
+'<button class="btn stp" data-b="-1" data-i="'+i+'" aria-label="'+p.k+' 줄이기">−</button><span class="num" style="min-width:78px">'+p.v.toLocaleString()+p.u+'</span>'+
+'<button class="btn stp" data-b="1" data-i="'+i+'" aria-label="'+p.k+' 늘리기">＋</button>';prm.appendChild(w);});sim();}
+function sim(){var r=P[0].v,t=P[1].v,n=P[2].v,x=P[3].v,m=P[4].v;var b=(r/1000)*(t/40)*9/Math.pow(n,1.35)*(4/x);
+if(document.getElementById('c1').checked)b*=1.25;if(document.getElementById('c2').checked)b*=0.72;if(document.getElementById('c3').checked)b*=0.9;
+var f=Math.max(0,Math.round(b*10)/10),e=Math.max(0,Math.round(f*Math.min(1,(n/m)*1.1)*10)/10);
+document.getElementById('n1').textContent=f+'회';document.getElementById('n2').textContent=e+'회';
+var j=document.getElementById('judge');
+if(f>12){j.textContent='발동이 잦습니다. 경보 무시가 우려됩니다.';j.className='note warn';}
+else if(f<1){j.textContent='거의 발동하지 않습니다. 실제 상황을 놓칠 수 있습니다.';j.className='note warn';}
+else{j.textContent='월 1~12회 범위로 운영 가능한 수준입니다.';j.className='note ok';}}
+prm.addEventListener('click',function(e){var b=e.target.closest('[data-b]');if(!b)return;
+var p=P[+b.dataset.i];p.v=Math.max(p.min,Math.min(p.max,p.v+p.st*(+b.dataset.b)));dp();});
+['c1','c2','c3'].forEach(function(id){document.getElementById(id).onchange=sim;});dp();
+
+var R=[{k:'담당부서 자체 처리'},{k:'이미 조치 진행 중'},{k:'현장 확인 필요'},{k:'기상 호전 예상'},{k:'가용 인력 부족'},{k:'오탐',n:'규칙 개정 근거'}];
+var rs=document.getElementById('rs'),pr=-1;
+R.forEach(function(r,i){var b=document.createElement('button');b.className='pick';b.dataset.r=i;b.style.padding='var(--s3)';
+b.innerHTML='<div style="font-size:14px;font-weight:600">'+r.k+'</div>'+(r.n?'<div class="s">'+r.n+'</div>':'');rs.appendChild(b);});
+rs.addEventListener('click',function(e){var b=e.target.closest('[data-r]');if(!b)return;pr=+b.dataset.r;
+[].forEach.call(rs.children,function(x,i){x.setAttribute('aria-pressed',i===pr);});
+var f=document.getElementById('hfoot');f.className='note';
+f.textContent=pr===5?'오탐으로 기록하면 탐지 규칙 개정 자료에 자동 반영됩니다.':'보류도 결정으로 기록됩니다. 일일보고와 감사 자료에 포함됩니다.';});
+
+var A=[{t:'포트홀 보수',l:'매송면 원평리 312',d:1,w:'매송면사무소',mine:1,s:'완료',dt:'07-24 15:20'},
+{t:'불법주정차',l:'매송면 어천리 88',d:0,w:'매송면사무소',mine:1,s:'완료',dt:'07-24 09:05'},
+{t:'가로등 소등',l:'매송면 천천리 4',d:0,w:'매송면사무소',mine:1,s:'완료',dt:'07-23 21:40'},
+{t:'신호등 고장',l:'매송면 어천교차로',d:0,w:'도로교통과',mine:0,s:'완료',dt:'07-23 18:12'},
+{t:'보도블록 파손',l:'매송면 야목리 21',d:1,w:'매송면사무소',mine:1,s:'재방문 예정',dt:'07-22 14:30'}];
+var DV=[{k:'즉시',c:'b-hi'},{k:'단기',c:'b-mid'},{k:'중장기',c:'b-low'}];
+var etab=0,tabs=document.getElementById('tabs');
+['우리 면 전체','우리가 처리한 건'].forEach(function(k,i){var b=document.createElement('button');b.className='btn btn-sm';b.dataset.e=i;b.textContent=k;tabs.appendChild(b);});
+function pe(){[].forEach.call(tabs.children,function(b,i){var on=i===etab;b.style.background=on?'var(--hs-blue)':'#fff';
+b.style.color=on?'#fff':'var(--hdr-ink)';b.style.borderColor=on?'var(--hs-blue)':'var(--hdr-line)';});
+var r=A.filter(function(a){return etab===0||a.mine;}),mine=r.filter(function(a){return a.mine;}).length;
+document.getElementById('estat').innerHTML='<div class="stat"><div class="k">표시 건수</div><div class="v">'+r.length+'</div></div>'+
+'<div class="stat"><div class="k">우리 처리</div><div class="v">'+mine+'</div></div>'+
+'<div class="stat"><div class="k">타 부서</div><div class="v">'+(r.length-mine)+'</div></div>';
+var L=document.getElementById('elist');L.innerHTML='';
+r.forEach(function(a){var w=document.createElement('div');w.className='row';if(!a.mine)w.style.opacity='.68';
+w.innerHTML='<div style="width:44px;height:44px;border-radius:var(--r2);background:#F2F6FB;flex:none;display:flex;align-items:center;justify-content:center;color:var(--hdr-muted)">▣</div>'+
+'<div style="flex:1;min-width:0"><div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="t">'+a.t+'</span>'+
+'<span class="bd '+DV[a.d].c+'">'+DV[a.d].k+'</span>'+(a.mine?'':'<span class="bd b-low">'+a.w+' 처리</span>')+'</div>'+
+'<div class="s">'+a.l+' · '+a.dt+'</div></div><span style="font-size:13px;color:'+(a.s==='완료'?'var(--st-done)':'var(--st-prog)')+'">'+a.s+'</span>';
+L.appendChild(w);});}
+tabs.addEventListener('click',function(e){var b=e.target.closest('[data-e]');if(!b)return;etab=+b.dataset.e;pe();});pe();
+
+var K=[{k:'즉시처리',c:'b-hi',s:'남은 시간',i:[['신호등 소등','봉담읍 와우리','1시간 12분 남음',1,'출동 중'],['도로 낙하물','향남읍 발안로','42분 남음',2,'배정 대기'],['동물사체','매송면 어천리','3시간 05분',0,'출동 중']]},
+{k:'단기처리',c:'b-mid',s:'작업 일정',i:[['포트홀 보수','매송면 원평리 외 2','07-28 예정',0,'묶음 후보'],['보도블록 파손','동탄 반송동','07-26 예정',1,'자재 대기'],['반사경 각도','정남면 문학리','기한 D-1',2,'미배정']]},
+{k:'중장기',c:'b-low',s:'진행 단계',i:[['횡단보도 신설','매송면 원평초 앞','경찰 협의 2/5',0,'협의 중'],['회전교차로','봉담 상리 교차로','설계 3/5',0,'설계 중'],['신호주기 조정','병점 중심상가','교통분석 1/5',0,'분석 중']]}];
+var kan=document.getElementById('kan');
+K.forEach(function(c){var w=document.createElement('div');w.className='kan';
+var h='<div style="display:flex;align-items:baseline;gap:var(--s2);margin-bottom:var(--s3)"><span class="bd '+c.c+'">'+c.k+'</span>'+
+'<span style="font-size:12.5px;color:var(--hdr-muted);margin-left:auto">'+c.s+'</span></div>';
+c.i.forEach(function(it){var col=it[3]===2?'var(--st-risk)':it[3]===1?'var(--st-prog)':'var(--hdr-muted)';
+h+='<div class="kcard'+(it[3]===2?' risk':'')+'"><div class="t">'+it[0]+'</div><div class="s">'+it[1]+'</div>'+
+'<div style="display:flex;align-items:center;gap:6px;margin-top:6px"><span style="font-size:12.5px;color:'+col+'">'+it[2]+'</span>'+
+'<span style="font-size:12px;color:var(--hdr-muted);margin-left:auto">'+it[4]+'</span></div></div>';});
+w.innerHTML=h;kan.appendChild(w);});
+</script>
+</body>
+</html>
