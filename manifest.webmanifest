@@ -1,0 +1,18 @@
+{
+  "name": "화성특례시 당직 업무 플랫폼",
+  "short_name": "화성 당직",
+  "description": "화성특례시 24시간 민원접수·당직 상황판",
+  "start_url": "./#cit",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#143567",
+  "theme_color": "#1D4994",
+  "icons": [
+    {
+      "src": "data/icons/logo.png",
+      "sizes": "677x220",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

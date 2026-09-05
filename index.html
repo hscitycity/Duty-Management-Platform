@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>화성특례시 당직 업무 플랫폼 (프로토타입)</title>
+<!-- D-08 홈 화면 추가는 선택 기능 — 설치를 요구하지 않는다(브라우저 그대로 사용 가능) -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1D4994">
+<meta name="apple-mobile-web-app-title" content="화성 당직">
+<link rel="apple-touch-icon" href="data/icons/logo.png">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -336,6 +341,56 @@ body.mapfs #mapFsBtn{top:8px; right:8px;}
 .cit-act{display:flex; gap:8px; margin-top:16px;}
 .cit-act button{flex:1; height:48px; border-radius:12px; font-size:16px; font-weight:700;}
 @media (prefers-reduced-motion: reduce){#citSheet{transition:none;}}
+/* ══════════ S-05 상황판 치수 정비 ══════════
+   간격은 4·8·12·16·24·32·48 일곱 값, 글자는 12·13·15·17·22·30px 여섯 단계만 쓴다. */
+.lbar .lb, .lbar-grid .lb{min-height:36px; height:36px; padding:0 12px; font-size:13px; display:inline-flex; align-items:center; justify-content:center;}
+.lbar{gap:8px; margin-bottom:12px;}
+.lbar-grid{gap:8px;}
+.card{padding:16px 24px;}
+.card h2{font-size:17px; margin-bottom:12px;}
+.card h2 .sub{font-size:12px;}
+.kpi .n{font-size:30px; line-height:1.15;}
+.kpi .l{font-size:12px;}
+.stat .n{font-size:30px; line-height:1.15;}
+.stat .l{font-size:12px;}
+
+/* ══════════ D-08 반응형 정비 ══════════
+   PC 3열 → 태블릿 2열 → 폰은 지도 전체 + 하단 시트. */
+#dutyBar{display:none;}
+@media(max-width:1200px){
+  .grid{grid-template-columns:minmax(300px,1fr) minmax(0,1.6fr);}
+}
+@media(max-width:700px){
+  .wrap{padding:12px 12px 0;}
+  body[data-mode="duty"]{overflow-x:hidden;}
+  body[data-mode="duty"] .grid{display:block;}
+  body[data-mode="duty"] #mapCard{height:calc(100vh - var(--hdr-h, 96px) - 56px); min-height:0; padding:12px;}
+  body[data-mode="duty"] .col-l, body[data-mode="duty"] .col-r{
+    position:fixed; left:0; right:0; bottom:0; z-index:900; background:var(--bg);
+    border-radius:16px 16px 0 0; box-shadow:0 -6px 24px rgba(16,32,64,.18);
+    max-height:76vh; overflow-y:auto; padding:16px 16px calc(72px + env(safe-area-inset-bottom,0px));
+    transform:translateY(101%); transition:transform .28s ease;}
+  body[data-mode="duty"] .col-l.on, body[data-mode="duty"] .col-r.on{transform:translateY(0);}
+  /* 폰 하단 이동 바 — 홈 인디케이터에 가리지 않게 안전 영역만큼 띄운다 */
+  body[data-mode="duty"] #dutyBar{display:flex; position:fixed; left:0; right:0; bottom:0; z-index:950;
+    background:#fff; border-top:1px solid var(--line); gap:8px; padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));}
+  #dutyBar button{flex:1; height:48px; border-radius:12px; font-size:15px; font-weight:700;
+    background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+  #dutyBar button.on{background:var(--hs-blue); color:#fff;}
+  /* 폰에서는 문서 생성 대신 안내 */
+  .pc-only{display:none !important;}
+  .phone-note{display:block; font-size:13px; color:var(--muted); background:var(--hs-blue-bg);
+    border:1px solid var(--hs-blue-line); border-radius:8px; padding:12px; line-height:1.6;}
+  #dash .dash-top{grid-template-columns:1fr !important;}
+  #dash .dgrid2{grid-template-columns:1fr !important;}
+  .rd-cols{grid-template-columns:1fr;}
+}
+.phone-note{display:none;}
+/* 터치 대상은 48px 이상 */
+@media(pointer:coarse){
+  .btn-p, .btn-o, .btn-g{min-height:48px;}
+  .catbtn{min-height:60px;}
+}
 </style>
 </head>
 <body>
@@ -457,9 +512,10 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <span>🎪 행사 = 인파 밀집(<span style="color:#D93025;font-weight:600">과열</span>·<span style="color:#F07B27;font-weight:600">주의</span>·<span style="color:#1D8348">보통</span>) <span style="font-size:11.5px;color:var(--muted)">— 출처: 화성시 문화관광포털(tour.hscity.go.kr) 축제·행사 일정 웹크롤링</span></span>
         </div>
         <div class="row">
-          <button class="btn-p" onclick="openReport()">📄 일일보고 자동 생성</button>
+          <button class="btn-p pc-only" onclick="openReport()">📄 일일보고 자동 생성</button>
           <button class="btn-g" onclick="openManual()">🔍 당직메뉴얼 검색</button>
         </div>
+        <p class="phone-note">📄 일일보고·민원접수서 등 문서 생성은 <b>PC에서 이용</b>해 주세요. 폰에서는 접수·확인·출동 지시가 가능합니다.</p>
         <p class="hint">핀 클릭=상세 보기 · <b>빈 지도 클릭=신규 접수 위치 지정</b>(관할구 자동, 오른쪽 AI 서기와 연동)</p>
       </div>
     </div>
@@ -570,6 +626,12 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   </div>
   <p class="hint" style="margin-top:10px">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
 </div>
+<!-- D-08 폰 전용 하단 이동 바 (상황판) -->
+<div id="dutyBar">
+  <button id="dbList" onclick="dutySheet('l')">📋 접수 목록</button>
+  <button id="dbWork" onclick="dutySheet('r')">🧑‍💼 업무 처리</button>
+  <button id="dbMap" onclick="dutySheet(null)">🗺️ 지도</button>
+</div>
 <div id="track"></div>
 <div id="road" style="display:none"></div>
 <footer>화성특례시 당직 업무 플랫폼 프로토타입 · AI공모전 출품용 데모 — 데이터는 예시이며 실제 접수되지 않습니다.<br>인계 문자·연락처는 데모용으로 일부 마스킹되어 있습니다.</footer>
@@ -580,7 +642,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0212';
+const BUILD_VER = 'v0906-0213';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1239,6 +1301,7 @@ function cardClick(id){
 }
 function selectItem(id){
   selId = id; renderMap(); renderList();
+  dutySheetAuto();   // D-08: 폰에서는 업무 처리 시트를 자동으로 올린다
   const it = items.find(i=>i.id===id);
   if(map && it.ll){ map.panTo(it.ll); if(mkById[it.id]) setTimeout(()=>mkById[it.id].openPopup(), 120); }
   const r = RULES[it.field] || RULES["기타"];
@@ -3912,6 +3975,24 @@ async function sbPush(it){
 }
 
 /* ── 공통 ── */
+/* ── D-08 폰 상황판: 지도 전체 + 하단 시트 ── */
+function dutySheet(which){
+  const l = document.querySelector('#duty .col-l'), r = document.querySelector('#duty .col-r');
+  if(!l || !r) return;
+  l.classList.toggle('on', which === 'l');
+  r.classList.toggle('on', which === 'r');
+  const map3 = {l:'dbList', r:'dbWork', null:'dbMap'};
+  for(const k of ['dbList','dbWork','dbMap']){
+    const b = document.getElementById(k);
+    if(b) b.classList.toggle('on', k === (map3[which] || 'dbMap'));
+  }
+  setTimeout(()=>{ try{ if(typeof map !== 'undefined' && map) map.invalidateSize(); }catch(e){} }, 320);
+}
+/* 상황판에서 민원을 고르면 폰에서는 업무 처리 시트를 자동으로 올린다 */
+function dutySheetAuto(){
+  if(window.matchMedia && window.matchMedia('(max-width: 700px)').matches && curMode === 'duty') dutySheet('r');
+}
+
 /* ══════════ S-02 신고 흐름 재배치 ══════════
    지도에서 시작 → 좌하단 버튼으로 진입 → 유형(야간 다발 5종 + 그 밖) 한 단계 →
    위치 확인(핀 고정 + 지도 이동) → 확인·접수 → 처리 현황 화면.
