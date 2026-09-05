@@ -203,6 +203,20 @@ pre.report{background:#F8FAFC; border:1.5px solid var(--line); border-radius:12p
 .bub.warn{background:var(--st-new-bg); border:2px solid var(--st-new); color:#7F1D1D; align-self:stretch; max-width:100%; font-weight:600; font-size:16px;}
 .toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--hs-blue-dark); color:#fff; padding:12px 22px; border-radius:999px; font-size:15px; display:none; z-index:99;}
 footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px; line-height:1.7;}
+/* ── D-03 로딩 스플래시: 회선이 느린 발표장에서 흰 화면 구간 제거 ── */
+#splash{position:fixed; inset:0; z-index:9999; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px;
+  background:radial-gradient(120% 90% at 50% 0%, #1D4994 0%, #143567 55%, #0B2145 100%); color:#EAF2FB;
+  transition:opacity .45s ease, visibility .45s ease;}
+#splash.off{opacity:0; visibility:hidden; pointer-events:none;}
+#splash .sp-logo{height:72px; filter:brightness(0) invert(1); opacity:.95;}
+#splash .sp-t{font-size:30px; font-weight:800; letter-spacing:-.5px; text-align:center;}
+#splash .sp-s{font-size:15px; color:#A9C4E8; text-align:center; line-height:1.6;}
+#splash .sp-bar{width:min(320px,72vw); height:6px; border-radius:4px; background:rgba(255,255,255,.16); overflow:hidden;}
+#splash .sp-fill{height:100%; width:8%; border-radius:4px; background:linear-gradient(90deg,#38bdf8,#F07B27); transition:width .5s ease;}
+#splash .sp-step{font-size:13px; color:#8FB2E0; min-height:20px;}
+#splash .sp-ver{position:absolute; bottom:16px; font-size:12px; color:#5E82B8;}
+@media (prefers-reduced-motion: reduce){ #splash, #splash .sp-fill{transition:none;} }
+@media (max-width:520px){ #splash .sp-t{font-size:22px;} #splash .sp-logo{height:56px;} }
 </style>
 </head>
 <body>
@@ -225,6 +239,18 @@ footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px
     <b>당직자 김주무관</b> · 시청 당직실<br><span id="clock"></span>
   </div>
 </header>
+<!-- D-03 로딩 스플래시 -->
+<div id="splash" role="status" aria-live="polite" aria-label="화면을 준비하고 있습니다">
+  <img class="sp-logo" id="spLogo" alt="">
+  <div class="sp-t">화성특례시 당직 업무 플랫폼</div>
+  <div class="sp-s">사람이 받고, AI가 쓰고, 시스템이 처리한다<br>재난안전상황실(5층) · 시청 당직실(1층) 통합 상황판</div>
+  <div class="sp-bar"><div class="sp-fill" id="spFill"></div></div>
+  <div class="sp-step" id="spStep">자원 불러오는 중…</div>
+  <div class="sp-ver" id="spVer"></div>
+</div>
+<script>document.getElementById("spLogo").src=document.querySelector("header img.logo").src;
+/* 메인 스크립트가 오류로 멈춰도 8초 뒤에는 화면을 넘긴다 */
+setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElementById("splash"); if(e){ e.classList.add("off"); setTimeout(function(){e.remove();},500);} }, 8000);</script>
 
 <div class="wrap">
 <!-- ═══════════ 당직자 화면 ═══════════ -->
@@ -463,7 +489,7 @@ footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0140';
+const BUILD_VER = 'v0906-0205';
 window.onerror = function(msg, src, line, col){
   try{
     let b = document.getElementById('errBanner');
@@ -3421,12 +3447,32 @@ document.querySelector('header .duty') && (document.querySelector('header .duty'
 try{ const bv=document.createElement('span'); bv.style.cssText='font-size:10.5px;color:#98A8C0;margin-left:8px'; bv.textContent=BUILD_VER; document.querySelector('header .duty b') && document.querySelector('header .duty b').after(bv); }catch(e){}
 setInterval(()=>{ const d=new Date(); document.getElementById("clock").textContent = d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate()+". "+nowHM(); },1000);
 
+/* ── D-03 스플래시 제어: 지도 초기화 · DB 연결이 끝나면 사라진다 ── */
+const SP_STEPS={res:[20,'지도 자원 준비 중…'], map:[55,'지도 초기화 중…'], db:[85,'클라우드 DB 연결 중…'], done:[100,'준비 완료']};
+let spGone=false;
+function spStep(k){
+  if(spGone) return;
+  const v=SP_STEPS[k]; if(!v) return;
+  const f=document.getElementById('spFill'), t=document.getElementById('spStep');
+  if(f) f.style.width=v[0]+'%'; if(t) t.textContent=v[1];
+  if(k==='done') spHide();
+}
+function spHide(){
+  if(spGone) return; spGone=true;
+  const el=document.getElementById('splash'); if(!el) return;
+  const f=document.getElementById('spFill'); if(f) f.style.width='100%';
+  setTimeout(()=>{ el.classList.add('off'); setTimeout(()=>el.remove(), 500); }, 180);
+}
+/* 안전장치: 어떤 단계가 걸려도 6초 뒤에는 반드시 화면을 넘긴다 (인라인 8초 폴백과 이중화) */
+setTimeout(spHide, 6000);
+try{ const sv=document.getElementById('spVer'); if(sv) sv.textContent=BUILD_VER; }catch(e){}
+
 /* 초기 렌더 + 시민 첫 인사 */
 const restored = loadState();
 setTimeout(loadJournal, 0);
-initMap(); renderMap(); renderList();
+spStep('res'); initMap(); spStep('map'); renderMap(); renderList();
 if(restored){ toast("💾 저장된 접수 데이터 "+items.length+"건 복원 (이 PC 누적분)"); const last=[...items].sort((a,b)=>b.id-a.id)[0]; if(last) selectItem(last.id); } else { selectItem(3); }
-sbInit();   // ☁️ Supabase complaints 실시간 연동 (호출 누락돼 있던 버그 — DB가 민원 원천, 성공 시 시드 대체)
+spStep('db'); sbInit().finally(()=>spStep('done'));   // ☁️ Supabase complaints 실시간 연동 (호출 누락돼 있던 버그 — DB가 민원 원천, 성공 시 시드 대체)
 citRenderCats();
 renderStaff();
 loadWeather(); loadFeed(); loadAir(); loadRoadWx();
