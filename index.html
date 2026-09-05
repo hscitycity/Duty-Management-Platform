@@ -489,7 +489,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0136';
+const BUILD_VER = 'v0906-0138';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2684,13 +2684,13 @@ const HIST = [
 ];
 function dashDisasters(){
   const past = HIST.filter(h=>h.dis || h.field==="안전·재난");
-  const cur = items.filter(i=>i.field==="안전·재난" || i.urg==="긴급").map(i=>({
+  const cur = realItems().filter(i=>i.field==="안전·재난" || i.urg==="긴급").map(i=>({
     dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, st:i.st, urg:i.urg,
     act:(i.crews&&i.crews.length?"현장 "+i.crews.length+"명 활동":"")+(i.sms?" 문자인계":"")||i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
   return [...cur, ...past.slice().reverse()];
 }
 function dashDone(){
-  const cur = items.filter(i=>i.st==="완료").map(i=>({dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
+  const cur = realItems().filter(i=>i.st==="완료").map(i=>({dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
   return [...cur, ...HIST.slice().reverse()];
 }
 function hbar(label, v, max, col, clickType){
@@ -2698,11 +2698,11 @@ function hbar(label, v, max, col, clickType){
   return '<div class="hbar" '+(clickType?'style="cursor:pointer'+(on?';outline:2px solid var(--hs-orange);border-radius:8px':'')+'" onclick="dashClick(\''+clickType+'\',\''+label+'\')"':'')+'><span class="lb2">'+label+'</span><div class="tr"><div class="fl" style="width:'+Math.round(v/max*100)+'%'+(col?';background:'+col:'')+'"></div></div><span class="v">'+v+'</span></div>';
 }
 function renderDash(){
-  const all = [...HIST, ...items];
+  const all = [...HIST, ...realItems()];   // D-04: 시연 데이터는 통계에서 제외
   const done = dashDone(), dis = dashDisasters();
   const tot = all.length;
-  const doneCnt = HIST.length + items.filter(i=>i.st==="완료").length;
-  const active = items.filter(i=>i.st!=="완료").length;
+  const doneCnt = HIST.length + realItems().filter(i=>i.st==="완료").length;
+  const active = realItems().filter(i=>i.st!=="완료").length;
   const urg = all.filter(x=>x.urg==="긴급").length;
   const cit = all.filter(x=>x.src==="시민접수").length;
   const durs = HIST.map(h=>h.dur);
@@ -2780,6 +2780,44 @@ const SCEN_POOL = [
  {field:"안전·재난", sub:"도로 침하", gu:"동탄구", emd:"목동", sum:"아파트 진입로 노면이 내려앉는 중이라는 신고", urg:"긴급"},
  {field:"기타", sub:"직접 작성", gu:"병점구", emd:"화산동", sum:"심야 문 여는 약국 문의", urg:"일반"}
 ];
+/* ── D-04 시연 버튼: 긴급 민원 1건 즉시 접수 → 알림 팝업 → 인력 배정 → 출동 재생 ──
+   자동 유입이 5분 주기라 발표 타이밍과 어긋나는 문제 해결.
+   단축키 Ctrl+Shift+D (눈에 띄지 않게 단축키만 노출).
+   생성 건은 로그에 시연 표식이 남고 대시보드 집계에서 제외된다. */
+const DEMO_TAG = "[시연]";
+function realItems(){ return items.filter(i=>!i.demo); }
+const DEMO_URGENT = [
+  {field:"안전·재난", sub:"도로 침하", gu:"동탄구", emd:"목동", sum:"아파트 진입로 노면 침하 진행 중 — 차량 통행 위험", urg:"긴급", src:"전화"},
+  {field:"상하수도", sub:"상수도 누수", gu:"효행구", emd:"정남", sum:"도로 관로 파손 누수 — 차선 침수 확산", urg:"긴급", src:"시민접수"},
+  {field:"교통·도로", sub:"신호등 고장", gu:"병점구", emd:"병점", sum:"주요 교차로 신호 전면 소등 — 수신호 필요", urg:"긴급", src:"전화"},
+  {field:"안전·재난", sub:"재난 위험 신고", gu:"만세구", emd:"향남", sum:"강풍에 대형 간판 탈락 위험 — 보행자 통행로", urg:"긴급", src:"시민접수"}
+];
+let demoSeq = 0;
+async function demoOne(){
+  const base = DEMO_URGENT[(demoSeq++) % DEMO_URGENT.length];
+  const it = spawnItem(base);
+  if(!it) return;
+  it.demo = true;
+  it.log.push(nowHM()+" "+DEMO_TAG+" 발표 시연용 생성 — 실제 통계 집계 제외");
+  sbPush(it);
+  renderList();
+  /* 팝업을 읽을 시간을 준 뒤 인력 배정·출동 재생까지 이어서 진행 */
+  setTimeout(()=>{
+    try{
+      closeModal();
+      setMode("duty");
+      selectItem(it.id);
+      dispatchCrew(it.id, "당직자");
+    }catch(e){ console.error("[D-04] 시연 진행 실패", e); toast("시연 진행 중 오류 — 수동으로 출동 지시해 주세요"); }
+  }, 3200);
+}
+document.addEventListener("keydown", e=>{
+  if(e.ctrlKey && e.shiftKey && (e.key === "D" || e.key === "d")){
+    e.preventDefault();
+    demoOne();
+  }
+});
+
 let demoOn = false, demoTimer = null, scenQueue = [], scenTimer = null;
 function spawnItem(s){
   const it = {id:seq++, time:nowHM(), gu:s.gu||"미상",
@@ -2798,7 +2836,7 @@ function spawnItem(s){
 function toggleDemo(){
   demoOn = !demoOn;
   const b = document.getElementById('demoBtn');
-  b.classList.toggle('on', demoOn);
+  if(b) b.classList.toggle('on', demoOn);   // 버튼이 화면에서 제거된 상태 대비
   if(demoOn){
     toast("🎬 시연 모드 시작 — 가상 민원이 자동 유입됩니다");
     const tick = ()=>{ if(!demoOn) return;
@@ -3391,6 +3429,7 @@ function itRow(it){
 }
 function rowIt(r){
   const it = {id:r.id, time:r.time, gu:r.gu, loc:r.loc, field:r.field, sub:r.sub, sum:r.sum, req:r.req,
+    demo:Array.isArray(r.log) && r.log.some(x=>String(x).indexOf(DEMO_TAG)>=0),   // D-04: 시연 데이터 표식 복원
     urg:r.urg, st:(r.st==="미확인"||r.st==="신규")?"신규접수":r.st, src:r.src, sms:r.sms, dispN:r.disp_n||0, log:r.log||[], crews:[], _db:true};
   if(r.lat != null) it.pin = [r.lat, r.lng];
   assignXY(it);
