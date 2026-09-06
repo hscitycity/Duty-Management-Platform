@@ -1932,9 +1932,14 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 #mapCornerBR .lb{width:auto; min-width:0; max-width:none; overflow:visible;}
 
 /* H-0 기간 고르기 */
-.dash-range{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;
-  padding:10px 14px; border-radius:10px; background:#fff; border:1px solid var(--line);
-  box-shadow:0 1px 3px rgba(16,32,64,.06);}
+/* 아래로 내려가며 표를 보다가도 "지금 언제 것을 보는가" 가 계속 보여야 한다 */
+.dash-range{position:sticky; top:0; z-index:var(--z-panel);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin:-2px -2px 14px; padding:10px 14px; border-radius:0 0 10px 10px;
+  background:#fff; border:1px solid var(--line); border-top:none;
+  box-shadow:0 3px 10px rgba(16,32,64,.10);}
+/* 붙어 있는 동안에는 아래 내용이 비쳐 보이지 않게 */
+.dash-range:after{content:""; position:absolute; left:0; right:0; top:-8px; height:8px; background:var(--bg);}
 .dr-modes{display:flex; gap:4px;}
 .dr-m{height:32px; padding:0 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;
   background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
@@ -2380,7 +2385,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1809';
+const BUILD_VER = 'v0906-1812';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
