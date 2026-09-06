@@ -3,561 +3,412 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>설계 인스펙터 — 당직 업무 플랫폼</title>
+<title>설계 인스펙터 — 도와드림QR</title>
 <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <style>
-
 :root{
   --hs-blue:#1D4994; --hs-blue-dark:#143567; --hs-blue-bg:#EAF2FB; --hs-blue-line:#C6D8F0;
-  --hs-orange:#F07B27; --hs-orange-bg:#FDEEDF;
-  --ink:#1F2937; --muted:#64748B; --line:#E2E8F0; --bg:#F5F8FC;
-  --st-new:#D93025; --st-new-bg:#FCE8E6;
-  --st-work:#9A6700; --st-work-bg:#FFF3CD;
-  --st-hand:#1D4994; --st-hand-bg:#E1EBFA;
-  --st-done:#6B7280; --st-done-bg:#EEF1F4;
-  --st-cit:#B25412; --st-cit-bg:#FDEEDF;
+  --hs-orange:#F07B27; --ink:#1F2937; --muted:#64748B; --line:#E2E8F0; --bg:#F5F8FC;
+  --bar:56px;
 }
 *{box-sizing:border-box; margin:0; padding:0;}
-body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif; background:var(--bg); color:var(--ink); font-size:16px;}
-button{font-family:inherit; cursor:pointer; border:none; border-radius:10px;}
-input,textarea,select{font-family:inherit; font-size:16px; border:1.5px solid var(--line); border-radius:10px; padding:11px 13px; width:100%;}
-input:focus,textarea:focus,select:focus{outline:2px solid var(--hs-blue); border-color:var(--hs-blue);}
-/* ── 상단 명판 ── */
-header{background:#fff; border-bottom:3px solid var(--hs-blue); padding:10px 22px; display:flex; align-items:center; gap:18px; flex-wrap:wrap;}
-header img.logo{height:40px;}
-header .title h1{font-size:20px; font-weight:700; color:var(--hs-blue-dark);}
-header .title p{font-size:12.5px; color:var(--muted);}
-header .duty{margin-left:auto; text-align:right; font-size:14px; color:var(--muted);}
-header .duty b{color:var(--ink); font-weight:600;}
-.mode{display:flex; gap:8px; background:var(--hs-blue-bg); padding:5px; border-radius:12px;}
-.mode button{padding:10px 18px; font-size:15.5px; font-weight:600; background:transparent; color:var(--hs-blue-dark); border-radius:9px;}
-.mode button.on{background:var(--hs-blue); color:#fff;}
-/* ── 레이아웃 ── */
-.wrap{max-width:none; margin:0; padding:14px 16px 40px;}
-.grid{display:grid; grid-template-columns:minmax(430px,26%) minmax(0,1fr) minmax(440px,27%) ; gap:12px; align-items:start;}
-@media(max-width:1200px){.grid{grid-template-columns:280px minmax(0,1fr);} .col-r{grid-column:1/-1;}}
-@media(max-width:900px){.grid{grid-template-columns:1fr;} .col-r{grid-column:auto;}}
-.col-l .list-scroll{max-height:46vh; overflow-y:auto; padding-right:4px;}
-.card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 18px;}
-.card h2{font-size:16.5px; font-weight:700; color:var(--hs-blue-dark); margin-bottom:12px; display:flex; align-items:center; gap:8px; white-space:nowrap;}
-.card h2 .sub{font-size:11.5px; color:var(--muted); font-weight:400; margin-left:auto; white-space:normal; text-align:right; line-height:1.3;}
-/* ── 지도 ── */
-#map{width:100%; height:calc(100vh - 265px); min-height:540px; border-radius:12px; z-index:0; border:1.5px solid var(--line);}
-.leaflet-container{font-family:Pretendard,sans-serif; font-size:14px;}
-.pin{width:30px;height:30px;border-radius:50%;border:3.5px solid #ccc;box-shadow:0 2px 6px rgba(0,0,0,.45);}
-.pin.pulse{animation:pp 1.5s infinite;}
-@keyframes pp{0%{box-shadow:0 0 0 0 rgba(217,48,37,.45)}70%{box-shadow:0 0 0 14px rgba(217,48,37,0)}100%{box-shadow:0 0 0 0 rgba(217,48,37,0)}}
-.pin.sel{outline:3px dashed rgba(29,73,148,.8); outline-offset:3px; transform:scale(1.4); box-shadow:0 0 0 6px rgba(240,123,39,.30), 0 4px 14px rgba(0,0,0,.5);}
-.pin.dim{opacity:.18; filter:grayscale(.75); animation:none;}
-.leaflet-popup-content{font-size:14px; line-height:1.65; margin:12px 15px;}
-.leaflet-popup-content b{color:var(--hs-blue-dark);}
-.map-lbl{background:rgba(255,255,255,.93); border:1px solid rgba(20,40,80,.18); border-radius:6px; padding:1px 6px; font-size:11.5px; font-weight:700; color:#16233F; box-shadow:0 1px 3px rgba(0,0,0,.22); white-space:nowrap;}
-.map-lbl.leaflet-tooltip-top:before{border-top-color:rgba(255,255,255,.93);}
-.leaflet-container.zlo .hosp-lbl{display:none;}
-.leaflet-container.lbloff .map-lbl{display:none;}
-.leaflet-container.zlo .cctv-lbl{display:none;}
-.loc-btn{background:#fff;border:2px solid rgba(0,0,0,.2);border-radius:6px;width:36px;height:36px;font-size:19px;line-height:32px;text-align:center;cursor:pointer;}
-.loc-btn:hover{background:#f4f4f4;}
-.me-wrap{position:relative;width:18px;height:18px;}
-.me-dot{position:absolute;inset:0;border-radius:50%;background:#1A73E8;border:3px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);}
-.me-ring{position:absolute;left:50%;top:50%;width:18px;height:18px;border-radius:50%;background:rgba(26,115,232,.30);transform:translate(-50%,-50%);animation:mePulse 2s ease-out infinite;}
-@keyframes mePulse{0%{width:18px;height:18px;opacity:.7}100%{width:52px;height:52px;opacity:0}}
-.gu-label{background:transparent;border:none;box-shadow:none;font-weight:700;color:#33507E;font-size:14px;text-shadow:0 1px 3px #fff;}
-.lbar{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:10px; justify-content:flex-start; align-items:center;}
-.lbar .rgt{margin-left:auto; display:flex; gap:7px;}
-.lbar-grid{display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:7px; flex:1 1 100%;}
-.lbar-grid .lb{width:100%; text-align:center; padding:7px 8px; font-size:13px; line-height:1.25;}
-.lb{background:#fff; border:1.5px solid var(--line); border-radius:999px; padding:8px 14px; font-size:14px; font-weight:600; color:var(--muted);}
-.lb:hover{border-color:var(--hs-blue);}
-.lb.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;}
-.legend{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; font-size:13.5px; color:var(--muted);}
-.legend span{display:flex; align-items:center; gap:5px;}
-.dot{width:12px; height:12px; border-radius:50%; display:inline-block;}
-.stats{display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-top:12px;}
-.stat{background:var(--hs-blue-bg); border-radius:12px; padding:10px 12px; text-align:center;}
-.stat .n{font-size:22px; font-weight:700; color:var(--hs-blue-dark);}
-.stat .l{font-size:13px; color:var(--muted);}
-/* ── 리스트/배지 ── */
-.badge{display:inline-block; font-size:13px; font-weight:600; padding:4px 10px; border-radius:999px;}
-.b-new{background:var(--st-new-bg); color:var(--st-new);}
-.b-work{background:var(--st-work-bg); color:var(--st-work);}
-.b-hand{background:var(--st-hand-bg); color:var(--st-hand);}
-.b-done{background:var(--st-done-bg); color:var(--st-done);}
-.b-cit{background:var(--st-cit-bg); color:var(--st-cit); border:1.5px dashed var(--st-cit);}
-.b-cat{background:#EEF2F7; color:#334155;}
-.b-urg{background:#FCE8E6; color:#B3261E;}
-@keyframes blinkNew{0%,100%{background:#fff;}50%{background:var(--st-new-bg);}}
-.item.blink{animation:blinkNew 1.4s ease-in-out infinite;}
-.item{border:1.5px solid var(--line); border-left-width:5px; border-radius:13px; padding:12px 14px; margin-bottom:10px; cursor:pointer;}
-.item:hover{border-color:var(--hs-blue);}
-.item.sel{border-color:var(--hs-blue); background:var(--hs-blue-bg);}
-.item .top{display:flex; gap:6px; flex-wrap:wrap; align-items:center; margin-bottom:6px;}
-.item .top time{margin-left:auto; font-size:12.5px; color:var(--muted);}
-.item .loc{font-weight:600; font-size:15.5px;}
-.item .txt{font-size:14.5px; color:#475569; margin-top:2px;}
-/* ── AI 서기 ── */
-.ai-box textarea{min-height:150px; resize:vertical;}
-.btn-p{background:var(--hs-blue); color:#fff; font-size:16.5px; font-weight:600; padding:13px 20px; border-radius:11px; min-height:50px;}
-.btn-p:hover{background:var(--hs-blue-dark);}
-.btn-o{background:var(--hs-orange); color:#fff; font-size:16.5px; font-weight:700; padding:13px 20px; border-radius:11px; min-height:50px;}
-.btn-g{background:#fff; color:var(--ink); border:1.5px solid var(--line); font-size:15.5px; font-weight:500; padding:12px 18px; border-radius:11px; min-height:48px;}
-.btn-g:hover{border-color:var(--hs-blue);}
-.row{display:flex; gap:10px; margin-top:10px;}
-.row>*{flex:1;}
-.form{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px;}
-.form .full{grid-column:1/-1;}
-.form label{font-size:13px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;}
-.hint{font-size:13.5px; color:var(--muted); margin-top:8px; line-height:1.55;}
-.adr-item{display:block;width:100%;text-align:left;background:#fff;border:1.5px solid var(--line);border-radius:9px;padding:9px 12px;font-size:14px;margin-bottom:6px;}
-.adr-item:hover{border-color:var(--hs-blue);background:var(--hs-blue-bg);}
-.ai-note{background:var(--hs-orange-bg); border-left:4px solid var(--hs-orange); border-radius:0 10px 10px 0; padding:10px 13px; font-size:14.5px; margin-top:12px; display:none;}
-.prog{display:flex; align-items:center; gap:3px; margin-top:8px;}
-.prog .p{flex:1; height:6px; border-radius:3px; background:#E8EDF4;}
-.prog .p.f{background:var(--hs-blue);}
-.prog span{font-size:11.5px; color:var(--muted); white-space:nowrap;}
-.meta{display:flex; gap:10px; flex-wrap:wrap; font-size:12.5px; color:var(--muted); margin-top:6px;}
-/* ── 지적 WMS 파랑 변환 ── */
-.jjwms{ filter: hue-rotate(195deg) saturate(2.2) brightness(0.82) contrast(1.35); }
-body.saton .jjwms{ filter: hue-rotate(195deg) saturate(2.8) brightness(1.25) contrast(1.7) drop-shadow(0 0 1px #fff) drop-shadow(0 0 1px #fff); }
-/* ── 매뉴얼 뷰어 ── */
-.mn-h{font-size:14.5px; font-weight:800; color:var(--hs-blue-dark); background:var(--hs-blue-bg); border-left:4px solid var(--hs-blue); padding:7px 12px; border-radius:0 8px 8px 0; margin:14px 0 8px;}
-.mn-step{display:flex; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:14px; line-height:1.7;}
-.mn-step .no{flex:0 0 26px; height:26px; border-radius:50%; background:var(--hs-blue); color:#fff; font-weight:800; font-size:13.5px; display:flex; align-items:center; justify-content:center; margin-top:1px;}
-.mn-note{background:var(--hs-orange-bg); border:1.5px solid #F3C99F; color:#7A3E0E; border-radius:9px; padding:8px 12px; font-size:13.5px; line-height:1.65; margin:8px 0;}
-.mn-p{font-size:14px; line-height:1.75; margin:6px 0;}
-.mn-sub{padding-left:16px; font-size:13.5px; color:#444; line-height:1.7; border-left:2.5px solid var(--line); margin:3px 0 3px 6px;}
-.mn-tel{display:inline-block; background:#EAF1FB; color:var(--hs-blue-dark); font-weight:700; border-radius:6px; padding:0 7px; margin:1px 2px; font-size:13px; white-space:nowrap;}
-.mn-bul{display:flex; gap:8px; font-size:14px; line-height:1.7; padding:3px 0;}
-.mn-bul::before{content:"•"; color:var(--hs-orange); font-weight:800;}
-/* ── 대시보드 ── */
-#dash{display:none;}
-.kpis{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:14px;}
-.kpi{background:var(--card); border:1.5px solid var(--line); border-radius:var(--r); padding:16px 18px;}
-.kpi .n{font-size:30px; font-weight:800; color:var(--hs-blue-dark);}
-.kpi .l{font-size:13.5px; color:var(--muted); margin-top:3px; font-weight:600;}
-.dgrid{display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:14px;}
-.dgrid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
-.hbar{display:flex; align-items:center; gap:9px; margin:7px 0;}
-.hbar .lb2{min-width:96px; font-size:13.5px; font-weight:600; text-align:right;}
-.hbar .tr{flex:1; height:20px; background:#EEF2F7; border-radius:6px; overflow:hidden;}
-.hbar .fl{height:100%; border-radius:6px; background:var(--hs-blue); min-width:2px;}
-.hbar .v{min-width:34px; font-size:13.5px; color:var(--muted); font-weight:700;}
-.cols{display:flex; align-items:flex-end; gap:8px; height:120px; padding-top:8px;}
-.cols .c{flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;}
-.cols .bar2{width:100%; background:linear-gradient(180deg,#4A78C4,#1D4994); border-radius:6px 6px 0 0; min-height:3px;}
-.cols .d{font-size:11.5px; color:var(--muted);}
-.cols .cv{font-size:12.5px; font-weight:700; color:var(--hs-blue-dark);}
-.dtable{width:100%; border-collapse:collapse; font-size:13.5px;}
-.dtable th{background:var(--hs-blue-bg); color:var(--hs-blue-dark); font-weight:700; padding:9px 10px; text-align:left; border-bottom:2px solid var(--hs-blue); white-space:nowrap;}
-.dtable td{padding:8px 10px; border-bottom:1px solid var(--line); vertical-align:top;}
-.dtable tr:hover td{background:#F7FAFF;}
-.tbl-scroll{max-height:420px; overflow-y:auto;}
-/* ── 상세/매뉴얼 ── */
-.manual{background:var(--hs-blue-bg); border:1.5px solid var(--hs-blue-line); border-radius:13px; padding:13px 15px; margin-top:12px;}
-.manual h3{font-size:15px; color:var(--hs-blue-dark); margin-bottom:8px;}
-.manual ol{padding-left:20px; font-size:14.5px; line-height:1.8;}
-.manual .dept{font-size:14px; margin-top:8px; padding-top:8px; border-top:1px dashed var(--hs-blue-line); color:#33507E;}
-/* ── 모달 ── */
-.ovl{position:fixed; inset:0; background:rgba(15,23,42,.5); display:none; align-items:center; justify-content:center; padding:18px; z-index:50;}
-.ovl.on{display:flex;}
-.modal{background:#fff; border-radius:18px; padding:22px; width:100%; max-width:640px; max-height:88vh; overflow:auto;}
-.modal.wide{max-width:900px;}
-.mn-chip{background:#fff; border:1.5px solid var(--hs-blue); color:var(--hs-blue-dark); border-radius:999px; padding:8px 16px; font-size:14px; font-weight:700; margin:0 6px 8px 0;}
-.mn-chip:hover{background:var(--hs-blue); color:#fff;}
-.mn-nav{position:sticky; top:-1px; z-index:5; display:flex; align-items:center; gap:8px; background:#fff; padding:8px 0 10px; border-bottom:1.5px solid var(--line); margin-bottom:10px;}
-.mn-navbtn{background:var(--hs-blue-bg); border:1.5px solid var(--hs-blue); color:var(--hs-blue-dark); border-radius:10px; padding:8px 14px; font-size:13.5px; font-weight:700;}
-.mn-navbtn:hover{background:var(--hs-blue); color:#fff;}
-.mn-top{position:sticky; bottom:6px; float:right; background:var(--hs-orange); color:#fff; border:none; border-radius:999px; width:46px; height:46px; font-size:20px; box-shadow:0 3px 10px rgba(0,0,0,.25); z-index:6;}
-.mn-card{border:1.5px solid var(--line); border-radius:13px; padding:12px 15px; margin-bottom:10px; transition:border-color .15s;}
-.mn-card:hover{border-color:var(--hs-blue);}
-.modal h2{font-size:18px; color:var(--hs-blue-dark); margin-bottom:12px;}
-.msgprev{background:#F8FAFC; border:1.5px solid var(--line); border-radius:12px; padding:14px; font-size:15px; line-height:1.75; white-space:pre-wrap;}
-pre.report{background:#F8FAFC; border:1.5px solid var(--line); border-radius:12px; padding:16px; font-size:13.5px; line-height:1.7; white-space:pre-wrap; font-family:Pretendard,sans-serif;}
-/* ── 시민 화면 ── */
-#citizen{display:none; max-width:1100px; margin:0 auto;}
-#citMap{width:100%; height:calc(100vh - 520px); min-height:380px; max-height:560px; border-radius:12px; border:1.5px solid var(--line); z-index:0;}
-@media (max-width:1100px){ .dash-top{grid-template-columns:1fr !important;} }
-.steps{display:flex; gap:8px; margin-bottom:14px;}
-.steps span{flex:1; text-align:center; font-size:14px; font-weight:600; padding:9px 4px; border-radius:9px; background:#EEF2F7; color:var(--muted);}
-.steps span.on{background:var(--hs-blue); color:#fff;}
-.steps span.ok{background:var(--st-hand-bg); color:var(--hs-blue);}
-.catgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:12px;}
-@media(max-width:640px){.catgrid{grid-template-columns:repeat(2,1fr);}}
-.catbtn{background:#fff; border:2px solid var(--line); border-radius:14px; padding:16px 8px; font-size:16px; font-weight:600; color:var(--ink); display:flex; flex-direction:column; gap:8px; align-items:center; min-height:86px;}
-.catbtn .ico{font-size:26px;}
-.catbtn:hover{border-color:var(--hs-blue); background:var(--hs-blue-bg);}
-.catbtn.on{border-color:var(--hs-orange); background:var(--hs-orange-bg);}
-.locbox{background:var(--hs-blue-bg); border-radius:11px; padding:11px 14px; font-size:15px; margin-top:10px;}
-.confirm{border:2px solid var(--hs-blue-line); border-radius:14px; padding:15px 17px; margin-top:12px; font-size:15.5px; line-height:1.9;}
-.chat{display:flex; flex-direction:column; gap:10px; min-height:300px; margin-bottom:14px;}
-.bub{max-width:85%; padding:12px 15px; border-radius:15px; font-size:15.5px; line-height:1.6;}
-.bub.ai{background:var(--hs-blue-bg); border-top-left-radius:4px; align-self:flex-start;}
-.bub.me{background:var(--hs-blue); color:#fff; border-top-right-radius:4px; align-self:flex-end;}
-.bub.warn{background:var(--st-new-bg); border:2px solid var(--st-new); color:#7F1D1D; align-self:stretch; max-width:100%; font-weight:600; font-size:16px;}
-.toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--hs-blue-dark); color:#fff; padding:12px 22px; border-radius:999px; font-size:15px; display:none; z-index:99;}
-footer{ text-align:center; font-size:12.5px; color:var(--muted); margin-top:26px; line-height:1.7;}
+html,body{height:100%;}
+body{font-family:Pretendard,-apple-system,"Malgun Gothic",sans-serif; background:var(--bg); color:var(--ink);
+  font-size:15px; overflow:hidden;}
+button{font-family:inherit; cursor:pointer; border:none;}
 
-.logo-ph{width:44px;height:44px;border-radius:8px;background:#1D4994;color:#fff;font-size:11px;font-weight:800;line-height:1.15;display:flex;align-items:center;justify-content:center;text-align:center}
+/* ── 상단 바 ── */
+.insp-bar{position:fixed; left:0; right:0; top:0; height:var(--bar); z-index:20;
+  display:flex; align-items:center; gap:8px; padding:0 14px; background:#fff;
+  border-bottom:2px solid var(--hs-blue); overflow-x:auto;}
+.insp-bar > *{flex:0 0 auto;}
+.insp-bar b{font-size:15px; color:var(--hs-blue-dark); margin-right:4px;}
+.insp-bar .ver{font-family:ui-monospace,Consolas,monospace; font-size:11px; color:var(--muted);}
+.insp-sep{width:1px; height:22px; background:var(--line);}
+.insp-btn{height:32px; padding:0 12px; border-radius:8px; font-size:13px; font-weight:700;
+  background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
+.insp-btn:hover{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+.insp-btn.on{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.insp-legend{display:flex; gap:12px; align-items:center; margin-left:auto; font-size:12px; color:var(--muted);}
+.insp-legend span{display:flex; align-items:center; gap:5px;}
+.insp-legend i{width:11px; height:11px; border-radius:3px; display:inline-block;}
+.insp-count{font-size:12px; color:var(--muted);}
 
-.insp-bar{position:fixed;top:0;left:0;right:0;z-index:9000;background:#0a1628;color:#e8f2ff;
- display:flex;gap:8px;align-items:center;padding:8px 14px;font-size:13px;
- box-shadow:0 2px 12px rgba(10,22,40,.3);font-family:Pretendard,system-ui,sans-serif}
-.insp-bar b{font-size:14px;color:#38bdf8;letter-spacing:.5px}
-.insp-btn{height:30px;padding:0 11px;border-radius:6px;border:1px solid rgba(56,189,248,.4);
- background:transparent;color:#bcd0ec;font:inherit;font-size:12.5px;cursor:pointer}
-.insp-btn:hover{background:rgba(56,189,248,.16);color:#f0f9ff}
-.insp-btn.on{background:#38bdf8;border-color:#38bdf8;color:#0a1628;font-weight:700}
-.insp-legend{display:flex;gap:10px;margin-left:auto;font-size:11.5px;color:#8fa8c8}
-.insp-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:3px}
-body.insp-on{padding-top:46px}
-.insp-hit{position:relative;outline:1.5px dashed rgba(29,73,148,.55);outline-offset:2px;cursor:pointer}
-.insp-hit:hover{outline:2px solid #F07B27;background:rgba(240,123,39,.06)}
-.insp-tag{position:absolute;top:-9px;left:-6px;z-index:800;font:700 10.5px/1 ui-monospace,monospace;
- color:#fff;padding:3px 6px;border-radius:3px;pointer-events:none;white-space:nowrap}
-.insp-panel{position:fixed;right:0;top:46px;bottom:0;width:330px;z-index:9001;background:#fff;
- border-left:1px solid #E3EDF7;box-shadow:-4px 0 20px rgba(10,22,40,.12);padding:18px;overflow:auto;
- font-family:Pretendard,system-ui,sans-serif;transform:translateX(100%);transition:transform .2s}
-.insp-panel.open{transform:none}
-.insp-panel h3{margin:0;font-size:19px;letter-spacing:-.4px}
-.insp-code{font:700 12px ui-monospace,monospace;color:#1D4994}
-.insp-row{background:#F7F9FC;border-radius:8px;padding:9px 12px;margin-top:8px}
-.insp-row .k{font-size:11.5px;color:#8d9299}
-.insp-row .v{font-size:13.5px;color:#121314;word-break:break-all}
-.insp-cp{width:100%;height:44px;margin-top:14px;border:0;border-radius:8px;background:#1D4994;
- color:#fff;font:600 14px Pretendard,system-ui,sans-serif;cursor:pointer}
-.insp-cp:hover{background:#12305F}
-.insp-x{position:absolute;right:14px;top:14px;border:0;background:#F3F5FA;width:28px;height:28px;
- border-radius:50%;cursor:pointer;color:#8d9299;font-size:15px}
-@media(max-width:900px){.insp-panel{width:100%}}
+/* ── 화면 ── */
+#stage{position:fixed; left:0; right:0; top:var(--bar); bottom:0; background:#fff;}
+#frame{width:100%; height:100%; border:0; display:block;}
+#warn{display:none; position:absolute; inset:0; padding:40px; overflow:auto;
+  background:var(--bg); color:var(--ink); line-height:1.9;}
+#warn h2{font-size:20px; color:#B3261E; margin-bottom:12px;}
+#warn code{font-family:ui-monospace,Consolas,monospace; background:#fff; border:1px solid var(--line);
+  border-radius:6px; padding:2px 8px; font-size:13px;}
+#warn ol{margin:12px 0 0 20px;}
+#warn li{margin-bottom:8px;}
 
+/* ── 우측 패널 ── */
+.insp-panel{position:fixed; right:0; top:var(--bar); bottom:0; width:400px; z-index:30;
+  background:#fff; border-left:1px solid var(--line); box-shadow:-8px 0 28px rgba(16,32,64,.14);
+  padding:20px; overflow-y:auto; transform:translateX(101%); transition:transform .22s ease;}
+.insp-panel.open{transform:translateX(0);}
+.insp-x{position:absolute; right:14px; top:14px; width:28px; height:28px; border-radius:50%;
+  background:#F3F5FA; color:#8d9299; font-size:15px;}
+.insp-code{font-family:ui-monospace,Consolas,monospace; font-size:12px; font-weight:700;
+  color:#fff; background:var(--hs-blue); display:inline-block; padding:3px 9px; border-radius:5px;}
+.insp-panel h3{font-size:19px; margin:12px 0 4px; color:var(--hs-blue-dark);}
+.insp-scr{font-size:12px; color:var(--muted); margin-bottom:14px;}
+.insp-row{border-top:1px solid var(--line); padding:11px 0;}
+.insp-row .k{font-size:11.5px; font-weight:700; color:var(--muted); margin-bottom:4px;}
+.insp-row .v{font-size:13.5px; word-break:break-all; line-height:1.7;}
+.insp-row .v.mono{font-family:ui-monospace,Consolas,monospace; font-size:12.5px; color:#0F7A57;}
+.insp-cp{width:100%; height:44px; margin-top:16px; border-radius:8px;
+  background:var(--hs-blue); color:#fff; font-size:14px; font-weight:700;}
+.insp-cp:hover{background:var(--hs-blue-dark);}
+.insp-note{margin-top:12px; font-size:12px; color:var(--muted); line-height:1.7;
+  background:var(--hs-blue-bg); border:1px solid var(--hs-blue-line); border-radius:8px; padding:10px 12px;}
+
+/* ── 목록 보기 ── */
+.insp-list{position:fixed; left:0; right:0; top:var(--bar); bottom:0; z-index:25; background:var(--bg);
+  padding:20px; overflow-y:auto; display:none;}
+.insp-list.on{display:block;}
+.insp-list table{width:100%; border-collapse:collapse; background:#fff; border-radius:12px; overflow:hidden;
+  box-shadow:0 1px 3px rgba(16,32,64,.08);}
+.insp-list th, .insp-list td{padding:9px 12px; border-bottom:1px solid var(--line); text-align:left;
+  font-size:13px; vertical-align:top;}
+.insp-list th{background:var(--hs-blue-bg); color:var(--hs-blue-dark); font-size:12px; position:sticky; top:0;}
+.insp-list td.c{font-family:ui-monospace,Consolas,monospace; font-weight:700; white-space:nowrap;}
+.insp-list td.s{font-family:ui-monospace,Consolas,monospace; color:#0F7A57; white-space:nowrap;}
+.insp-list tr:hover td{background:#F7FAFD; cursor:pointer;}
+.insp-list h2{font-size:16px; color:var(--hs-blue-dark); margin:20px 0 8px;}
+.insp-list h2:first-child{margin-top:0;}
+.gtag{display:inline-block; font-size:11px; font-weight:700; color:#fff; border-radius:4px; padding:1px 7px;}
+@media(max-width:900px){ .insp-panel{width:100%;} }
 </style>
 </head>
 <body>
 
 <div class="insp-bar">
-  <b>설계 인스펙터</b>
-  <button class="insp-btn on" id="inspToggle">개발요소 표시</button>
-  <button class="insp-btn on" data-scr="duty">당직자 상황판</button>
+  <b>설계 인스펙터</b><span class="ver" id="verTxt">—</span>
+  <span class="insp-sep"></span>
+  <button class="insp-btn on" id="btnTag">개발요소 표시</button>
+  <button class="insp-btn" id="btnList">목록 보기</button>
+  <span class="insp-sep"></span>
+  <button class="insp-btn on" data-scr="duty">상황판</button>
   <button class="insp-btn" data-scr="dash">대시보드</button>
-  <button class="insp-btn" data-scr="citizen">민원접수창구</button>
+  <button class="insp-btn" data-scr="cit">민원창구</button>
+  <button class="insp-btn" data-scr="track">처리현황</button>
+  <button class="insp-btn" data-scr="road">기동단</button>
+  <button class="insp-btn" data-scr="cmd">조치지시</button>
+  <span class="insp-count" id="cntTxt"></span>
   <span class="insp-legend">
     <span><i style="background:#1D4994"></i>화면</span>
     <span><i style="background:#0F7A57"></i>데이터</span>
     <span><i style="background:#7A3EAF"></i>AI</span>
+    <span><i style="background:#B25412"></i>자동화</span>
     <span><i style="background:#C1352B"></i>점검</span>
   </span>
 </div>
+
+<div id="stage">
+  <iframe id="frame" src="../index.html#duty" title="도와드림QR 실제 화면"></iframe>
+  <div id="warn">
+    <h2>화면을 읽지 못했습니다</h2>
+    <p>이 인스펙터는 <b>실제 <code>index.html</code> 을 그대로 띄워</b> 그 위에 개발요소를 표시합니다.
+       정적 복사본이 아니라서 화면이 바뀌어도 어긋나지 않습니다.<br>
+       다만 브라우저가 <code>file://</code> 로 열린 문서끼리는 서로 읽지 못하게 막습니다.</p>
+    <p style="margin-top:14px"><b>이렇게 열어 주세요</b></p>
+    <ol>
+      <li>저장소 폴더에서 <code>npx serve .</code> 또는 <code>python -m http.server</code> 실행</li>
+      <li>브라우저에서 <code>http://localhost:3000/docs/설계인스펙터.html</code> 접속</li>
+      <li>배포본에서 보려면 <code>/docs/설계인스펙터.html</code> 로 접속</li>
+    </ol>
+    <p style="margin-top:14px">화면 없이 목록만 보려면 상단 <b>목록 보기</b>를 누르세요 — 그건 언제나 됩니다.</p>
+  </div>
+</div>
+
+<div class="insp-list" id="listView"></div>
 <aside class="insp-panel" id="inspPanel"></aside>
 
-<header>
-  <div class="logo-ph">화성<br>특례시</div>
-  <div class="title">
-    <h1>당직 업무 플랫폼</h1>
-    <p>재난안전상황실(5층) · 시청 당직실(1층) 통합 상황판 — 공모전 프로토타입</p>
-  </div>
-  <div class="mode" role="tablist">
-    <button id="tabDuty" class="on" >당직자 상황판</button>
-    <button id="tabDash" >종합현황 대시보드</button>
-    <button id="tabCit" >화성시 24시간 민원접수창구</button>
-  </div>
-  <a class="btn-g" href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener"
-     title="화성시 스마트행정지원시스템 — 내부망(행정망) 전용이라 외부에서는 열리지 않습니다"
-     style="display:flex;align-items:center;gap:7px;text-decoration:none;">🏢 행정조직도
-     <span style="font-size:11px;background:#EEF2F7;color:#64748B;padding:2px 7px;border-radius:999px;">내부망</span></a>
-  <div class="duty">
-    <b>당직자 김주무관</b> · 시청 당직실<br><span id="clock"></span>
-  </div>
-</header>
-
-<div class="wrap">
-<!-- ═══════════ 당직자 화면 ═══════════ -->
-<div id="duty">
-  <div class="grid">
-    <!-- 왼쪽: 접수 현황 -->
-    <div class="col-l">
-      <div class="card" style="margin-bottom:14px; padding:13px 16px" id="wxCard">
-        <h2 style="margin-bottom:8px">🌤️ 화성시 실시간 기상 <span class="sub">기상청 연동</span></h2>
-        <div id="wxBody" style="font-size:14.5px; color:var(--muted)">기상 정보를 불러오는 중…</div>
-        <div id="airBody" style="font-size:13.5px; color:var(--muted); margin-top:6px"></div>
-      </div>
-      <div class="card">
-        <h2>📋 민원접수 현황 <span class="sub" id="listCnt"></span></h2>
-        <div class="stats" style="grid-template-columns:1fr; margin:0 0 8px">
-          <div class="stat" style="background:var(--hs-blue);color:#fff"><div class="n" id="sTot" style="color:#fff">0</div><div class="l" style="color:#EAF1FF">금일 접수</div></div>
-        </div>
-        <div class="stats" style="grid-template-columns:repeat(4,1fr); margin:0 0 12px">
-          <div class="stat"><div class="n" id="sNewCit" style="color:var(--st-cit)">0</div><div class="l">신규접수<br><span style="font-size:11px;color:var(--muted)">민원접수창구</span></div></div>
-          <div class="stat"><div class="n" id="sNewDuty" style="color:var(--st-new)">0</div><div class="l">신규접수<br><span style="font-size:11px;color:var(--muted)">당직자접수</span></div></div>
-          <div class="stat"><div class="n" id="sHand" style="color:#9A6700">0</div><div class="l">처리중</div></div>
-          <div class="stat"><div class="n" id="sDone" style="color:var(--st-done)">0</div><div class="l">완료</div></div>
-        </div>
-        <div class="list-scroll" id="list"></div>
-      </div>
-      <div class="card" style="margin-top:14px" id="staffCard">
-        <h2>🧑‍🚒 당직 인력 현황 <span class="sub">투입 버튼 연동</span></h2>
-        <div id="staffBody"></div>
-      </div>
-      <div class="card" style="margin-top:14px" id="svcCard">
-        <h2>🚓🚒 경찰·소방 가용인력 <span class="sub">최근접 출동제</span></h2>
-        <div id="svcBody"></div>
-      </div>
-      <div class="card" style="margin-top:14px">
-        <h2>📰 화성시 실시간 이슈 <span class="sub">키워드 '화성시'</span></h2>
-        <div id="feed" style="font-size:14px; line-height:1.6; color:var(--muted); max-height:420px; overflow-y:auto; padding-right:4px">이슈를 불러오는 중…</div>
-      </div>
-    </div>
-    <!-- 가운데: 지도 -->
-    <div>
-      <div class="card">
-        <h2>🗺️ 실시간 상황 지도 <span class="sub">레이어를 켜고 끄세요</span></h2>
-        <div style="display:flex; gap:7px; align-items:center; background:#EEF3FB; border:1.5px solid #C9D8EE; border-radius:12px; padding:7px 10px; margin-bottom:8px">
-          <span style="font-size:12.5px; font-weight:800; color:#1D4994; margin-right:2px">🗺️ 지도 배경</span>
-          <button class="lb" id="satBtn" >🛰️ 항공</button>
-          <button class="lb" id="wxBtn" >🌦️ 기상</button>
-          <button class="lb" id="nightBtn" >🌙 야간모드</button>
-        </div>
-        <div class="lbar">
-          <div class="lbar-grid">
-          <button class="lb on" id="cplBtn" >🚨 민원</button>
-          <button class="lb on" id="festBtn" >🎪 행사·인파</button>
-          <button class="lb" id="stnBtn" >🚓🚒 소방서·경찰서</button>
-          <button class="lb" id="crimeBtn" >🚨 범죄주의</button>
-          <button class="lb" id="hospBtn" >🏥 병원</button>
-          <button class="lb" id="pmBtn" >💨 미세먼지</button>
-          <button class="lb" id="rwBtn" >🛣️ 도로날씨</button>
-          <button class="lb" id="cctvBtn" >📹 CCTV</button>
-          <button class="lb" id="bldgBtn" >🏢 건축물대장</button>
-          <button class="lb" id="jjBtn" >📐 지적</button>
-          <button class="lb" id="safeBtn" >🧒 안전시설</button>
-          <button class="lb" id="waterBtn" >🌊 물놀이</button>
-          <button class="lb" id="cnstBtn" >🏗️ 공사현장</button>
-          <button class="lb" id="bellBtn" >🔔 비상벨</button>
-          <button class="lb" id="emgBtn" >🚑 응급의료</button>
-          <button class="lb" id="cptedBtn" >🛡️ CPTED</button>
-          <button class="lb" id="incBtn" >⚠️ 돌발상황</button>
-          <button class="lb" id="pharmBtn" >💊 심야약국</button>
-          </div>
-        </div>
-        <div id="apiErrBox" style="display:none;background:#FFF8F7;border:1.5px dashed #E5B4AE;border-radius:10px;padding:8px 12px;margin-bottom:10px">
-          <span style="font-size:13px;font-weight:800;color:#B3261E">⚠️ API 연계오류 조치중</span>
-          <span style="font-size:12px;color:var(--muted)"> — 아래 연계는 일시 오류로 점검 중입니다. 데이터 직접 업로드 보완 예정.</span>
-          <div id="apiErrList" style="margin-top:5px"></div>
-        </div>
-        <div id="map" role="application" aria-label="화성시 접수 현황 지도"></div>
-        <div class="legend">
-          <span>🚨 긴급 민원 · 📢 일반 민원 — 테두리색=상태:</span>
-          <span><span class="dot" style="background:var(--hs-orange)"></span>신규접수(민원접수창구)</span>
-          <span><span class="dot" style="background:var(--st-new)"></span>신규접수(당직자접수)</span>
-          <span><span class="dot" style="background:#E5B800"></span>처리중</span>
-          <span><span class="dot" style="background:var(--st-done)"></span>완료</span>
-          <span>🎪 행사 = 인파 밀집(<span style="color:#D93025;font-weight:600">과열</span>·<span style="color:#F07B27;font-weight:600">주의</span>·<span style="color:#1D8348">보통</span>) <span style="font-size:11.5px;color:var(--muted)">— 출처: 화성시 문화관광포털(tour.hscity.go.kr) 축제·행사 일정 웹크롤링</span></span>
-        </div>
-        <div class="row">
-          <button class="btn-p" >📄 일일보고 자동 생성</button>
-          <button class="btn-g" >🔍 당직메뉴얼 검색</button>
-        </div>
-        <p class="hint">핀 클릭=상세 보기 · <b>빈 지도 클릭=신규 접수 위치 지정</b>(관할구 자동, 오른쪽 AI 서기와 연동)</p>
-      </div>
-    </div>
-    <!-- 오른쪽: 업무 처리 -->
-    <div class="col-r">
-      <div class="card ai-box">
-        <h2>🖊️ AI 접수 서기 <span class="sub">전화 받으며 입력</span></h2>
-        <div style="display:flex; gap:8px; margin-bottom:10px">
-          <input id="adrKw" placeholder="주소 검색 (예: 향남읍 행정리 494 / 시청로 159)" style="flex:1" onkeydown="if(event.key==='Enter')jusoDuty()">
-          <button class="btn-g" style="min-height:44px;padding:8px 14px" >🔎 주소검색</button>
-        </div>
-        <div id="adrRes" style="display:none; margin-bottom:10px"></div>
-        <div class="ai-note" id="mapPin" style="display:none"></div>
-        <div id="selBanner" style="display:none;background:#FFF4E8;border:1.5px solid #F0C9A0;border-radius:10px;padding:7px 12px;margin-top:8px;font-size:13.5px">🎯 <b>선택 민원만 강조 표시 중</b> — 나머지 민원은 흐리게 표시됩니다. <a href="#"  style="color:var(--hs-blue);font-weight:700">전체 민원 보기</a></div>
-        <textarea id="rawText" placeholder="지도를 클릭해 위치를 찍고, 통화 내용을 들리는 대로 입력하세요.
-예) 배수로가 막혀서 물이 넘친다고 빨리 치워달라시는데요"></textarea>
-        <div class="row">
-          <button class="btn-p" id="btnParse" >AI로 정리하기</button>
-        </div>
-        <div class="ai-note" id="aiAsk"></div>
-        <div class="form" id="parsedForm" style="display:none">
-          <div class="full"><label>민원발생위치</label><input id="fLoc"></div>
-          <div><label>관할구</label><select id="fGu"><option>만세구</option><option>효행구</option><option>병점구</option><option>동탄구</option><option>미상</option></select></div>
-          <div><label>분야</label><select id="fField" ></select></div>
-          <div class="full"><label>세부유형</label><select id="fSub"></select></div>
-          <div class="full"><label>민원발생사항</label><input id="fSum"></div>
-          <div class="full"><label>처리요청사항</label><input id="fReq"></div>
-          <div><label>긴급도</label><select id="fUrg"><option>일반</option><option>긴급</option></select></div>
-          <div style="display:flex; align-items:flex-end"><button class="btn-o" style="width:100%" >접수 등록</button></div>
-        </div>
-        <p class="hint">AI가 정리해 채워줍니다. <b>확인 후 접수 등록을 눌러야 정식 접수됩니다.</b></p>
-      </div>
-            <div class="card" style="margin-bottom:14px" id="journalCard">
-        <h2>📋 재난상황일지 AI 서기 <span class="sub">막 적으면 자동 분류</span></h2>
-        <textarea id="jRaw" placeholder="상황을 자유롭게 적으세요.
-예) NDMS 3건 들어왔고 유관기관 통보 1건. 봉담읍에서 22시쯤 옹벽 균열 신고 있었는데 인명피해 없고 접근통제 조치함. 전국적으로는 남부지방 호우경보 발효 중" style="min-height:110px; resize:vertical; margin-bottom:10px"></textarea>
-        <button class="btn-p" id="btnJParse"  style="width:100%">AI로 일지 정리하기</button>
-        <p class="hint" style="margin-top:8px">AI가 아래 일지 항목에 자동 분류합니다. 확인 후 수정할 수 있고, 일일보고 HWPX에 그대로 반영됩니다.</p>
-        <div id="jForm" style="display:none; margin-top:12px; border-top:1.5px dashed var(--line); padding-top:12px">
-        <p style="font-size:13.5px; font-weight:700; color:var(--hs-blue-dark); margin-bottom:6px">상황접수현황 (건수)</p>
-        <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px">
-          <div><label style="font-size:12px; color:var(--muted); font-weight:600">NDMS</label><input id="jN1" placeholder="-" style="text-align:center" ></div>
-          <div><label style="font-size:12px; color:var(--muted); font-weight:600">유관기관</label><input id="jN2" placeholder="-" style="text-align:center" ></div>
-          <div><label style="font-size:12px; color:var(--muted); font-weight:600">기타</label><input id="jN3" placeholder="-" style="text-align:center" ></div>
-          <div><label style="font-size:12px; color:var(--muted); font-weight:600">계</label><input id="jN4" placeholder="-" style="text-align:center" ></div>
-        </div>
-        <p style="font-size:13.5px; font-weight:700; color:var(--hs-blue-dark); margin-bottom:6px">우리 시 주요 재난·사건·사고</p>
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px">
-          <input id="jMjType" placeholder="사고유형" >
-          <input id="jMjDt" placeholder="발생일시" >
-        </div>
-        <input id="jMjLoc" placeholder="발생위치" style="margin-bottom:8px" >
-        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px">
-          <input id="jMjHum" placeholder="피해(인명)" >
-          <input id="jMjProp" placeholder="피해(재산)" >
-        </div>
-        <textarea id="jMjAct" placeholder="활동사항" style="min-height:48px; resize:vertical; margin-bottom:12px" ></textarea>
-        <p style="font-size:13.5px; font-weight:700; color:var(--hs-blue-dark); margin-bottom:6px">국내 주요 재난·사건·사고</p>
-        <textarea id="jNation" placeholder="특이사항 없음" style="min-height:52px; resize:vertical" ></textarea>
-        </div>
-      </div>
-      <div class="card">
-        <h2>🧑‍💼 업무 처리 <span class="sub" id="dHint">목록/지도에서 선택</span></h2>
-        <div id="detail"><p class="hint">왼쪽 접수 목록 또는 지도 핀을 선택하면 대응 매뉴얼과 처리 버튼이 표시됩니다.</p></div>
-      </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ═══════════ 시민 화면 ═══════════ -->
-<div id="dash">
-  <div class="kpis" id="dKpis"></div>
-  <div style="display:grid; grid-template-columns:minmax(240px,1fr) minmax(0,1.7fr) minmax(240px,1fr); gap:14px; margin-bottom:14px; align-items:start" class="dash-top">
-    <div>
-      <div class="card"><h2>📊 최근 7일 접수 추이</h2><div class="cols" id="dTrend"></div></div>
-      <div class="card" style="margin-top:14px"><h2>🕐 시간대별 접수 분포 <span class="sub">당직시간 피크 분석</span></h2><div id="dHour"></div></div>
-      <div class="card" style="margin-top:14px"><h2>🚨 긴급도 비율</h2><div id="dUrg"></div></div>
-    </div>
-    <div class="card">
-      <h2>🗺️ 누적 현황 지도 <span class="sub">재난이력+완료민원</span>
-        <button class="btn-g" style="min-height:36px;padding:6px 14px;font-size:13.5px;margin-left:auto" >💾 백업</button></h2>
-      <div id="dashMap" style="width:100%; height:46vh; min-height:380px; border-radius:14px; overflow:hidden; border:1.5px solid var(--line)"></div>
-      <div class="legend" style="margin-top:8px">
-        <span>🚨 재난상황 이력</span>
-        <span>✅ 처리완료 민원</span>
-        <span style="font-size:12px;color:var(--muted)">클릭하면 상세</span>
-      </div>
-    </div>
-    <div>
-      <div class="card"><h2>🗂️ 분야별 누적</h2><div id="dField"></div></div>
-      <div class="card" style="margin-top:14px"><h2>🗺️ 관할구별 누적</h2><div id="dGu"></div></div>
-    </div>
-  </div>
-  <div class="dgrid2">
-    <div class="card"><h2>🚨 재난상황 이력 <span class="sub">안전·재난 + 긴급 분류</span></h2><div class="tbl-scroll" id="dDisaster"></div></div>
-    <div class="card"><h2>✅ 민원처리 이력 <span class="sub">완료 건 자동 이관·누적</span></h2><div class="tbl-scroll" id="dDone"></div></div>
-  </div>
-</div>
-<div id="citizen">
-  <div class="card">
-    <h2>🏠 화성시 24시간 민원접수창구 <span class="sub">야간·휴일에도 바로 접수됩니다</span></h2>
-    <div class="steps"><span id="st1" class="on">1. 위치 선택</span><span id="st2">2. 신고 유형</span><span id="st3">3. 확인·접수</span></div>
-    <div id="citStep1">
-      <p style="font-size:16px; font-weight:600">지도에서 민원 발생 위치를 누르시거나, 현재 계신 곳이면 아래 버튼을 눌러주세요.</p>
-      <div class="row" style="margin-top:10px"><button class="btn-o" style="font-size:17px" >📍 현재 위치로 신고하기</button></div>
-      <div id="citMap" style="margin-top:10px"></div>
-      <div style="display:flex; gap:8px; margin-top:10px">
-        <input id="citAdrKw" placeholder="또는 주소로 찾기 (예: 동탄역로 122)" style="flex:1" onkeydown="if(event.key==='Enter')jusoCit()">
-        <button class="btn-g" style="min-height:44px;padding:8px 14px" >🔎 검색</button>
-      </div>
-      <div id="citAdrRes" style="display:none; margin-top:8px"></div>
-      <div class="locbox" id="citLocBox" style="display:none"></div>
-      <div class="row"><button class="btn-p" id="citNext1"  disabled style="opacity:.5">다음 (유형 선택)</button></div>
-    </div>
-    <div id="citStep2" style="display:none">
-      <p style="font-size:16px; font-weight:600">어떤 불편을 신고하시나요?</p>
-      <div class="catgrid" id="citCats"></div>
-      <div id="citSubWrap" style="display:none">
-        <p style="font-size:15.5px; font-weight:600; margin-top:16px; color:var(--hs-blue-dark)">어떤 시설물인가요?</p>
-        <div class="catgrid" id="citSubs"></div>
-      </div>
-      <div id="citEtcWrap" style="display:none; margin-top:14px">
-        <label style="font-size:14px; font-weight:600; color:var(--muted)">내용을 직접 적어주세요</label>
-        <textarea id="citEtcText" style="margin-top:6px; min-height:80px" placeholder="예) 공원 벤치가 부서져 있어요"></textarea>
-      </div>
-      <div class="row"><button class="btn-g" >← 위치 다시 선택</button><button class="btn-p" id="citNext2"  disabled style="opacity:.5">다음 (확인)</button></div>
-    </div>
-    <div id="citStep3" style="display:none">
-      <p style="font-size:16px; font-weight:600">아래 내용으로 접수할까요?</p>
-      <div class="confirm" id="citConfirm"></div>
-      <label style="font-size:14px; font-weight:600; color:var(--muted); display:block; margin-top:12px">추가 설명 (선택)</label>
-      <input id="citExtra" placeholder="예) 이틀째 그대로예요" style="margin-top:6px">
-      <label style="font-size:14px; font-weight:600; color:var(--muted); display:block; margin-top:12px">사진 첨부 (선택)</label>
-      <div class="row" style="margin-top:6px"><label class="btn-g" style="text-align:center; line-height:24px">📷 사진 선택/촬영<input type="file" id="citPhoto" accept="image/*" capture="environment" style="display:none" ></label></div>
-      <img id="citPhotoPrev" style="display:none; max-width:100%; max-height:220px; border-radius:12px; margin-top:8px; border:1.5px solid var(--line)">
-      <div class="row"><button class="btn-g" >← 유형 다시 선택</button><button class="btn-o" >신고 접수</button></div>
-    </div>
-    <div id="citDone" style="display:none"></div>
-    <p class="hint">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
-  </div>
-</div>
-<footer>화성특례시 당직 업무 플랫폼 프로토타입 · AI공모전 출품용 데모 — 데이터는 예시이며 실제 접수되지 않습니다.<br>인계 문자·연락처는 데모용으로 일부 마스킹되어 있습니다.</footer>
-</div>
-
-<div class="ovl" id="ovl"><div class="modal" id="modalBody"></div></div>
-<div class="toast" id="toast"></div>
-
 <script>
+/* ══════════════════════════════════════════════════════════
+   설계 인스펙터 — 실제 화면(index.html)을 iframe 으로 띄우고
+   등록된 요소에 코드 표를 얹는다. 화면이 바뀌어도 어긋나지 않는다.
+   REG = [코드, 선택자, 이름, 코드에서 찾을 위치, 범주, 설명, 화면]
+   ══════════════════════════════════════════════════════════ */
+var GRP = {'화면':'#1D4994', '데이터':'#0F7A57', 'AI':'#7A3EAF', '자동화':'#B25412', '점검':'#C1352B'};
+var SCR_NM = {duty:'상황판', dash:'대시보드', cit:'민원창구', track:'처리현황', road:'기동단', cmd:'조치지시'};
 
-var REG=[["UI-H1", "#tabDuty", "당직자 상황판 탭", "setMode('duty')", "화면", "기본 진입 화면"], ["UI-H2", "#tabDash", "대시보드 탭", "setMode('dash')", "화면", "누적 데이터 분석"], ["UI-H3", "#tabCit", "시민 접수창구 탭", "setMode('cit')", "화면", "QR 접속 시 기본 화면으로 변경 예정"], ["UI-H4", "#clock", "당직 편성·시계", "시간대 자동 전환", "화면", "일직·숙직 자동 전환, 편성표 토글"], ["D-L1", "#wxCard", "기상·대기 카드", "loadWeather / loadAir", "데이터", "기상청 실황·특보, 에어코리아"], ["D-L2", "#sTot", "접수 통계 5종", "renderList 집계", "데이터", "전체·시민·전화·처리중·완료"], ["D-L3", "#list", "민원 목록", "renderList / selectItem", "화면", "긴급 우선·최신순. 클릭 시 지도 포커스"], ["D-L4", "#staffCard", "가용 인력 현황", "staffBody / dispatchCrew", "데이터", "출동 배정 기준"], ["D-L5", "#svcCard", "경찰·소방 가용인력", "svcBody", "데이터", "최근접 출동 대상"], ["D-L6", "#feed", "실시간 이슈", "loadFeed / api/naver", "데이터", "네이버 뉴스 100건"], ["D-L7", "#apiErrBox", "API 오류 안내", "apiErrList", "점검", "발표 중 노출 방지 필요"], ["D-M1", "#map", "실시간 상황 지도", "initMap / renderMap", "화면", "민원 핀·레이어 20종·출동 경로"], ["D-M2", ".lbar-grid", "레이어 버튼 20종", "toggle* 함수군", "화면", "높이 36px 통일 필요"], ["D-M3", "#satBtn", "배경 전환 3종", "toggleSat / toggleWx / toggleNight", "화면", "VWorld 항공·야간, Windy 기상"], ["D-M4", "#cctvBtn", "CCTV 레이어", "toggleCctv / api/cctv", "데이터", "ITS + 경찰청 UTIC, hls.js 영상"], ["D-M5", "#jjBtn", "지적 레이어", "toggleJijeok / tiles", "데이터", "자체 벡터타일 51만 필지"], ["D-M6", "#bldgBtn", "건축물대장", "bldgQuery / bldg_db", "데이터", "건축HUB + 로컬 폴백"], ["D-M7", "#pharmBtn", "심야약국", "togglePharm", "점검", "심평원 승인 대기"], ["D-M8", "#adrRes", "주소 검색", "jusoDuty / addrToLL", "데이터", "VWorld 지오코딩 4단 폴백"], ["D-M9", "#selBanner", "선택 포커스 배너", "selectItem", "화면", "선택 강조·나머지 디밍"], ["D-R1", "#aiAsk", "AI 접수 서기", "parseDuty / aiStructure", "AI", "자유 기록 → 유형·긴급도·위치"], ["D-R2", "#parsedForm", "구조화 결과 폼", "registerItem", "화면", "AI 신뢰도 표시 추가 예정"], ["D-R3", "#journalCard", "재난상황일지", "parseJournal", "AI", "자유 서술 → 일일보고 표"], ["D-R4", "#detail", "업무 처리 패널", "openHandoff / askDispatch / nextStage", "화면", "문자 인계·인력 투입·단계 진행"], ["B-1", "#dKpis", "핵심 지표", "renderDash", "점검", "평균 처리시간 지표 없음"], ["B-2", "#dTrend", "추이 그래프", "renderDash", "화면", "7일·시간대·긴급도"], ["B-3", "#dashMap", "누적 지도", "initDashMap", "점검", "상습지점 열지도 미구현"], ["B-4", "#dField", "분야·관할 분포", "dashClick", "화면", "클릭 시 아래 표 필터"], ["B-5", "#dDone", "처리완료 이력", "renderDash", "화면", "읍면동별 범위 분리 예정"], ["C-1", "#citMap", "위치 지정", "citPick / citMyLoc / outOfCity", "화면", "GPS·핀 드래그·주소검색 3방식"], ["C-2", "#citCats", "유형 선택", "citCat / citSub", "화면", "티맵식 5종+기타로 재설계 예정"], ["C-3", "#citStep3", "확인·접수", "citSubmit", "화면", "접수 후 추적 화면 연결 예정"], ["C-4", "#citPhoto", "현장 사진", "citPhotoPrev", "화면", "선택 항목"], ["C-5", "#citDone", "접수 완료", "citReset", "점검", "처리 현황 추적 화면 신설 필요"]], GRP={"화면": "#1D4994", "데이터": "#0F7A57", "AI": "#7A3EAF", "점검": "#C1352B"}, on=true, cur=null;
-function tag(el,r){
- var s=getComputedStyle(el);
- if(s.position==='static') el.style.position='relative';
- el.classList.add('insp-hit'); el.dataset.insp=r[0];
- var t=document.createElement('span'); t.className='insp-tag';
- t.style.background=GRP[r[4]]; t.textContent=r[0];
- el.appendChild(t);
+var REG = [
+/* ── 명령 바 (상황판 헤더 통합) ── */
+['CMD-1','.cs-modes','화면 이동 칩 5종',"setMode() · MODES",'화면','상황판·대시보드·기동단·조치지시·민원창구. 주소(#duty #dash #road #cmd #cit)와 연동된다','duty'],
+['CMD-2','#csSearchBtn','검색 (Ctrl+K)','csSearch()','화면','접수번호·위치·유형으로 찾아 선택까지 이동','duty'],
+['CMD-3','#fltAll','상태 필터 (전체·긴급·미처리)','csFilter() / csPass()','화면','걸리지 않는 건은 숨기지 않고 흐린다(흐린 건수는 옆에 표시)','duty'],
+['CMD-4','#csLive','LIVE 토글','csLiveToggle() / csNow()','자동화','켜면 선택 시각이 현재를 자동 추종. 끄면 그 시각 상태를 재현','duty'],
+['CMD-5','#rng24','시간 범위 (1·6·24시간)','csRange()','화면','지도·목록·타임라인에 함께 걸리는 창','duty'],
+['CMD-6','#csClock','시계·근무대','csClockTick()','화면','일직(09~18)·숙직 자동 구분. 화면 전체에서 시계는 여기 하나뿐','duty'],
+['CMD-7','#csMe','내 소속','openMe() / meSet() / meScope()','화면','상황실·부서·행정복지센터 3단계 선택. 고른 범위가 화면에 즉시 걸린다','duty'],
+
+/* ── 좌측 패널 ── */
+['L-1','#ltList','좌측 탭 3종','csLeftTab()','화면','민원 / 레이어 / 자원','duty'],
+['L-2','#statLine','통계 한 줄 요약','renderList() 집계','데이터','금일·긴급·처리중·완료. 남는 세로는 전부 목록이 갖는다','duty'],
+['L-3','#scSum','소속 범위 요약·내려받기','scopeItems() / scopeExport()','데이터','우리 처리·타 부서를 나눠 세고 현재 범위를 CSV 로 내려받는다','duty'],
+['L-4','#scTabs','읍면동 두 탭','scopeTab()','화면','"우리 관내 전체"(타 부서 건 흐림 + 부서 배지) / "우리가 처리한 건"','duty'],
+['L-5','#list','민원 목록 (구획형)','renderList() / listRow()','화면','긴급 → 일반 → 처리중 구획. 머리글 고정, 긴급은 최상단·접기 불가. 완료는 대시보드로','duty'],
+['L-6','#layerList','레이어 패널 21종','renderLayerPanel() / LAYER_ORDER','화면','켜짐=진한 파랑, 꺼짐=흐린 회색. 끌어서 순서 변경(브라우저에 저장)','duty'],
+['L-7','#wxCard','기상·대기','loadWeather() / loadAir()','데이터','기상청 실황·특보 + 에어코리아','duty'],
+['L-8','#staffBody','당직 인력 현황','renderStaff() / dispatchCrew()','데이터','근무대 자동 전환, 출동 배정의 기준','duty'],
+['L-9','#svcBody','경찰·소방 가용인력','renderStaff() 내 svcBody','데이터','최근접 출동 대상','duty'],
+['L-10','#feed','실시간 이슈','loadFeed() / api/naver','데이터','네이버 뉴스 + yna_news 축적분','duty'],
+
+/* ── 지도 ── */
+['M-1','#map','실시간 상황 지도','initMap() / renderMap()','화면','잔여 영역 전부를 차지한다. 민원 핀·출동 경로·레이어','duty'],
+['M-2','#mapLayerBar','레이어 칩 (주요 5종)','toggle* 함수군','화면','한 줄 고정. 전체 목록은 좌측 레이어 탭에서 조작','duty'],
+['M-3','#mapBaseBar','지도 도구 (우상단)','toggleSat / toggleWx / toggleNight','화면','항공·기상·야간 + 캡처 + 전체화면','duty'],
+['M-4','#mapCapBtn','지도 캡처','csCapture()','점검','보고서 삽입용 PNG. 타일이 교차 출처면 배경이 비어 나올 수 있다','duty'],
+['M-5','#mapFsBtn','전체화면','mapFsToggle() / mapResize()','화면','Esc 로 해제. 전환마다 invalidateSize 4단계 호출','duty'],
+['M-6','#cctvBtn','CCTV','toggleCctv() / api/cctv','데이터','ITS + 경찰청 UTIC 병합, hls.js 인라인 영상','duty'],
+['M-7','#jjBtn','지적','toggleJijeok() / tiles/jijeok','데이터','자체 벡터타일 51만 필지 + 지번 라벨타일','duty'],
+['M-8','#bldgBtn','건축물대장','toggleBldg() / bldgSample() / bldg_db','데이터','건축HUB + 로컬 원본 폴백. 표본은 필요 시점에만 받는다','duty'],
+['M-9','#wxBtn','기상 관제 (Windy)','toggleWx() / windyURL()','데이터','전체화면에서도 부모 크기를 따라 함께 확대','duty'],
+['M-10','#pharmBtn','심야약국','togglePharm()','점검','심평원 일반약국 API 승인 대기 — 승인 시 자동 활성','duty'],
+['M-11','#apiErrBox','API 연계오류 안내','apiErrList','점검','실패한 연계만 지도 아래에 조용히 표시','duty'],
+
+/* ── 우측 패널 ── */
+['R-1','#rtSel','우측 탭 3종','csRightTab()','화면','선택 상세 / 접수 / 일지 — 조회와 지시가 한 자리','duty'],
+['R-2','#detail','선택 상세·조치','selectItem() / deptBlock()','화면','법적 소관·처리 주체 2층 배정, 인력 투입·문자 인계·결과보고','duty'],
+['R-3','#aiAsk','AI 접수 서기','parseDuty() / aiStructure()','AI','통화 내용을 그대로 적으면 유형·긴급도·위치로 정리','duty'],
+['R-4','#parsedForm','구조화 결과 폼','registerItem()','화면','확인 후 눌러야 정식 접수된다','duty'],
+['R-5','#journalCard','재난상황일지 AI 서기','parseJournal()','AI','자유 서술 → 일일보고 표 항목으로 자동 분류','duty'],
+['R-6','#adrRes','주소 검색','jusoDuty() / addrToLL()','데이터','juso 검색키 + VWorld 지오코딩 폴백','duty'],
+
+/* ── 하단 스트립 ── */
+['S-1','#csTimeline','시간대별 접수','csStripRender()','화면','24구간. 한 구간에 몰려도 읽히도록 제곱근 스케일 + 최댓값 표기','duty'],
+['S-2','#csEvents','실시간 이벤트','csStripRender()','자동화','최근 처리이력 20건','duty'],
+['S-3','#csKpis','처리 지표','d10Stats()','데이터','긴급·처리중·출동·열린 민원·평균 처리·상위10% 지연','duty'],
+['S-4','#csPlayBtn','재생 (1x·5x·20x)','csPlay() / csSpeed()','자동화','과거 구간을 되감아 재생. 시연 모드와 함께 쓴다','duty'],
+['S-5','#csStripBtn','스트립 접기','csStripToggle()','화면','접어도 시간 범위·필터·선택 시각은 지도에 계속 걸린다','duty'],
+
+/* ── 대시보드 ── */
+['B-1','#dKpis','핵심 지표','renderDash()','데이터','누적·완료·진행·재난·시민접수·평균 처리시간','dash'],
+['B-2','#dashMap','누적 현황 지도','initDashMap() / L.heatLayer','화면','상단 전폭. 재난이력 + 완료민원 밀도','dash'],
+['B-3','#dOps','처리시간·상습지점','d10Stats()','데이터','현장 결과보고 실측 소요시간 + 반복 지점 상위 6곳','dash'],
+['B-4','#dTrend','7일 접수 추이','renderDash()','화면','클릭하면 아래 표가 필터된다','dash'],
+['B-5','#dField','분야·관할 분포','dashClick()','화면','분야별·관할구별 누적','dash'],
+['B-6','#dDone','민원처리 이력','dashDone()','데이터','완료 건 자동 이관. 중장기 진행 건은 섞지 않는다','dash'],
+
+/* ── 시민창구 ── */
+['C-1','#citStart','신고 진입','citFlow(\'type\')','화면','지도 좌하단 56px — 한 손으로 닿는 자리','cit'],
+['C-2','#citNear','근처 신고 보기','citNearby()','데이터','반경 3km 미완료 건. 중복 신고를 줄인다(담당자 정보는 나가지 않는다)','cit'],
+['C-3','#citSheet','하단 시트','citFlow() 단계별','화면','유형(야간 다발 5종 + 그 밖) → 위치 → 확인·접수','cit'],
+['C-4','#citCross','핀 고정 + 지도 이동','citLocSync() / citPick()','화면','화면 가운데 핀은 고정하고 지도를 움직여 위치를 맞춘다','cit'],
+['C-5','#citMap','시민 지도','initCitMap() / outOfCity()','화면','관할 밖은 접수 차단, 읍면동 2.5km 허용','cit'],
+
+/* ── 처리 현황 추적 ── */
+['T-1','#track','처리 현황 추적','renderTrack() / trackPublic()','화면','처리구분별 3종 화면. 접수번호로 재조회','track'],
+['T-2','#tkMap||#track','인력 이동 표현','trackTick() / trackHeading()','자동화','보간 이동·방향 회전·지나온 길 흐림·도착 임박(잔여 18%). <b>즉시처리 건을 추적 중일 때만</b> 그려진다','track'],
+['T-3','#tkFollowBtn||#track','자동 추적','trackFollowOn()','화면','시민 화면 기본 켜짐. <b>지도를 직접 만졌을 때만</b> "다시 따라가기" 버튼이 나타난다','track'],
+
+/* ── 신속기동단 작업판 ── */
+['RD-1','#road','처리구분 3열','renderRoad() / triage()','화면','즉시(4시간)·단기(7일)·중장기(6개월). 열마다 관리 기준이 다르다','road'],
+['RD-2','.rd-bundle||#road','작업 묶음 제안','bundleSuggest() / bundleAssign()','자동화','같은 읍면동·같은 유형 단기처리가 <b>2건 이상 모였을 때만</b> 제안이 뜬다','road'],
+['RD-3','.rd-card.over||.rd-card||#road','기한 초과·임박','dueOf() / leftText()','점검','초과는 빨강 테두리, 임박(잔여 25%)은 주황. 열 맨 위로 정렬. <b>해당 건이 있을 때만</b>','road'],
+['RD-4','.rd-steps||#road','중장기 5단계','longStepsOf() / longStageSet()','화면','교통분석→경찰 협의→설계→예산→공사. 신호등·횡단보도는 경찰 심의 자동 삽입. <b>중장기 건이 있을 때만</b>','road'],
+
+/* ── 조치지시 ── */
+['K-1','.hud','탐지 근거 (HUD)','detectSurges() / ruleThresholds()','AI','지역·건수·시간창·반경·평소 대비 배수·특보. 상신 기준을 넘은 건만 올라온다','cmd'],
+['K-2','.cmd-grid||#cmd','조치 유형 3분류','ACT_TYPES / cmdPickType()','화면','일반민원·긴급민원·선제조치. 카드마다 총원이 미리 계산돼 있다. <b>상신 건이 있을 때만</b>','cmd'],
+['K-3','.cmd-step||#cmd','인원 증감 버튼','cmdStep()','화면','40px 정사각. 슬라이더를 쓰지 않아 조정 단계를 감추지 않는다. <b>상신 건이 있을 때만</b>','cmd'],
+['K-4','.cmd-warn||#cmd','총원 경고','CREW_BAND','점검','과다(비번 소집·초과근무)·과소(대응 지연) 양방향. <b>상신 건이 있을 때만</b>','cmd'],
+['K-5','.ack||#cmd','수신확인·재통보','cmdIssue() / cmdRetry()','자동화','부서별 수신확인 시각 표시, 미수신은 자동 재통보(최대 3회). <b>하달 이력이 있을 때만</b>','cmd'],
+['K-6','.rule-row||#cmd','급증 탐지 규칙','openRules() / ruleApplyDraft()','데이터','초안→심의 상정→의결·시행. 개정 전 "최근 30일이면 몇 회" 검증. <b>⚙️ 탐지 규칙 모달을 열었을 때만</b>','cmd'],
+['K-7','.cmd-card h4||#cmd','보류·재상신','holdOpen() / holdCheck()','자동화','사유 없이 보류 불가. 인명 관련 신고는 억제를 무시하고 즉시 재상신. <b>보류 건이 있을 때만</b>','cmd']
+];
+
+var on = true, cur = null, listOn = false, curScr = 'duty';
+var fr = document.getElementById('frame');
+
+function fdoc(){
+  try{
+    var d = fr.contentDocument || (fr.contentWindow && fr.contentWindow.document);
+    if(d && d.body) return d;
+  }catch(e){}
+  return null;
+}
+function fwin(){ try{ return fr.contentWindow; }catch(e){ return null; } }
+
+/* 화면 안에 태그 스타일을 한 번만 심는다 */
+function injectStyle(d){
+  if(d.getElementById('inspStyle')) return;
+  var st = d.createElement('style');
+  st.id = 'inspStyle';
+  st.textContent =
+    '.insp-hit{outline:2px dashed rgba(29,73,148,.55) !important; outline-offset:1px;}' +
+    '.insp-tag{position:absolute; z-index:99998; left:0; top:0; transform:translateY(-100%);' +
+    ' font:700 10.5px ui-monospace,Consolas,monospace; color:#fff; padding:1px 6px;' +
+    ' border-radius:4px 4px 4px 0; pointer-events:none; white-space:nowrap;' +
+    ' box-shadow:0 1px 4px rgba(0,0,0,.3);}';
+  d.head.appendChild(st);
+}
+function clearTags(d){
+  d.querySelectorAll('.insp-tag').forEach(function(t){ t.remove(); });
+  d.querySelectorAll('.insp-hit').forEach(function(e){
+    e.classList.remove('insp-hit'); delete e.dataset.insp;
+  });
 }
 function build(){
- REG.forEach(function(r){ var el=document.querySelector(r[1]); if(el) tag(el,r); });
+  var d = fdoc();
+  if(!d){ showWarn(); return; }
+  injectStyle(d);
+  clearTags(d);
+  var n = 0;
+  REG.filter(function(r){ return r[6] === curScr; }).forEach(function(r){
+    var el = null;
+    /* 조건부 요소는 "정밀선택자||대체선택자" 로 적는다 — 앞에서부터 찾는다 */
+    var sels = String(r[1]).split('||');
+    for(var i = 0; i < sels.length && !el; i++){
+      try{ el = d.querySelector(sels[i].trim()); }catch(e){}
+    }
+    if(!el || !el.offsetParent && el.offsetHeight === 0) { if(!el) return; }
+    var cs = d.defaultView.getComputedStyle(el);
+    if(cs.position === 'static') el.style.position = 'relative';
+    el.classList.add('insp-hit');
+    el.dataset.insp = r[0];
+    var t = d.createElement('span');
+    t.className = 'insp-tag';
+    t.style.background = GRP[r[4]] || '#1D4994';
+    t.textContent = r[0];
+    t.style.display = on ? '' : 'none';
+    el.appendChild(t);
+    n++;
+  });
+  var tot = REG.filter(function(r){ return r[6] === curScr; }).length;
+  document.getElementById('cntTxt').textContent = SCR_NM[curScr] + ' ' + n + '/' + tot + '개 표시';
+  bindClicks(d);
+}
+var bound = null;
+function bindClicks(d){
+  if(bound === d) return;
+  bound = d;
+  d.addEventListener('click', function(e){
+    if(!on) return;
+    var el = e.target.closest && e.target.closest('[data-insp]');
+    if(!el) return;
+    e.preventDefault(); e.stopPropagation();
+    show(el.dataset.insp);
+  }, true);
 }
 function show(code){
- var r=REG.filter(function(x){return x[0]===code;})[0]; if(!r) return;
- cur=r;
- var p=document.getElementById('inspPanel');
- p.innerHTML='<button class="insp-x" id="inspX" aria-label="닫기">✕</button>'+
-  '<div class="insp-code">'+r[0]+' · '+r[4]+'</div><h3>'+r[2]+'</h3>'+
-  '<div class="insp-row"><div class="k">선택자</div><div class="v" style="font-family:ui-monospace">'+r[1]+'</div></div>'+
-  '<div class="insp-row"><div class="k">코드에서 찾을 위치</div><div class="v" style="font-family:ui-monospace">'+r[3]+'</div></div>'+
-  '<div class="insp-row"><div class="k">설명</div><div class="v">'+r[5]+'</div></div>'+
-  '<button class="insp-cp" id="inspCp">수정 지시문 복사</button>';
- p.classList.add('open');
- document.getElementById('inspX').onclick=function(){p.classList.remove('open');};
- document.getElementById('inspCp').onclick=function(){
-  var t='['+r[0]+'] '+r[2]+'\n선택자: '+r[1]+'\n위치: '+r[3]+'\n설명: '+r[5]+'\n요청: ';
-  navigator.clipboard.writeText(t).then(function(){document.getElementById('inspCp').textContent='복사됨 — 뒤에 수정 내용을 적으세요';},
-   function(){document.getElementById('inspCp').textContent='복사 실패 — "'+r[0]+'"라고 말해도 됩니다';});
- };
+  var r = REG.filter(function(x){ return x[0] === code; })[0];
+  if(!r) return;
+  cur = r;
+  var p = document.getElementById('inspPanel');
+  p.innerHTML =
+    '<button class="insp-x" id="inspX" aria-label="닫기">✕</button>' +
+    '<span class="insp-code" style="background:' + (GRP[r[4]] || '#1D4994') + '">' + r[0] + ' · ' + r[4] + '</span>' +
+    '<h3>' + r[2] + '</h3>' +
+    '<div class="insp-scr">' + SCR_NM[r[6]] + ' 화면</div>' +
+    '<div class="insp-row"><div class="k">선택자</div><div class="v mono">' + String(r[1]).split('||')[0].trim() + '</div></div>' +
+    '<div class="insp-row"><div class="k">코드에서 찾을 위치</div><div class="v mono">' + r[3] + '</div></div>' +
+    '<div class="insp-row"><div class="k">설명</div><div class="v">' + r[5] + '</div></div>' +
+    '<button class="insp-cp" id="inspCp">수정 지시문 복사</button>' +
+    '<div class="insp-note">복사한 뒤 뒤에 바꾸고 싶은 내용을 적어 그대로 전달하면 됩니다. ' +
+    '코드(<b>' + r[0] + '</b>)만 말해도 어디인지 찾을 수 있습니다.</div>';
+  p.classList.add('open');
+  document.getElementById('inspX').onclick = function(){ p.classList.remove('open'); };
+  document.getElementById('inspCp').onclick = function(){
+    var t = '[' + r[0] + '] ' + r[2] + '\n화면: ' + SCR_NM[r[6]] +
+            '\n선택자: ' + r[1] + '\n위치: ' + r[3] + '\n현재: ' + r[5] + '\n요청: ';
+    var btn = this;
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(t).then(
+        function(){ btn.textContent = '복사됨 — 뒤에 수정 내용을 적으세요'; },
+        function(){ btn.textContent = '복사 실패 — "' + r[0] + '" 라고 말해도 됩니다'; });
+    } else {
+      btn.textContent = '복사 실패 — "' + r[0] + '" 라고 말해도 됩니다';
+    }
+  };
 }
-document.addEventListener('click',function(e){
- if(!on) return;
- var el=e.target.closest('[data-insp]'); if(!el) return;
- e.preventDefault(); e.stopPropagation(); show(el.dataset.insp);
-},true);
+function showWarn(){
+  document.getElementById('warn').style.display = 'block';
+  document.getElementById('cntTxt').textContent = '화면 접근 불가 — 목록 보기를 이용하세요';
+}
 function setScreen(k){
- ['duty','dash','citizen'].forEach(function(id){
-  var el=document.getElementById(id); if(el) el.style.display=(id===k)?'':'none';});
- document.querySelectorAll('[data-scr]').forEach(function(b){b.classList.toggle('on',b.dataset.scr===k);});
+  curScr = k;
+  document.querySelectorAll('[data-scr]').forEach(function(b){
+    b.classList.toggle('on', b.dataset.scr === k);
+  });
+  var w = fwin();
+  if(w && w.setMode){
+    try{ w.setMode(k); }catch(e){}
+    setTimeout(build, 260);
+  } else {
+    try{ fr.src = '../index.html#' + k; }catch(e){ showWarn(); }
+  }
+  renderList();
 }
-window.addEventListener('DOMContentLoaded',function(){
- build(); setScreen('duty'); document.body.classList.add('insp-on');
- document.getElementById('inspToggle').onclick=function(){
-  on=!on; this.classList.toggle('on',on);
-  document.querySelectorAll('.insp-tag').forEach(function(t){t.style.display=on?'':'none';});
-  document.querySelectorAll('.insp-hit').forEach(function(t){t.style.outline=on?'':'none';});
-  if(!on) document.getElementById('inspPanel').classList.remove('open');
- };
- document.querySelectorAll('[data-scr]').forEach(function(b){
-  b.onclick=function(){setScreen(this.dataset.scr);};});
+/* 화면 없이도 언제나 되는 목록 보기 */
+function renderList(){
+  var host = document.getElementById('listView');
+  var html = '';
+  Object.keys(SCR_NM).forEach(function(sc){
+    var rows = REG.filter(function(r){ return r[6] === sc; });
+    if(!rows.length) return;
+    html += '<h2>' + SCR_NM[sc] + ' <span style="font-size:12px;color:var(--muted);font-weight:400">' + rows.length + '개</span></h2>' +
+      '<table><thead><tr><th style="width:76px">코드</th><th style="width:80px">범주</th><th style="width:150px">이름</th>' +
+      '<th style="width:150px">선택자</th><th style="width:190px">코드 위치</th><th>설명</th></tr></thead><tbody>' +
+      rows.map(function(r){
+        return '<tr onclick="show(\'' + r[0] + '\')"><td class="c">' + r[0] + '</td>' +
+          '<td><span class="gtag" style="background:' + (GRP[r[4]] || '#1D4994') + '">' + r[4] + '</span></td>' +
+          '<td>' + r[2] + '</td><td class="s">' + String(r[1]).split('||')[0].trim() + '</td><td class="s">' + r[3] + '</td>' +
+          '<td style="color:var(--muted)">' + r[5] + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  });
+  host.innerHTML = html;
+}
+window.addEventListener('DOMContentLoaded', function(){
+  renderList();
+  document.getElementById('btnTag').onclick = function(){
+    on = !on;
+    this.classList.toggle('on', on);
+    var d = fdoc();
+    if(d){
+      d.querySelectorAll('.insp-tag').forEach(function(t){ t.style.display = on ? '' : 'none'; });
+      d.querySelectorAll('.insp-hit').forEach(function(e){ e.style.outline = on ? '' : 'none'; });
+    }
+    if(!on) document.getElementById('inspPanel').classList.remove('open');
+  };
+  document.getElementById('btnList').onclick = function(){
+    listOn = !listOn;
+    this.classList.toggle('on', listOn);
+    document.getElementById('listView').classList.toggle('on', listOn);
+  };
+  document.querySelectorAll('[data-scr]').forEach(function(b){
+    b.onclick = function(){ setScreen(this.dataset.scr); };
+  });
+  fr.addEventListener('load', function(){
+    var d = fdoc();
+    if(!d){ showWarn(); return; }
+    document.getElementById('warn').style.display = 'none';
+    /* 앱이 부팅을 마칠 시간을 준 뒤 태그를 얹는다 */
+    setTimeout(function(){
+      var w = fwin();
+      try{
+        var m = w.document.body.getAttribute('data-mode');
+        if(m) curScr = m;
+        document.querySelectorAll('[data-scr]').forEach(function(b){
+          b.classList.toggle('on', b.dataset.scr === curScr);
+        });
+        var v = w.document.querySelector('script') ? null : null;
+      }catch(e){}
+      try{
+        var ver = (fwin().BUILD_VER) || '';
+        if(ver) document.getElementById('verTxt').textContent = ver;
+      }catch(e){}
+      build();
+    }, 1200);
+  });
+  /* iframe 이 끝내 안 열리면 안내로 넘어간다 */
+  setTimeout(function(){ if(!fdoc()) showWarn(); }, 4000);
 });
-
 </script>
 </body>
 </html>

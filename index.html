@@ -705,6 +705,11 @@ body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-i
 /* ── E. 모달이 열려 있으면 시민 시트를 확실히 내린다 ── */
 body:has(#ovl.on) #citSheet{transform:translateY(101%);}
 
+/* ── CSV 내려받기 아이콘 ── */
+.ico-csv{width:15px; height:15px; vertical-align:-3px; margin-right:4px; flex:0 0 auto;}
+button .ico-csv, a .ico-csv{pointer-events:none;}
+.btn-csv{display:inline-flex; align-items:center; gap:2px;}
+
 </style>
 </head>
 <body>
@@ -1054,7 +1059,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0924';
+const BUILD_VER = 'v0906-0931';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2134,7 +2139,8 @@ function renderList(){
   if(sm){
     const mine = sc.filter(isMine).length;
     sm.innerHTML = '<b>' + meLabel() + '</b> · ' + sc.length + '건 (우리 ' + mine + ' · 타 부서 ' + (sc.length - mine) + ')' +
-      ' <a href="#" onclick="scopeExport();return false">⬇ 내려받기</a>';
+      ' <a href="#" class="btn-csv" onclick="scopeExport();return false" title="현재 범위를 CSV 파일로 내려받기">' +
+      '<img class="ico-csv" src="data/icons/csv.png" alt="CSV">내려받기</a>';
   }
   if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);
   saveState();
