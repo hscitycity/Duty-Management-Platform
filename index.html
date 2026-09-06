@@ -2026,6 +2026,16 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .rd-actlog .ar-none{padding:10px; font-size:12.5px; color:var(--muted); background:#fff;}
 .rd-shots{margin-top:10px;}
 .rd-shots-h{font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:6px;}
+/* B-9a 기동단 상세 머리 — 제목·조치사항 등록·남은 시간을 위에 붙여 둔다 */
+.rd-top{position:sticky; top:-22px; z-index:2; background:#fff;
+  margin:-2px -2px 0; padding:2px 2px 0;}
+.rd-top h2{padding-right:150px;}
+.rd-top .dp-acts{top:0;}
+.rd-top .rd-mbar{margin-bottom:10px;}
+@media (max-width:560px){
+  .rd-top h2{padding-right:0;}
+  .rd-top .dp-acts{position:static; margin:0 0 8px;}
+}
 </style>
 </head>
 <body>
@@ -2439,7 +2449,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2024';
+const BUILD_VER = 'v0906-2102';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -10477,10 +10487,15 @@ function roadDetailFull(id){
   const isBus = cat.k === '버스불편';
 
   showModal(
-    '<h2>' + cat.ico + ' ' + it.sub + ' <span class="rd-mno">#' + String(it.id).padStart(3,'0') + '</span></h2>' +
-    '<div class="rd-mbar ' + (wait ? guideState(it) : d.state) + '">' +
-      (wait ? '⏱ ' + guideText(it) + ' — 처리방안을 안내해야 합니다'
-            : '⏱ ' + leftText(d) + ' · ' + cat.nm + ' · ' + (d.state === 'plan' ? '관계기관 협의' : triage(it) + '처리')) + '</div>' +
+    /* 제목 · 조치사항 등록 · 남은 시간은 스크롤해도 계속 보여야 한다 —
+       어느 민원을 보고 있고 시간이 얼마 남았는지가 아래로 내려갈수록 더 필요하다 */
+    '<div class="rd-top" data-no="B-9b">' +
+      '<h2>' + cat.ico + ' ' + it.sub + ' <span class="rd-mno">#' + String(it.id).padStart(3,'0') + '</span></h2>' +
+      '<div class="dp-acts"><button class="btn-p" data-no="B-9a" onclick="roadActGo(' + it.id + ')">📝 조치사항 등록</button></div>' +
+      '<div class="rd-mbar ' + (wait ? guideState(it) : d.state) + '">' +
+        (wait ? '⏱ ' + guideText(it) + ' — 처리방안을 안내해야 합니다'
+              : '⏱ ' + leftText(d) + ' · ' + cat.nm + ' · ' + (d.state === 'plan' ? '관계기관 협의' : triage(it) + '처리')) + '</div>' +
+    '</div>' +
 
     /* 접수 */
     '<details class="acc" open><summary>📥 접수</summary><div class="acc-in">' +
@@ -10566,8 +10581,7 @@ function roadDetailFull(id){
       '<div class="rd-shots"><div class="rd-shots-h">현장 담당자가 올린 사진</div>' + photoBlock(it) + '</div>' +
       (it.replyAt
         ? '<div class="sel-kv"><span>회신</span><b>' + hm(it.replyAt) + ' (' + esc(it.replyVia || '') + ') ' + esc(it.replyMemo || '') + '</b></div>' : '') +
-      '<div class="row"><button class="btn-p" data-no="B-9a" onclick="roadActGo(' + it.id + ')">📝 조치사항 등록</button></div>' +
-      '<p class="hint">조치사항·현장사진 등록은 상황판에서 합니다 — 누르면 해당 민원으로 넘어갑니다.</p>' +
+      '<p class="hint">조치사항·현장사진 등록은 상황판에서 합니다 — 위 <b>조치사항 등록</b>을 누르면 해당 민원으로 넘어갑니다.</p>' +
     '</div></details>' +
 
     (roadColOf(it) === '중장기'
