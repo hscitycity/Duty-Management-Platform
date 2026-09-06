@@ -2144,6 +2144,15 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
   background:#F2F4F7; border:1px solid var(--line); color:var(--muted);}
 .sel-lock b{color:var(--ink);}
 .act3s.locked{opacity:.5; pointer-events:none; filter:saturate(.3);}
+/* C-2f 부서 재지정 요청 — 배부 부서의 주 업무. 한 줄을 통째로 준다 */
+.cr-bar:has(.b-req){grid-template-columns:1fr 1fr;}
+.cr-b.b-req{grid-column:1 / -1; height:38px; font-weight:800;
+  background:#F3F0FA; color:#5B3FA8; border-color:#DDD3F0;}
+.cr-b.b-req.has{background:#FFF4E5; color:#8A3E0C; border-color:#F0D6A8;
+  box-shadow:0 0 0 2px rgba(240,123,39,.14);}
+.cr-b.b-req.on{background:var(--hs-orange); color:#fff; border-color:var(--hs-orange);}
+.cr-b.b-req .n{margin-left:auto; font-family:var(--mono,ui-monospace);}
+.it-b.req{background:#FFF4E5; color:#8A3E0C;}
 </style>
 </head>
 <body>
@@ -2557,7 +2566,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2352';
+const BUILD_VER = 'v0906-2358';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -4171,7 +4180,25 @@ function credGroup(it){
    기본은 '처리대상' 이다. 유사 제보가 모여 신빙성이 선 건부터 손대는 것이 순서다.
    확인중은 눌러야 보인다 — 아직 오신고일 수 있는 건이다. */
 let credSel = 'ready';
+/* C-2f 부서 재지정 요청 — 배부 부서(행정종합관찰관 · 교통·도로 기동단)의 주 업무다.
+   다른 화면에 묻어 두면 요청이 쌓인 줄도 모른다. 분류 카드 바로 아래에 세운다. */
+function reqItems(){
+  return scopeItems().filter(function(i){ return i.st !== '완료' && i.reassignReq; });
+}
+/* 나에게 온 요청인가 — 내가 배부 부서인 건만 */
+function reqMine(it){
+  if(!it.reassignReq) return false;
+  return typeof canAssignDept === 'function' ? canAssignDept(it) : true;
+}
+function reqCount(){ return reqItems().filter(reqMine).length; }
+/* 배부 부서이거나 이미 요청이 와 있으면 자리를 만든다 */
+function reqShow(){
+  if(typeof meIsTriage === 'function' && (meIsTriage() || meIsRoadTeam())) return true;
+  if(typeof meIsMayor === 'function' && (meIsMayor() || meVice())) return reqCount() > 0;
+  return false;
+}
 function credPass(it){
+  if(credSel === 'req') return reqMine(it);
   if(credSel === 'all') return true;
   const c = credOf(it);
   return credSel === 'ready' ? c.ok : !c.ok;
@@ -4200,16 +4227,29 @@ function renderCredBar(){
       '<span class="t">🔎 민원제보 확인중</span><span class="n">' + c.check + '</span></button>' +
     '<button class="cr-b b-rdy' + (credSel === 'ready' ? ' on' : '') + '" data-no="C-2e" ' +
       'onclick="credPick(\'ready\')" title="반경 ' + R.r.toLocaleString() + 'm · ' + R.h + '시간 안에 같은 종류 제보가 ' + R.need + '건 이상">' +
-      '<span class="t">✅ 처리대상 민원목록</span><span class="n">' + c.ready + '</span></button>';
+      '<span class="t">✅ 처리대상 민원목록</span><span class="n">' + c.ready + '</span></button>' +
+    (reqShow()
+      ? '<button class="cr-b b-req' + (credSel === 'req' ? ' on' : '') + (reqCount() ? ' has' : '') + '" data-no="C-2f" ' +
+        'onclick="credPick(' + String.fromCharCode(39) + 'req' + String.fromCharCode(39) + ')" ' +
+        'title="다른 부서가 우리에게 보낸 부서 재지정 요청입니다 — 처리부서를 다시 지정해 주세요">' +
+        '<span class="t">📥 부서 재지정 요청</span><span class="n">' + reqCount() + '</span></button>'
+      : '');
   const nt = document.getElementById('credNote');
   if(nt){
     nt.hidden = credSel === 'all';
-    nt.innerHTML = credSel === 'all' ? '' :
-      (credSel === 'ready'
+    /* 무엇을 보고 있는지 한 줄로 — 재지정 요청은 문구가 다르다 */
+    if(credSel === 'all'){ nt.innerHTML = ''; }
+    else if(credSel === 'req'){
+      nt.innerHTML = '다른 부서가 <b>' + esc(meLabel()) + '</b>에 보낸 재지정 요청 <b>' + reqCount() + '건</b>' +
+        ' — 눌러서 <b>처리부서</b>를 다시 지정하십시오' +
+      ' <a href="#" onclick="credPick(\'' + credSel + '\');return false">전체 보기</a>';;
+    } else {
+      nt.innerHTML = (credSel === 'ready'
         ? '동일지역 유사제보 <b>' + R.need + '건 이상</b> — 반경 ' + R.r.toLocaleString() + 'm · ' + R.h + '시간'
         : '유사제보가 아직 ' + R.need + '건에 못 미칩니다 — 오신고 가능성을 함께 봅니다') +
-      ' <a href="#" onclick="credPick(\'' + credSel + '\');return false">전체 보기</a>' +
+      ' <a href="#" onclick="credPick(\'' + credSel + '\');return false">전체 보기</a>';
       ' · <a href="#" onclick="openRules();return false">기준 보기</a>';
+    }
   }
 }
 
@@ -4240,6 +4280,8 @@ function credBadge(it){
 function listRow(it){
   /* 배지는 최대 2개. 처리구분은 교통·도로 분류에서만 */
   const badges = [];
+  if(it.reassignReq) badges.push('<span class="it-b req" title="' +
+    String(it.reassignReq.by + ' 재지정 요청 — ' + (it.reassignReq.why || '')).replace(/"/g, '&quot;') + '">재지정</span>');
   if(it.urg === '긴급') badges.push('<span class="it-b urg">긴급</span>');
   if(clsSel === '교통도로') badges.push('<span class="it-b sla">' + (awaitingGuide(it) ? '안내대기' : triage(it)) + '</span>');
   else badges.push('<span class="it-b st">' + it.st + '</span>');
@@ -4266,12 +4308,14 @@ function renderList(){
   renderClsCards();
   const c = clsOf(clsSel);
   renderCredBar();
-  const rows = open.filter(c.test).filter(credPass).sort((a,b)=>b.id - a.id);
+  /* 재지정 요청은 배부 부서의 주 업무다 — 분류에 갇히지 않고 들어온 것을 모두 보여 준다 */
+  const rows = (credSel === 'req' ? open.filter(credPass) : open.filter(c.test).filter(credPass))
+    .sort((a,b)=>b.id - a.id);
   l.innerHTML = rows.length
     ? rows.map(listRow).join('') +
       (clsSel === '교통도로'
         ? '<button class="cs-mini" style="width:100%;margin-top:6px" onclick="setMode(\'road\')">기동단 작업판 열기 →</button>' : '')
-    : '<p class="cs-empty">' + (credSel === 'ready'
+    : '<p class="cs-empty">' + (credSel === 'req' ? '들어온 부서 재지정 요청이 없습니다' : credSel === 'ready'
         ? '유사제보 ' + credRule().need + '건 이상인 민원이 없습니다'
         : (credSel === 'check' ? '확인중인 제보가 없습니다' : '해당 분류에 열린 민원이 없습니다')) + '</p>';
 
