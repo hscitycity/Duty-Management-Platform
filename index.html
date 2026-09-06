@@ -1893,7 +1893,7 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 .dp-why{width:100%; height:34px; font-size:13px; margin-bottom:8px;}
 
 /* G-6 좌상단 — 확대·축소 바로 아래 */
-#mapCornerTL{position:absolute; left:12px; top:96px; z-index:var(--z-maptool);}
+#mapCornerTL{position:absolute; left:12px; top:126px; z-index:var(--z-maptool);}   /* 칩 줄 + 확대·축소 아래 */
 /* G-7 우하단 — 전체화면 */
 #mapCornerBR{position:absolute; right:12px; bottom:12px; z-index:var(--z-maptool);}
 #mapCornerTL .lb, #mapCornerBR .lb{height:32px; padding:0 12px; font-size:12.5px; font-weight:700;
@@ -1925,7 +1925,6 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 #mapBox.wx-on #mapLayerBar{top:110px;}
 #mapBox.wx-on #mapBaseBar{top:110px;}
 #mapBox.wx-on #layerPanel{top:150px;}
-#mapBox.wx-on #mapCornerTL{top:150px;}
 #mapBox.wx-on #mapPickBar{bottom:96px;}   /* Windy 하단 띠 위로 */
 #mapBox.wx-on #mapWxBadge{display:none;}        /* Windy 하단 띠와 겹친다 */
 #mapBox.wx-on #mapCornerBR{bottom:56px;}        /* Windy 하단 띠 위로 */
@@ -1952,6 +1951,21 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .dr-today{height:32px; padding:0 12px; border-radius:8px; font-size:12.5px; font-weight:700;
   cursor:pointer; background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
 .dr-today:hover{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+
+/* 좌상단 확대·축소가 레이어 칩 줄에 가려 눌리지 않았다 — 칩 줄 아래로 내린다 */
+.cs-map .leaflet-top.leaflet-left{top:44px;}
+#mapBox.wx-on .leaflet-top.leaflet-left{top:142px;}
+/* 내위치는 그 아래 */
+#mapBox.wx-on #mapCornerTL{top:110px;}
+/* 숨긴 도구가 계속 보이던 문제 — .lb 의 display 가 [hidden] 을 눌렀다 */
+#mapBaseBar .lb[hidden], #mapLayerBar .lb[hidden], #mapCornerTL .lb[hidden]{display:none !important;}
+
+/* 기상 관제 중 — 우상단 도구를 하나로 묶어 좌측 내위치 아래에 둔다 */
+#mapBox.wx-on #mapBaseBar{left:12px; right:auto; top:158px; align-items:flex-start;}
+#mapBox.wx-on #mapBaseBar > .lb{display:none;}
+#mapBox.wx-on #mapBaseBar > .mb-one{display:inline-flex;}
+#mapBox.wx-on.tools-open #mapBaseBar > .lb{display:inline-flex;}
+.mb-one{display:none;}
 
 </style>
 </head>
@@ -2090,7 +2104,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           </div>
           <button id="mapWxBadge" data-no="G-4" onclick="openWxDetail()" title="기상·대기 상세">기상 정보 불러오는 중…</button>
           <div id="mapBaseBar" data-no="G-2">
-            <!-- §5.1 우상단 세로 6개 · 32px 알약 · 아이콘 + 라벨(§0 ⑤ 라벨 없는 버튼 금지) -->
+            <!-- §5.1 우상단 세로 · 32px 알약 · 아이콘 + 라벨(§0 ⑤ 라벨 없는 버튼 금지) -->
+            <button class="lb mb-one" id="mbOneBtn" onclick="mapToolsToggle()" aria-expanded="false"
+                    title="기상 관제 중에는 지도 도구를 이 버튼 하나로 묶습니다">☰ 지도도구</button>
             <button class="lb" id="satBtn" onclick="toggleSat()" aria-pressed="false" title="항공사진 배경으로 전환">🛰️ 항공</button>
             <button class="lb" id="wxBtn" onclick="toggleWx()" aria-pressed="false" title="기상 관제(Windy) 겹쳐 보기">🌦️ 기상</button>
             <button class="lb" id="nightBtn" onclick="toggleNight()" aria-pressed="false" title="야간 배경으로 전환 (21~02시 자동)">🌙 야간</button>
@@ -2364,7 +2380,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1804';
+const BUILD_VER = 'v0906-1809';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3918,14 +3934,17 @@ function credOf(it){
   }
   return {n:n2, need:R.need, ok:n2 >= R.need, r:R.r, h:R.h};
 }
-/* 확인중 / 처리대상 — 좌측에서 갈라 본다 */
-let credSel = 'all';
+/* 확인중 / 처리대상 — 좌측에서 갈라 본다.
+   기본은 '처리대상' 이다. 유사 제보가 모여 신빙성이 선 건부터 손대는 것이 순서다.
+   확인중은 눌러야 보인다 — 아직 오신고일 수 있는 건이다. */
+let credSel = 'ready';
 function credPass(it){
   if(credSel === 'all') return true;
   const c = credOf(it);
   return credSel === 'ready' ? c.ok : !c.ok;
 }
 function credPick(k){
+  /* 같은 버튼을 다시 누르면 전체로 — 처리대상은 기본값이므로 되돌아올 자리가 있다 */
   credSel = (credSel === k) ? 'all' : k;
   renderList(); renderMap();
 }
@@ -7423,13 +7442,25 @@ function windyURL(overlay, at){
   return "https://embed.windy.com/embed2.html?lat=" + c[0] + "&lon=" + c[1] +
     "&detailLat=" + c[0] + "&detailLon=" + c[1] + "&zoom=9&level=surface&overlay="+overlay+"&product=ecmwf&menu=&message=&marker=&calendar=now&type=map&location=coordinates&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1";
 }
+/* 기상 관제 중에는 Windy 화면을 최대한 비워 둔다 — 도구는 눌러서 편다 */
+function mapToolsToggle(){
+  const box = document.getElementById('mapBox');
+  if(!box) return;
+  const open = box.classList.toggle('tools-open');
+  const b = document.getElementById('mbOneBtn');
+  if(b) b.setAttribute('aria-expanded', String(open));
+}
+
 function toggleWx(){
   wxOn = !wxOn;
   document.getElementById('wxBtn').classList.toggle('on', wxOn);
   /* Windy 는 제 도구 줄을 위에 깐다. 우리 레이어 칩을 그대로 두면 겹친다.
      기상 중에는 칩을 [☰ 레이어] 하나로 묶고 자리도 아래로 내린다. */
   const box = document.getElementById('mapBox');
-  if(box) box.classList.toggle('wx-on', wxOn);
+  if(box){
+    box.classList.toggle('wx-on', wxOn);
+    if(!wxOn) box.classList.remove('tools-open');
+  }
   const mapEl = document.getElementById('map');
   if(!wxOn){
     if(wxOv){ wxOv.remove(); wxOv = null; }
