@@ -1932,6 +1932,27 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 /* 우하단 전체화면 — 글자가 잘리지 않게 */
 #mapCornerBR .lb{width:auto; min-width:0; max-width:none; overflow:visible;}
 
+/* H-0 기간 고르기 */
+.dash-range{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:14px;
+  padding:10px 14px; border-radius:10px; background:#fff; border:1px solid var(--line);
+  box-shadow:0 1px 3px rgba(16,32,64,.06);}
+.dr-modes{display:flex; gap:4px;}
+.dr-m{height:32px; padding:0 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;
+  background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
+.dr-m:hover{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+.dr-m.on{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.dr-nav{width:32px; height:32px; border-radius:8px; font-size:17px; font-weight:800; cursor:pointer;
+  background:#fff; color:var(--hs-blue-dark); border:1px solid var(--line);}
+.dr-nav:hover:not(:disabled){background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.dr-nav:disabled{opacity:.35; cursor:default;}
+.dr-lb{display:flex; flex-direction:column; align-items:center; min-width:170px; line-height:1.3;}
+.dr-lb b{font-size:15px; color:var(--hs-blue-dark);}
+.dr-lb span{font-size:12px; color:var(--muted); font-family:var(--mono,ui-monospace);}
+.dr-date{height:32px; font-size:13px; padding:0 8px; width:auto;}
+.dr-today{height:32px; padding:0 12px; border-radius:8px; font-size:12.5px; font-weight:700;
+  cursor:pointer; background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
+.dr-today:hover{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+
 </style>
 </head>
 <body>
@@ -2286,6 +2307,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 </div>
 
 <div id="dash">
+  <!-- H-0 기간 — 아래 모든 집계가 이 기간을 따른다 -->
+  <div class="dash-range" id="dashRange" data-no="H-0"></div>
   <div class="kpis" id="dKpis" data-no="H-1"></div>
   <!-- F: 지도는 상단 전폭, 그 아래 지표·차트를 3열 균등 배치 -->
   <div class="card dash-map" data-no="H-2">
@@ -2304,6 +2327,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
     <div class="card" data-no="H-5"><h2>🕐 시간대별 접수 분포 <span class="sub">당직시간 피크</span></h2><div id="dHour"></div></div>
     <div class="card" data-no="H-6"><h2>🗂️ 분야별 누적</h2><div id="dField"></div></div>
     <div class="card" data-no="H-7"><h2>🗺️ 관할구별 누적</h2><div id="dGu"></div></div>
+    <div class="card" data-no="H-11"><h2>📍 행정동별 누적 <span class="sub">상위 12개 동</span></h2><div id="dEmd"></div></div>
     <div class="card" data-no="H-8"><h2>🚨 긴급도 비율</h2><div id="dUrg"></div></div>
   </div>
   <div class="dgrid2">
@@ -2340,7 +2364,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1756';
+const BUILD_VER = 'v0906-1804';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -6770,17 +6794,106 @@ function hbar(label, v, max, col, clickType){
   const on = dashF && clickType && dashF.type===clickType && dashF.val===label;
   return '<div class="hbar" '+(clickType?'style="cursor:pointer'+(on?';outline:2px solid var(--hs-orange);border-radius:8px':'')+'" onclick="dashClick(\''+clickType+'\',\''+label+'\')"':'')+'><span class="lb2">'+label+'</span><div class="tr"><div class="fl" style="width:'+Math.round(v/max*100)+'%'+(col?';background:'+col:'')+'"></div></div><span class="v">'+v+'</span></div>';
 }
+/* ══════════ H-0 기간 — 언제 것을 보는가 ══════════
+   누적만 보여 주면 "이번 주에 무슨 일이 있었나" 를 알 수 없다.
+   주·월·연 중 하나를 고르고 앞뒤로 넘긴다. 아래 모든 집계가 이 기간을 따른다. */
+let dashRange = {mode:'all', at:new Date()};
+const DASH_MODES = [{k:'week', nm:'주'}, {k:'month', nm:'월'}, {k:'year', nm:'연'}, {k:'all', nm:'전체'}];
+/* 기록마다 날짜를 하나 정한다 — HIST 는 "7/17" 처럼 연도가 없어 올해로 본다 */
+function recDate(x){
+  if(x && x.__d) return x.__d;
+  let d = null;
+  if(x && x.dt && /^\d{1,2}\/\d{1,2}$/.test(x.dt)){
+    const [mo, da] = x.dt.split('/').map(Number);
+    d = new Date(new Date().getFullYear(), mo - 1, da);
+    const t = String(x.time || '').match(/^(\d{1,2}):(\d{2})/);
+    if(t) d.setHours(Number(t[1]), Number(t[2]), 0, 0);
+  } else {
+    try{ d = itemStart(x); }catch(e){ d = new Date(); }
+  }
+  if(x) try{ Object.defineProperty(x, '__d', {value:d, enumerable:false, configurable:true}); }catch(e){}
+  return d;
+}
+function dashSpan(){
+  const a = new Date(dashRange.at);
+  if(dashRange.mode === 'all') return null;
+  if(dashRange.mode === 'week'){
+    const s2 = new Date(a); s2.setDate(a.getDate() - ((a.getDay() + 6) % 7)); s2.setHours(0,0,0,0);
+    const e2 = new Date(s2); e2.setDate(s2.getDate() + 7);
+    return [s2, e2];
+  }
+  if(dashRange.mode === 'month'){
+    const s2 = new Date(a.getFullYear(), a.getMonth(), 1);
+    return [s2, new Date(a.getFullYear(), a.getMonth() + 1, 1)];
+  }
+  return [new Date(a.getFullYear(), 0, 1), new Date(a.getFullYear() + 1, 0, 1)];
+}
+function inRange(x){
+  const sp = dashSpan();
+  if(!sp) return true;
+  const d = recDate(x);
+  return d >= sp[0] && d < sp[1];
+}
+function dashSpanLabel(){
+  const sp = dashSpan();
+  if(!sp) return '전체 기간';
+  const f = d => (d.getMonth() + 1) + '.' + d.getDate();
+  const e = new Date(sp[1].getTime() - 1);
+  if(dashRange.mode === 'year') return sp[0].getFullYear() + '년';
+  if(dashRange.mode === 'month') return sp[0].getFullYear() + '. ' + (sp[0].getMonth() + 1) + '월';
+  return sp[0].getFullYear() + '. ' + f(sp[0]) + ' ~ ' + f(e) + ' (주)';
+}
+function dashMode(k){
+  dashRange.mode = k;
+  renderDash();
+}
+function dashStep(d){
+  const a = new Date(dashRange.at);
+  if(dashRange.mode === 'week') a.setDate(a.getDate() + 7 * d);
+  else if(dashRange.mode === 'month') a.setMonth(a.getMonth() + d);
+  else if(dashRange.mode === 'year') a.setFullYear(a.getFullYear() + d);
+  else return;
+  dashRange.at = a;
+  renderDash();
+}
+function dashPickDate(v){
+  if(!v) return;
+  dashRange.at = new Date(v + 'T00:00:00');
+  if(dashRange.mode === 'all') dashRange.mode = 'month';
+  renderDash();
+}
+function dashToday(){ dashRange.at = new Date(); renderDash(); }
+function renderDashRange(cnt){
+  const host = document.getElementById('dashRange');
+  if(!host) return;
+  const a = dashRange.at;
+  const iso = a.getFullYear() + '-' + String(a.getMonth() + 1).padStart(2,'0') + '-' + String(a.getDate()).padStart(2,'0');
+  const all = dashRange.mode === 'all';
+  host.innerHTML =
+    '<div class="dr-modes">' + DASH_MODES.map(function(m){
+      return '<button class="dr-m' + (dashRange.mode === m.k ? ' on' : '') + '" onclick="dashMode(\'' + m.k + '\')">' + m.nm + '</button>';
+    }).join('') + '</div>' +
+    '<button class="dr-nav" onclick="dashStep(-1)"' + (all ? ' disabled' : '') + ' aria-label="이전">‹</button>' +
+    '<span class="dr-lb"><b>' + dashSpanLabel() + '</b><span>' + cnt + '건</span></span>' +
+    '<button class="dr-nav" onclick="dashStep(1)"' + (all ? ' disabled' : '') + ' aria-label="다음">›</button>' +
+    '<input type="date" class="dr-date" value="' + iso + '" onchange="dashPickDate(this.value)" ' +
+      'title="날짜를 고르면 그 날이 든 주·월·연을 봅니다">' +
+    '<button class="dr-today" onclick="dashToday()">오늘</button>';
+}
+
 function renderDash(){
-  const all = [...HIST, ...scopeItems(realItems())];   // D-04 시연 제외 · S-11 소속 범위 적용
-  const done = dashDone(), dis = dashDisasters();
+  /* H-0 고른 기간의 것만 센다 */
+  const all = [...HIST, ...scopeItems(realItems())].filter(inRange);
+  const done = dashDone().filter(inRange), dis = dashDisasters().filter(inRange);
   const tot = all.length;
-  const doneCnt = HIST.length + realItems().filter(i=>i.st==="완료").length;
-  const active = realItems().filter(i=>i.st!=="완료").length;
+  renderDashRange(tot);
+  const doneCnt = all.filter(x=>x.st === '완료').length;
+  const active = scopeItems(realItems()).filter(inRange).filter(i=>i.st !== '완료').length;
   const urg = all.filter(x=>x.urg==="긴급").length;
   const cit = all.filter(x=>x.src==="시민접수").length;
   const avg = d10Stats().avg;   // D-10: 누적 이력 + 현장 결과보고 실측 소요시간
   document.getElementById('dKpis').innerHTML =
-    '<div class="kpi"><div class="n">'+tot+'</div><div class="l">누적 접수 (7/17~)</div></div>'+
+    '<div class="kpi"><div class="n">'+tot+'</div><div class="l">접수 · '+dashSpanLabel()+'</div></div>'+
     '<div class="kpi"><div class="n" style="color:#1D8348">'+doneCnt+'</div><div class="l">처리 완료</div></div>'+
     '<div class="kpi"><div class="n" style="color:#9A6700">'+active+'</div><div class="l">진행 중 (상황판)</div></div>'+
     '<div class="kpi"><div class="n" style="color:#B3261E">'+dis.length+'</div><div class="l">재난상황 이력</div></div>'+
@@ -6827,14 +6940,31 @@ function renderDash(){
   const byF = {};
   all.forEach(x=>{ byF[x.field]=(byF[x.field]||0)+1; });
   const fEntries = Object.entries(byF).sort((a,b)=>b[1]-a[1]);
-  const fMax = fEntries[0][1];
+  const fMax = fEntries.length ? fEntries[0][1] : 1;
   document.getElementById('dField').innerHTML = fEntries.map(([k,v])=>hbar(k,v,fMax,null,'field')).join("");
   /* 관할구별 */
   const byG = {};
   all.forEach(x=>{ if(x.gu&&x.gu!=="미상") byG[x.gu]=(byG[x.gu]||0)+1; });
   const gCol = {"만세구":"#2E7D32","효행구":"#7B1FA2","병점구":"#F07B27","동탄구":"#1D4994"};
-  const gMax = Math.max(...Object.values(byG));
+  const gMax = Math.max(1, ...Object.values(byG));
   document.getElementById('dGu').innerHTML = ["만세구","효행구","병점구","동탄구"].filter(g=>byG[g]).map(g=>hbar(g,byG[g],gMax,gCol[g],'gu')).join("");
+  /* 행정동별 — 위치가 적힌 건만 센다(옛 이력은 관할구까지만 남아 있다) */
+  const dEmd = document.getElementById('dEmd');
+  if(dEmd){
+    const byE = {};
+    let noLoc = 0;
+    for(const x of all){
+      const e = (typeof emdOf === 'function') ? emdOf(x) : null;
+      if(e) byE[e] = (byE[e] || 0) + 1; else noLoc++;
+    }
+    const eEnt = Object.entries(byE).sort((a,b)=>b[1] - a[1]);
+    const eMax = eEnt.length ? eEnt[0][1] : 1;
+    dEmd.innerHTML = eEnt.length
+      ? eEnt.slice(0, 12).map(function(kv){ return hbar(kv[0], kv[1], eMax, '#4E637E', 'emd'); }).join('') +
+        (eEnt.length > 12 ? '<p class="hint" style="margin-top:6px">그 밖 ' + (eEnt.length - 12) + '개 동</p>' : '') +
+        (noLoc ? '<p class="hint">위치가 적히지 않은 ' + noLoc + '건은 세지 않았습니다</p>' : '')
+      : '<p class="hint">이 기간에 위치가 적힌 민원이 없습니다</p>';
+  }
   /* 재난상황 이력 */
   document.getElementById('dDisaster').innerHTML = '<table class="dtable"><tr><th>일시</th><th>관할</th><th>유형</th><th>내용</th><th>조치</th><th>상태</th></tr>'+
     dis.map(x=>'<tr'+(dashF?rowStyle(x):(x.live?' style="background:#FFF7ED"':''))+'><td>'+x.dt+' '+x.time+'</td><td>'+x.gu+'</td><td>'+x.field+'·'+x.sub+(x.urg==="긴급"?' <span class="badge b-urg" style="font-size:11px">긴급</span>':'')+'</td><td>'+x.sum+'</td><td>'+(x.act||"-")+'</td><td>'+(x.st||"완료")+'</td></tr>').join("")+'</table>';
