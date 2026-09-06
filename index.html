@@ -2002,6 +2002,29 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
   background:#F3F0FA; border:1px solid #DDD3F0;}
 .rs-all input{width:auto;}
 .rs-all span{color:var(--muted); font-size:12px;}
+/* C-18a 헤더 실시간 기상 한 줄 — LIVE 옆에 붙는다 */
+.cs-wx{display:inline-flex; align-items:center; height:28px; padding:0 10px; margin-left:8px;
+  border-radius:14px; font-size:12.5px; font-weight:600; white-space:nowrap; cursor:pointer;
+  background:#EFF4FA; color:var(--ink); border:1px solid var(--line);}
+.cs-wx.off{color:var(--muted); font-weight:500;}
+.cs-wx.warn{background:var(--hs-orange-bg,#FFF1E3); color:#8A3E0C; border-color:#F0D6A8; font-weight:700;}
+.cs-wx:hover{filter:brightness(.97);}
+@media (max-width:1180px){ .cs-wx{display:none;} }
+/* C-4c6 현장 이상 없음 — 회신할지 묻는다 */
+.ni-yn{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px;}
+.ni-yn button{height:46px; font-size:13.5px; font-weight:700;}
+@media (max-width:520px){ .ni-yn{grid-template-columns:1fr;} }
+/* B-9 처리 결과안내 — 조치 경과와 사진을 바로 보여 준다 */
+.rd-actlog{margin:8px 0; border:1px solid var(--line); border-radius:8px; overflow:hidden;}
+.rd-actlog .ar-row{display:flex; align-items:center; gap:8px; padding:7px 10px; font-size:12.5px;
+  border-bottom:1px solid var(--line); background:#fff;}
+.rd-actlog .ar-row:last-child{border-bottom:none;}
+.rd-actlog .k{font-weight:700; white-space:nowrap;}
+.rd-actlog .v{flex:1; color:var(--muted);}
+.rd-actlog .t{color:var(--smuted); font-size:12px;}
+.rd-actlog .ar-none{padding:10px; font-size:12.5px; color:var(--muted); background:#fff;}
+.rd-shots{margin-top:10px;}
+.rd-shots-h{font-size:12.5px; font-weight:700; color:var(--muted); margin-bottom:6px;}
 </style>
 </head>
 <body>
@@ -2415,7 +2438,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1918';
+const BUILD_VER = 'v0906-1949';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3314,6 +3337,19 @@ function wxBadgeSync(){
   const ab = document.getElementById('airBody');
   const air = (ab && ab.textContent) ? ' · ' + ab.textContent.replace(/\s+/g, ' ').slice(0, 30).trim() : '';
   b.textContent = t + ' ' + d + air + ((typeof WX !== 'undefined' && WX && WX.warn) ? ' · ⚠️ ' + WX.warn : '');
+  wxHeadSync();
+}
+/* C-18a 헤더 한 줄 — 기온 · 하늘 · 강수 · 특보. 특보가 있으면 그 줄이 붉어진다 */
+function wxHeadSync(){
+  const el = document.getElementById('csWx');
+  if(!el) return;
+  const W = (typeof WX !== 'undefined') ? WX : null;
+  if(!W || W.t == null){ el.className = 'cs-wx off'; el.textContent = '🌦 기상 확인 중…'; return; }
+  const bits = [Math.round(W.t) + '℃', W.desc || ''];
+  if(W.rain != null && Number(W.rain) > 0) bits.push('강수 ' + W.rain + 'mm');
+  if(W.wind != null && Number(W.wind) >= 7) bits.push('바람 ' + W.wind + 'm/s');
+  el.className = 'cs-wx' + (W.warn ? ' warn' : '');
+  el.textContent = (W.warn ? '⚠️ ' + W.warn + ' · ' : '🌦 ') + bits.filter(Boolean).join(' · ');
 }
 function openWxDetail(){
   const w = document.getElementById('wxBody');
@@ -3671,7 +3707,9 @@ function renderHeader(m){
   if(o.live){
     html += '<span class="cs-sep"></span>' +
       '<button class="cs-live' + (live ? ' on' : '') + '" data-no="C-18" id="csLive" onclick="csLiveToggle()" ' +
-      'aria-pressed="' + live + '" title="실시간 수신 상태 — 끄면 화면이 갱신되지 않습니다"><i></i>LIVE</button>';
+      'aria-pressed="' + live + '" title="실시간 수신 상태 — 끄면 화면이 갱신되지 않습니다"><i></i>LIVE</button>' +
+      /* 실시간 수신 옆에 지금 하늘 상태를 한 줄로. 당직은 날씨에 따라 대비가 달라진다 */
+      '<span class="cs-wx" data-no="C-18a" id="csWx" title="기상청 실황·특보 · 에어코리아 — 눌러서 자세히" onclick="openWxDetail()">🌦 기상 확인 중…</span>';
   }
   html += '<span class="cs-spacer"></span>' +
           '<span class="cs-clock" data-no="C-19" id="csClock" title="현재 시각"></span>';
@@ -3695,6 +3733,7 @@ function renderHeader(m){
   if(typeof meChipSync === 'function') meChipSync();
   if(typeof csClockTick === 'function') csClockTick();
   if(typeof cmdBadgeSync === 'function') cmdBadgeSync();
+  if(typeof wxHeadSync === 'function') wxHeadSync();
 }
 
 /* ══════════ D-M1 지도 전체화면 ══════════
@@ -4481,7 +4520,7 @@ function rsPick(i){
     nt.innerHTML = '<div class="rs-nt warn">📄 저장하면 <b>이관 인계서</b>가 파일로 내려받아집니다 — 민원 내용과 지금까지 조치한 내용이 모두 담깁니다.' +
       ' <button type="button" class="btn-g" data-no="C-4c4" onclick="transferDl(' + rsId + ')">📄 미리 내려받기</button></div>';
   else if(res === '현장 이상 없음')
-    nt.innerHTML = '<div class="rs-nt done">✅ 저장하면 <b>곧바로 종결</b>됩니다 — 회신은 하지 않아도 됩니다.</div>';
+    nt.innerHTML = '<div class="rs-nt done">✅ 저장하면 <b>민원인 회신 여부</b>를 여쭙고, 아니오를 고르면 곧바로 종결됩니다.</div>';
   else if(res === '처리 중')
     nt.innerHTML = '<div class="rs-nt">⏳ 아직 열린 민원으로 남습니다 — 조치가 끝나면 다시 여기서 마무리합니다.</div>';
   else
@@ -4578,9 +4617,14 @@ function actSave(id){
   if(!memo){ toast('조치 내용을 적어 주세요'); return; }
   it.actResult = res; it.actMemo = memo; it.actAt = new Date().toISOString();
   it.log.push(nowHM() + ' 조치기록: ' + res + ' — ' + memo.replace(/\n/g, ' / '));
-  /* 현장 이상 없음은 회신할 것이 없다 — 그 자리에서 종결한다 */
-  if(res === '현장 이상 없음') stageDone(it.id, '현장 이상 없음 — 즉시 종결');
-  else if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '조치결과 ' + res);
+  /* 현장 이상 없음은 회신할 것이 없을 수도, 있을 수도 있다 — 묻고 나서 끝낸다 */
+  if(res === '현장 이상 없음'){
+    try{ sbPush(it); }catch(e){}
+    renderSel(it); renderList(); renderMap();
+    noIssueAsk(it.id);
+    return;
+  }
+  if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '조치결과 ' + res);
   else stageAuto(it.id, '종결처리 · 결과입력');
   try{ sbPush(it); }catch(e){}
   /* 타 기관 이관은 받는 쪽이 그대로 쓸 인계서를 함께 내보낸다 */
@@ -4590,6 +4634,33 @@ function actSave(id){
   toast(res === '현장 이상 없음' ? '현장 이상 없음 — 곧바로 종결했습니다'
       : (res === '타 기관 이관 필요' ? '이관 인계서를 내려받았습니다 — 해당 기관에 보내십시오'
       : '조치기록을 남겼습니다 — 회신은 따로 하시면 됩니다'));
+}
+/* C-4c6 현장 이상 없음 — 회신할지 묻고 나서 끝낸다.
+   나가 보니 문제가 없었더라도 신고인에게는 알려야 하는 경우가 있다.
+   묻지 않고 닫으면 '왜 회신이 안 갔지' 가 되고, 매번 회신을 강요하면 손이 많아진다. */
+function noIssueAsk(id){
+  const it = items.find(function(i){ return i.id === id; });
+  if(!it){ closeModal(); return; }
+  showModal('<h2 data-no="C-4c6">🔎 현장 이상 없음 <span class="sub">#' + String(id).padStart(3,'0') + '</span></h2>' +
+    '<p class="hint">조치기록을 남겼습니다. 신고인에게 확인 결과를 알려 드릴까요?</p>' +
+    '<div class="sel-box" style="margin-bottom:12px">' +
+      '<div class="sel-kv"><span>처리 결과</span><b>현장 이상 없음</b></div>' +
+      '<div class="sel-kv"><span>조치 내용</span><b>' + esc((it.actMemo || '').split(String.fromCharCode(10)).join(' / ')) + '</b></div></div>' +
+    '<div class="ni-yn">' +
+      '<button class="btn-p" onclick="noIssueYes(' + id + ')">📞 예 — 회신하고 종결</button>' +
+      '<button class="btn-o" onclick="noIssueNo(' + id + ')">✅ 아니오 — 바로 종결</button></div>' +
+    '<p class="hint">아니오를 고르면 회신 없이 곧바로 종결됩니다.</p>');
+}
+function noIssueYes(id){ replyOpen2(id); }
+function noIssueNo(id){
+  const it = items.find(function(i){ return i.id === id; });
+  if(!it){ closeModal(); return; }
+  it.log.push(nowHM() + ' 회신 없이 종결 — 현장 이상 없음(담당자 판단)');
+  stageDone(it.id, '현장 이상 없음 — 회신 없이 종결');
+  try{ sbPush(it); }catch(e){}
+  closeModal();
+  renderSel(it); renderList(); renderMap();
+  toast('회신 없이 종결했습니다');
 }
 /* C-4c3 민원인 회신 — 기록과 다른 일이므로 화면을 나눈다 */
 function replyOpen2(id){
@@ -7922,7 +7993,7 @@ function itRow(it){
     guide_due:it.guideDue||null, guide_at:it.guideAt||null,
     guide_method:it.guideMethod||null, guide_memo:it.guideMemo||null,
     field_check_at:it.fieldCheckAt||null, field_check_by:it.fieldCheckBy||null,
-    partner_org:it.partnerOrg||null, partner_sent_at:it.partnerSentAt||null,
+    partner_org:it.partnerOrg||null, partner_sent_at:it.partnerAskAt||it.partnerSentAt||null,
     partner_reply_at:it.partnerReplyAt||null, partner_reply:it.partnerReply||null,
     intake_channel:it.intakeChannel||null,
     assignee:it.assignee||null, assigned_at:it.assignedAt||null, assigned_why:it.assignedWhy||null};
@@ -7941,7 +8012,7 @@ function rowIt(r){
     guideDue:r.guide_due||null, guideAt:r.guide_at||null,
     guideMethod:r.guide_method||null, guideMemo:r.guide_memo||null,
     fieldCheckAt:r.field_check_at||null, fieldCheckBy:r.field_check_by||null,
-    partnerOrg:r.partner_org||null, partnerSentAt:r.partner_sent_at||null,
+    partnerOrg:r.partner_org||null, partnerAskAt:r.partner_sent_at||null, partnerSentAt:r.partner_sent_at||null,
     partnerReplyAt:r.partner_reply_at||null, partnerReply:r.partner_reply||null,
     intakeChannel:r.intake_channel||null,
     assignee:r.assignee||null, assignedAt:r.assigned_at||null, assignedWhy:r.assigned_why||null};
@@ -10418,20 +10489,23 @@ function roadDetailFull(id){
       '<div class="sel-kv"><span>신고 내용</span><b>' + it.sum + '</b></div>' +
       photoBlock(it) + '</div></details>' +
 
-    /* 현장 확인 — 이 단계에서 분류를 확정한다 */
-    '<details class="acc"' + (wait ? ' open' : '') + '><summary>🔎 현장 확인 ' +
-      (it.fieldCheckAt ? '<b class="ok">완료</b>' : '<b class="warn">미확인</b>') + '</summary><div class="acc-in">' +
+    /* 처리유형 분류 — 접수 때 AI 가 1차로 나눈 것을 담당자가 고칠 때만 쓴다.
+       기동단이 현장에 나가는 단계가 아니다. */
+    '<details class="acc"' + (wait ? ' open' : '') + '><summary>🗂️ 처리유형 분류(즉시/단기/중장기) ' +
+      (it.fieldCheckAt ? '<b class="ok">담당자 확정</b>' : '<b class="warn">AI 1차 분류</b>') + '</summary><div class="acc-in">' +
+      '<div class="sel-kv"><span>현재 분류</span><b>' + (it.roadCategory || cat.k) + ' · ' + (it.roadSla || triage(it)) + '처리</b></div>' +
+      '<div class="sel-kv"><span>기준</span><b>' + esc(TRIAGE_META[it.roadSla || triage(it)].rule) + '</b></div>' +
       (it.fieldCheckAt
-        ? '<div class="sel-kv"><span>확인</span><b>' + hm(it.fieldCheckAt) + ' · ' + (it.fieldCheckBy || '') + '</b></div>' +
-          '<div class="sel-kv"><span>판정</span><b>' + (it.roadCategory || cat.k) + ' · ' + (it.roadSla || triage(it)) + '처리</b></div>'
-        : '<p class="hint">기동단이 현장을 확인하고 유형·처리구분을 확정합니다. 확인 전에는 안내 대기 열에 머뭅니다.</p>') +
+        ? '<div class="sel-kv"><span>수정</span><b>' + hm(it.fieldCheckAt) + ' · ' + (it.fieldCheckBy || '') + '</b></div>'
+        : '<p class="hint">접수 때 AI 가 내용·유형을 보고 1차로 나눈 값입니다. 다르면 아래에서 고치십시오.</p>') +
       '<label class="rd-lb">민원 유형</label>' +
       '<select id="rdCat">' + ROAD_CATS.map(c=>'<option value="' + c.k + '"' +
         ((it.roadCategory || cat.k) === c.k ? ' selected' : '') + '>' + c.ico + ' ' + c.nm + '</option>').join('') + '</select>' +
       '<label class="rd-lb">처리구분</label>' +
       '<select id="rdSla">' + ['즉시','단기','중장기'].map(x=>'<option' +
         ((it.roadSla || triage(it)) === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>' +
-      '<div class="row"><button class="btn-p" onclick="roadFieldCheck(' + it.id + ')">현장 확인 기록 · 분류 확정</button></div>' +
+      '<div class="row"><button class="btn-p" onclick="roadFieldCheck(' + it.id + ')">✏️ 처리유형 분류 수정</button></div>' +
+      '<p class="hint">고쳐도 이 창은 닫히지 않습니다 — 닫기를 누르거나 바깥을 누르면 닫힙니다.</p>' +
     '</div></details>' +
 
     /* 처리방안 안내 — 1시간 준수 여부 */
@@ -10451,30 +10525,49 @@ function roadDetailFull(id){
           '<div class="row"><button class="btn-o" onclick="roadGuide(' + it.id + ')">📢 안내 완료 기록</button></div>') +
     '</div></details>' +
 
-    /* 협력 — 버스 민원은 운수업체가 필수 */
-    '<details class="acc"' + (isBus ? ' open' : '') + '><summary>🤝 협력 기관' +
-      (isBus ? ' <b class="warn">운수업체 필수</b>' : '') + '</summary><div class="acc-in">' +
+    /* 협력기관 의견등록 — 이 시스템으로 타 기관에 통보할 수는 없다.
+       의견요청서를 파일로 내려받아 공문·팩스로 보내고, 돌아온 의견을 여기에 적는다. */
+    '<details class="acc"' + (isBus ? ' open' : '') + '><summary>🤝 협력기관 의견등록' +
+      (isBus ? ' <b class="warn">운수업체 필수</b>' : '') +
+      (it.partnerReplyAt ? ' <b class="ok">의견 접수</b>' : (it.partnerAskAt ? ' <b class="warn">의견 대기</b>' : '')) +
+      '</summary><div class="acc-in">' +
       '<div class="sel-kv"><span>소관 부서</span><b>' + a.actor.org + '</b></div>' +
       '<div class="sel-kv"><span>주 소관(유형)</span><b>' + cat.org + '</b></div>' +
-      (it.partnerOrg
-        ? '<div class="sel-kv"><span>협력 기관</span><b>' + it.partnerOrg + '</b></div>' +
-          '<div class="sel-kv"><span>통보</span><b>' + (it.partnerSentAt ? hm(it.partnerSentAt) : '—') + '</b></div>' +
-          '<div class="sel-kv"><span>회신</span><b>' + (it.partnerReplyAt ? hm(it.partnerReplyAt) : '<span class="warn">회신 대기</span>') + '</b></div>' +
-          (it.partnerReply ? '<div class="sel-kv"><span>회신 내용</span><b>' + it.partnerReply + '</b></div>' : '') +
-          (it.partnerSentAt && !it.partnerReplyAt
-            ? '<label class="rd-lb">회신 내용</label><input id="rdPreply" placeholder="업체 회신 내용">' +
-              '<div class="row"><button class="btn-o" onclick="roadPartnerReply(' + it.id + ')">회신 기록</button></div>' : '')
-        : '<label class="rd-lb">협력 기관</label>' +
-          '<select id="rdPorg">' + (isBus ? BUS_COMPANIES : PARTNER_ORGS).map(x=>'<option>' + x + '</option>').join('') + '</select>' +
-          '<div class="row"><button class="btn-g" onclick="roadPartnerSend(' + it.id + ')">📨 통보 기록</button></div>') +
+      '<p class="hint">이 시스템은 타 기관에 직접 통보하지 못합니다. <b>의견요청서를 내려받아</b> 공문으로 보내고, ' +
+        '회신받은 의견을 아래에 적어 두십시오.</p>' +
+      '<label class="rd-lb">협력 기관</label>' +
+      '<select id="rdPorg">' + (isBus ? BUS_COMPANIES : PARTNER_ORGS).map(x=>'<option' +
+        (it.partnerOrg === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>' +
+      '<div class="row"><button class="btn-g" data-no="B-7" onclick="roadPartnerAsk(' + it.id + ')">📄 의견요청서 내려받기</button></div>' +
+      (it.partnerAskAt
+        ? '<div class="sel-kv"><span>요청서</span><b>' + hm(it.partnerAskAt) + ' · ' + esc(it.partnerOrg || '') + ' 발송용 내려받음</b></div>' : '') +
+      (it.partnerReplyAt
+        ? '<div class="sel-kv"><span>의견 접수</span><b>' + hm(it.partnerReplyAt) + ' · ' + esc(it.partnerOrg || '') + '</b></div>' +
+          '<div class="sel-kv"><span>의견 내용</span><b>' + esc(it.partnerReply || '') + '</b></div>' : '') +
+      '<label class="rd-lb">' + (it.partnerReplyAt ? '의견 고쳐 적기' : '회신받은 의견') + '</label>' +
+      '<textarea id="rdPreply" style="min-height:72px" placeholder="예) 신호기 신설은 경찰서 교통안전시설 심의 대상 — 12월 심의 상정 예정">' +
+        esc(it.partnerReply || '') + '</textarea>' +
+      '<div class="row"><button class="btn-o" data-no="B-8" onclick="roadPartnerReply(' + it.id + ')">📝 의견 등록</button></div>' +
     '</div></details>' +
 
-    /* 처리 · 결과 안내 */
-    '<details class="acc"><summary>🛠️ 처리 · 결과 안내</summary><div class="acc-in">' +
+    /* 처리 결과안내 — 여기서 하는 일은 하나다. 지금까지의 조치와 사진을 보고 신고인에게 알린다.
+       사진을 새로 올리는 자리가 아니다(현장사진은 담당자가 상황판에서 올린다). */
+    '<details class="acc" open><summary>📢 처리 결과안내 ' +
+      (it.replyAt ? '<b class="ok">회신 ' + hm(it.replyAt) + '</b>' : '<b class="warn">회신 전</b>') + '</summary><div class="acc-in">' +
       '<div class="sel-kv"><span>상태</span><b>' + it.st + '</b></div>' +
-      (it.resultType ? '<div class="sel-kv"><span>조치 결과</span><b>' + it.resultType + '</b></div>' : '') +
-      '<div class="row"><button class="btn-g" onclick="closeModal();reportOpen(' + it.id + ')">📝 현장 결과보고</button>' +
-      '<button class="btn-g" onclick="closeModal();setMode(\'duty\');setTimeout(()=>selectItem(' + it.id + '),60)">상황판에서 보기</button></div>' +
+      '<div class="sel-kv"><span>조치 결과</span><b>' + esc(it.actResult || it.resultType || '기록 전') + '</b></div>' +
+      '<div class="rd-actlog">' + (actLog(it).length
+        ? actLog(it).map(function(r){ return '<div class="ar-row"><span class="ic">' + r.ico + '</span>' +
+            '<span class="k">' + esc(r.k) + '</span><span class="v">' + esc(r.v) + '</span>' +
+            '<span class="t">' + esc(r.t) + '</span></div>'; }).join('')
+        : '<div class="ar-none">기록된 조치가 없습니다</div>') + '</div>' +
+      (it.actMemo ? '<div class="sel-kv"><span>조치 내용</span><b>' + esc(it.actMemo.split(String.fromCharCode(10)).join(' / ')) + '</b></div>' : '') +
+      '<div class="rd-shots"><div class="rd-shots-h">현장 담당자가 올린 사진</div>' + photoBlock(it) + '</div>' +
+      (it.replyAt
+        ? '<div class="sel-kv"><span>회신</span><b>' + hm(it.replyAt) + ' (' + esc(it.replyVia || '') + ') ' + esc(it.replyMemo || '') + '</b></div>' : '') +
+      '<div class="row"><button class="btn-o" data-no="B-9" onclick="closeModal();replyOpen2(' + it.id + ')">📞 민원인 회신</button>' +
+      '<button class="btn-g" onclick="closeModal();setMode(' + String.fromCharCode(92) + "'duty" + String.fromCharCode(92) + "');setTimeout(()=>selectItem(" + it.id + '),60)">상황판에서 보기</button></div>' +
+      '<p class="hint">현장사진 등록은 상황판의 <b>초동조치 · 현장사진 등록</b>에서 합니다.</p>' +
     '</div></details>' +
 
     (roadColOf(it) === '중장기'
@@ -10488,17 +10581,20 @@ function roadDetailFull(id){
     '<ol class="sel-log">' + (it.log || []).slice(-6).map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
     '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
 }
-/* 5.3 현장 확인 — 분류 확정 */
+/* 5.3 처리유형 분류 수정 — AI 1차 분류를 담당자가 고칠 때만 쓴다.
+   고칠 때마다 창이 닫히면 유형과 처리구분을 잇달아 손보지 못한다. 창은 열어 둔 채 내용만 다시 그린다. */
 function roadFieldCheck(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const cat = (document.getElementById('rdCat') || {}).value;
   const sla = (document.getElementById('rdSla') || {}).value;
+  const was = (it.roadCategory || '') + '/' + (it.roadSla || '');
   it.roadCategory = cat; it.roadSla = sla;
   it.fieldCheckAt = new Date().toISOString();
   it.fieldCheckBy = meLabel();
-  it.log.push(nowHM() + ' 현장 확인 · 분류 확정: ' + cat + ' / ' + sla + '처리 (' + it.fieldCheckBy + ')');
-  sbPush(it); closeModal(); renderRoad(); renderList();
-  toast('현장 확인을 기록했습니다 — ' + cat + ' · ' + sla + '처리');
+  it.log.push(nowHM() + ' 처리유형 분류 수정: ' + cat + ' / ' + sla + '처리 (' + it.fieldCheckBy + ')');
+  sbPush(it); renderRoad(); renderList();
+  roadDetailFull(id);   /* 창은 그대로 두고 내용만 다시 그린다 */
+  toast(was === cat + '/' + sla ? '분류를 그대로 확정했습니다' : '처리유형을 고쳤습니다 — ' + cat + ' · ' + sla + '처리');
 }
 /* 5.1 처리방안 안내 — 1시간 준수 여부가 핵심 지표 */
 function roadGuide(id){
@@ -10516,25 +10612,65 @@ function roadGuide(id){
   sbPush(it); closeModal(); renderRoad(); renderList();
   toast(inTime ? '기한 내 안내 완료' : '안내 완료 — 기한을 넘겼습니다');
 }
-/* 5.4 협력 기관 통보·회신 */
-function roadPartnerSend(id){
+/* 5.4 협력기관 의견등록 (B-7 · B-8)
+   이 시스템에서 타 기관으로 직접 통보하는 길은 없다. 통보한 척하는 기록을 남기지 않는다.
+   대신 받는 기관이 그대로 쓸 의견요청서를 파일로 내주고, 돌아온 의견을 여기에 적는다. */
+function roadPartnerAsk(id){
   const it = items.find(i=>i.id === id); if(!it) return;
-  const org = (document.getElementById('rdPorg') || {}).value;
+  const org = (document.getElementById('rdPorg') || {}).value || '협력기관';
+  const a = deptOf(it);
+  const cat = roadCat(it);
+  const cls = it.roadSla || triage(it);
   it.partnerOrg = org;
-  it.partnerSentAt = new Date().toISOString();
-  it.log.push(nowHM() + ' 협력 기관 통보: ' + org);
-  sbPush(it); closeModal(); roadDetail(id); renderRoad();
-  toast(org + ' 통보를 기록했습니다 — 회신을 기다립니다');
+  it.partnerAskAt = new Date().toISOString();
+  const L = [];
+  L.push('교통·도로민원 신속처리 기동단 — 협력기관 의견요청서');
+  L.push('==================================================');
+  L.push('요청 ' + new Date().toLocaleString('ko-KR') + ' · ' + meLabel());
+  L.push('받는 곳  ' + org);
+  L.push('');
+  L.push('[민원 개요]');
+  L.push('접수번호  #' + String(it.id).padStart(3,'0'));
+  L.push('접수시각  ' + it.time);
+  L.push('위치      ' + it.gu + ' ' + it.loc);
+  L.push('유형      ' + cat.nm + ' · ' + cls + '처리');
+  L.push('소관      ' + a.actor.org + ' (주 소관 ' + cat.org + ')');
+  L.push('');
+  L.push('[민원 내용]');
+  L.push(it.sum || '(내용 없음)');
+  L.push('');
+  L.push('[지금까지 조치한 내용]');
+  const rows = (typeof actLog === 'function') ? actLog(it) : [];
+  if(rows.length) rows.forEach(function(r){ L.push('- ' + r.k + ': ' + r.v + (r.t ? ' (' + r.t + ')' : '')); });
+  else L.push('- 기록된 조치 없음');
+  L.push('');
+  L.push('[요청 사항]');
+  L.push('위 민원에 대한 귀 기관 소관 여부와 조치 계획에 관한 의견을 회신하여 주시기 바랍니다.');
+  L.push('회신받은 의견은 기동단 작업판의 협력기관 의견등록란에 기록됩니다.');
+  const blob = new Blob(['﻿' + L.join(String.fromCharCode(13, 10))], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href = url;
+  el.download = '의견요청서_' + String(it.id).padStart(3,'0') + '_' + org.replace(/[^가-힣0-9]/g,'') + '.txt';
+  document.body.appendChild(el); el.click(); el.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  it.log.push(nowHM() + ' 협력기관 의견요청서 내려받음: ' + org);
+  sbPush(it); renderRoad();
+  roadDetailFull(id);   /* 창은 열어 둔다 — 회신 의견을 이어서 적는다 */
+  toast(org + ' 의견요청서를 내려받았습니다 — 공문으로 보내신 뒤 회신 의견을 적어 주세요');
 }
 function roadPartnerReply(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const r = ((document.getElementById('rdPreply') || {}).value || '').trim();
-  if(!r){ toast('회신 내용을 적어 주세요'); return; }
+  if(!r){ toast('회신받은 의견을 적어 주세요'); return; }
+  const org = (document.getElementById('rdPorg') || {}).value || it.partnerOrg || '협력기관';
+  it.partnerOrg = org;
   it.partnerReplyAt = new Date().toISOString();
   it.partnerReply = r;
-  it.log.push(nowHM() + ' 협력 기관 회신(' + (it.partnerOrg || '') + '): ' + r);
-  sbPush(it); closeModal(); roadDetail(id); renderRoad();
-  toast('회신을 기록했습니다');
+  it.log.push(nowHM() + ' 협력기관 의견 등록(' + org + '): ' + r.split(String.fromCharCode(10)).join(' / '));
+  sbPush(it); renderRoad();
+  roadDetailFull(id);   /* 창은 열어 둔다 */
+  toast(org + ' 의견을 등록했습니다');
 }
 
 /* ══════════ 기동단 5.2 전화 접수 (1833-4088) ══════════
@@ -11401,6 +11537,8 @@ function bootDuty(){
   renderClsCards();
   cmdBadgeSync();
   wxBadgeSync();
+  /* 기상은 늦게 들어온다 — 들어오는 대로 헤더 한 줄에 반영한다 */
+  setInterval(wxBadgeSync, 30000);
   csApply();
   setInterval(()=>{ if(curMode === 'duty' && csLive) csApply(); }, 20000);
 }
