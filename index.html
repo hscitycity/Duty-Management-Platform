@@ -1583,17 +1583,11 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 .oc-foot{font-size:11.5px; color:var(--muted); text-align:right; margin:14px 0 0;}
 
 .oc-none{font-size:11.5px; color:var(--sdim);}
-/* F-4 뉴스 페이지 넘김 */
-.fd-pg{display:flex; align-items:center; gap:8px; margin-top:10px; padding-top:9px;
-  border-top:1px solid var(--sline);}
-.fd-b{height:30px; padding:0 12px; border-radius:7px; font-size:12.5px; font-weight:700;
-  background:#F1F5FA; color:var(--hs-blue-d); border:1px solid var(--sline); cursor:pointer;}
-.fd-b:hover:not(:disabled){background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
-.fd-b:disabled{opacity:.4; cursor:default;}
-.fd-n{flex:1; display:flex; flex-direction:column; align-items:center; gap:1px;
-  font-size:12px; color:var(--smuted); line-height:1.4;}
-.fd-n b{font-size:13.5px; color:var(--hs-blue-d);}
-.fd-n span{font-size:11px; color:var(--sdim); font-family:var(--mono);}
+/* F-4a 뉴스 쪽 넘김 — 좁은 칸이라 번호를 촘촘히 */
+#feed .pg{margin-top:10px; padding-top:9px; border-top:1px solid var(--sline); gap:3px;}
+#feed .pg-b{min-width:25px; height:26px; padding:0 5px; font-size:11.5px;}
+#feed .pg-note{width:100%; text-align:center; margin:5px 0 0; font-size:11px; color:var(--sdim);
+  font-family:var(--mono,ui-monospace);}
 .fd-more{width:100%; height:34px; margin-top:8px; border-radius:8px; cursor:pointer;
   font-size:12.5px; font-weight:700; background:#fff; color:var(--hs-blue-d);
   border:1.5px dashed var(--hs-blue-line);}
@@ -2066,6 +2060,19 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .rdd-card[open] > summary{background:#F7FAFD; border-bottom:1px solid var(--line);}
 .rdd-in{padding:12px;}
 @media (max-width:700px){ .rdd-card .loc, .rdd-card .sp{display:none;} }
+/* 쪽 넘김 한 벌 — ≪ 이전 묶음 · ‹ 이전 쪽 · 번호 · › 다음 쪽 · ≫ 다음 묶음 */
+.pg{display:flex; align-items:center; justify-content:center; gap:4px; flex-wrap:wrap;
+  margin:12px 0 4px; padding:2px;}
+.pg-b{min-width:30px; height:30px; padding:0 8px; border-radius:7px; cursor:pointer;
+  font-size:12.5px; font-weight:700; line-height:1;
+  background:#fff; color:var(--ink); border:1px solid var(--line);}
+.pg-b:hover:not(:disabled){background:#EFF4FA;}
+.pg-b:disabled{color:var(--smuted); background:#F7F8FA; cursor:default;}
+.pg-b.on{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.pg-b.pg-jump{font-size:13px;}
+.pg-n{font-family:var(--mono,ui-monospace);}
+.pg-note{margin-left:8px; font-size:12px; color:var(--muted);}
+@media (max-width:560px){ .pg-note{width:100%; text-align:center; margin:4px 0 0;} }
 </style>
 </head>
 <body>
@@ -2479,7 +2486,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2109';
+const BUILD_VER = 'v0906-2128';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -5774,6 +5781,32 @@ async function loadFeed(){
   feedPage = 0;
   renderFeed();
 }
+/* ══════════ 쪽 넘김 (F-4a · B-11g) ══════════
+   ≪ 이전 묶음 · ‹ 이전 쪽 · 1~10 쪽 번호 · › 다음 쪽 · ≫ 다음 묶음.
+   목록마다 다른 모양을 만들면 같은 조작을 화면마다 새로 익혀야 한다. 한 벌로 둔다. */
+const PG_BLOCK = 10;                      /* 한 묶음에 보이는 쪽 번호 수 */
+function pager(no, page, pages, fn, note){
+  if(pages < 1) pages = 1;
+  if(page > pages - 1) page = pages - 1;
+  if(page < 0) page = 0;
+  const blk = Math.floor(page / PG_BLOCK);
+  const from = blk * PG_BLOCK;
+  const to = Math.min(from + PG_BLOCK, pages);
+  const b = function(cls, lbl, go, on, ttl){
+    return '<button class="pg-b' + (cls ? ' ' + cls : '') + (on === 'cur' ? ' on' : '') + '" ' +
+      (on === false ? 'disabled ' : '') + 'title="' + ttl + '" ' +
+      'onclick="' + fn + '(' + go + ')">' + lbl + '</button>';
+  };
+  let out = '<div class="pg" data-no="' + no + '">';
+  out += b('pg-jump', '≪', Math.max(0, from - PG_BLOCK), from > 0, '이전 페이지 묶음');
+  out += b('', '‹', page - 1, page > 0, '이전 페이지');
+  for(let i = from; i < to; i++)
+    out += b('pg-n', String(i + 1), i, i === page ? 'cur' : true, (i + 1) + '쪽으로');
+  out += b('', '›', page + 1, page < pages - 1, '다음 페이지');
+  out += b('pg-jump', '≫', Math.min(pages - 1, to), to < pages, '다음 페이지 묶음');
+  out += (note ? '<span class="pg-note">' + note + '</span>' : '');
+  return out + '</div>';
+}
 function feedPages(){ return Math.max(1, Math.ceil(FEED_ALL.length / FEED_PER)); }
 function renderFeed(){
   const el = document.getElementById('feed');
@@ -5786,26 +5819,23 @@ function renderFeed(){
   const rows = FEED_ALL.slice(from, from + FEED_PER)
     .map(x=>feedRow(x.ico, x.t, x.l, x.when + ' · ' + x.src)).join('');
   el.innerHTML = rows +
-    '<div class="fd-pg" data-no="F-4a">' +
-      '<button class="fd-b" onclick="feedGo(-1)"' + (feedPage === 0 ? ' disabled' : '') + '>◀ 최근</button>' +
-      '<span class="fd-n"><b>' + (feedPage + 1) + '</b> / ' + pages + '쪽' +
-        '<span>' + (from + 1) + '–' + Math.min(from + FEED_PER, FEED_ALL.length) + ' / ' + FEED_ALL.length + '건</span></span>' +
-      '<button class="fd-b" onclick="feedGo(1)"' + (feedPage >= pages - 1 && feedEnd ? ' disabled' : '') + '>과거 ▶</button>' +
-    '</div>' +
+    pager('F-4a', feedPage, pages, 'feedTo',
+      (from + 1) + '–' + Math.min(from + FEED_PER, FEED_ALL.length) + ' / ' + FEED_ALL.length + '건') +
     /* 더 가져올 것이 없으면 버튼을 없앤다 — 눌러도 아무 일이 없는 버튼을 두지 않는다 */
     (feedEnd
       ? (feedPage >= pages - 1 ? '<p class="fd-note">더 이전 기사는 없습니다.</p>' : '')
       : '<button class="fd-more" onclick="feedMore()">📰 과거 기사 더 불러오기</button>');
 }
-function feedGo(d){
+/* 쪽 번호를 직접 누른다 — 마지막 쪽을 넘어서면 과거 구간을 더 가져온다 */
+function feedTo(p){
   const pages = feedPages();
-  /* 마지막 쪽에서 더 넘기면 과거 구간을 자동으로 가져온다 */
-  if(d > 0 && feedPage >= pages - 1){ feedMore(); return; }
-  feedPage += d;
+  if(p > pages - 1){ feedMore(); return; }
+  feedPage = Math.max(0, Math.min(p, pages - 1));
   renderFeed();
   const el = document.getElementById('feed');
   if(el) el.scrollTop = 0;
 }
+function feedGo(d){ feedTo(feedPage + d); }
 async function feedMore(){
   if(feedBusy || feedEnd) return;
   feedBusy = true;
@@ -10910,9 +10940,13 @@ function roadToIntake(){
    무엇을 어떻게 처리했는지(내용·이력·사진)와 얼마나 걸렸는지(안내·종결)를 함께 본다. */
 let roadView = 'work';                 /* work: 작업판 · done: 완료민원 */
 let rdDoneSla = 'all', rdDoneCat = 'all';
-function roadViewSet(v){ roadView = v; rdDoneSla = 'all'; rdDoneCat = 'all'; renderRoad(); }
-function roadDoneSla(v){ rdDoneSla = v; renderRoad(); }
-function roadDoneCat(v){ rdDoneCat = v; renderRoad(); }
+let rdDonePage = 0;
+const RDD_PER = 20;                       /* 한 쪽에 보이는 완료 민원 수 */
+function roadDoneTo(p){ rdDonePage = Math.max(0, p); renderRoad();
+  const h = document.getElementById('road'); if(h) h.scrollTop = 0; }
+function roadViewSet(v){ roadView = v; rdDoneSla = 'all'; rdDoneCat = 'all'; rdDonePage = 0; renderRoad(); }
+function roadDoneSla(v){ rdDoneSla = v; rdDonePage = 0; renderRoad(); }
+function roadDoneCat(v){ rdDoneCat = v; rdDonePage = 0; renderRoad(); }
 function roadDoneAll(){ return realItems().filter(function(i){ return isRoadItem(i) && i.st === '완료'; }); }
 /* 끝난 시각 — 기록이 없으면 처리이력의 '상태 변경: 완료' 줄에서 찾는다 */
 function doneTime(it){
@@ -11027,9 +11061,16 @@ function renderRoadDone(host){
       return '<button class="cs-chip' + (rdDoneCat === c.k ? ' on' : '') + '" onclick="roadDoneCat(&quot;' + c.k + '&quot;)">' +
         c.ico + ' ' + c.nm + ' ' + all.filter(function(i){ return roadCat(i).k === c.k; }).length + '</button>';
     }).join('') + '</div>';
+  /* 한 쪽에 20건 — 끝난 건은 쌓이기만 하므로 쪽으로 나눈다 */
+  const pages = Math.max(1, Math.ceil(list.length / RDD_PER));
+  if(rdDonePage > pages - 1) rdDonePage = pages - 1;
+  const from = rdDonePage * RDD_PER;
+  const page = list.slice(from, from + RDD_PER);
   host.innerHTML = head + stats + flt +
-    '<div class="rdd-list">' + (list.length ? list.map(roadDoneCard).join('')
-      : '<p class="rd-empty">해당하는 완료 민원이 없습니다.</p>') + '</div>';
+    '<div class="rdd-list">' + (page.length ? page.map(roadDoneCard).join('')
+      : '<p class="rd-empty">해당하는 완료 민원이 없습니다.</p>') + '</div>' +
+    (list.length ? pager('B-11g', rdDonePage, pages, 'roadDoneTo',
+      (from + 1) + '–' + Math.min(from + RDD_PER, list.length) + ' / ' + list.length + '건') : '');
 }
 function renderRoad(){
   const host = document.getElementById('road');
