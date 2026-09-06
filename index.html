@@ -2166,6 +2166,16 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .ord-card .oc-b .k{color:var(--muted);}
 .ord-card .ord-memo{margin:0 0 10px;}
 .ord-card .row{margin-top:2px;}
+/* 매뉴얼 전문 — 표는 표로, 소관 부서는 제목 옆에 */
+.mn-dept{padding:2px 8px; border-radius:9px; font-size:12px; font-weight:700;
+  background:var(--hs-blue-bg,#EAF1FB); color:var(--hs-blue-dark);}
+.mn-tblwrap{overflow-x:auto; margin:10px 0;}
+.mn-tbl{width:100%; border-collapse:collapse; font-size:13px; background:#fff;}
+.mn-tbl th, .mn-tbl td{border:1px solid var(--line); padding:6px 9px; vertical-align:top; line-height:1.6;}
+.mn-tbl th{background:#F1F5FA; color:var(--hs-blue-dark); font-weight:700; text-align:left; white-space:nowrap;}
+.mn-tbl tr:nth-child(even) td{background:#FAFCFE;}
+.mn-deptline{font-size:13.5px; margin:0 0 10px; color:var(--muted);}
+.mn-deptline b{color:var(--hs-blue-dark);}
 </style>
 </head>
 <body>
@@ -2579,7 +2589,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0907-0029';
+const BUILD_VER = 'v0907-0047';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2832,6 +2842,32 @@ function isSmallRepair(it){
 function cut(t, n){ t = String(t || ''); return t.length > n ? t.slice(0, n) + '…' : t; }
 
 /* 접수 건 → 배정 결과 {법적 소관, 처리 주체, 근거 문구, 확신도} */
+/* ══════════ 당직매뉴얼을 배정 근거로 ══════════
+   분장사무는 '어느 과의 일인가'를 말하고, 당직매뉴얼은 '당직 때 누가 받는가'를 말한다.
+   야간·휴일 민원은 매뉴얼이 먼저다 — 용역업체와 당직 연락처가 거기 적혀 있다.
+   근거 파일: data/manual_dept.json (원본 2026 화성시 당직메뉴얼 → md → 발췌) */
+let MAN_DEPT = null, manDeptP = null;
+function manDeptLoad(){
+  if(!manDeptP){
+    manDeptP = fetch('data/manual_dept.json').then(function(r){ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(function(j){ MAN_DEPT = j; if(typeof DEPT_CACHE === 'object') for(const k of Object.keys(DEPT_CACHE)) delete DEPT_CACHE[k]; return j; })
+      .catch(function(e){ console.warn('당직매뉴얼 배정근거 로드 실패', e); return null; });
+  }
+  return manDeptP;
+}
+/* 민원 글에서 매뉴얼 장을 찾는다 — 겹치는 낱말의 길이를 점수로 삼는다 */
+function manualDeptOf(it){
+  if(!MAN_DEPT || !MAN_DEPT.length) return null;
+  const txt = [it.field, it.sub, it.sum, it.req].filter(Boolean).join(' ');
+  let best = null, bestSc = 0;
+  for(const r of MAN_DEPT){
+    let sc = 0;
+    for(const k of (r.kw || [])) if(k.length >= 2 && txt.indexOf(k) >= 0) sc += k.length;
+    if(sc > bestSc){ bestSc = sc; best = r; }
+  }
+  /* 두 글자 낱말 하나로 부서를 정하지 않는다 — 최소 네 글자어치는 겹쳐야 한다 */
+  return (best && bestSc >= 4) ? {row:best, score:bestSc} : null;
+}
 function assignDept(it){
   const txt = [it.field, it.sub, it.sum, it.req].filter(Boolean).join(' ');
   const isRoad = it.field === '교통·도로' || /도로|포트홀|노면|차선|신호등|가로등|보안등|표지판/.test(txt);
@@ -2846,6 +2882,24 @@ function assignDept(it){
       confidence: 0.95};
   }
 
+  /* ①-2 당직매뉴얼에 절차가 적힌 민원은 매뉴얼을 따른다.
+     야간·휴일에 누가 받고 어느 용역업체가 나가는지는 매뉴얼에만 있다. */
+  /* 교통·도로는 도로 등급·관리청 규칙이 이미 정교하다 — 그 분야는 규칙을 따른다.
+     나머지 분야(동물사체·폐기물·복지 등)는 당직매뉴얼이 실무의 근거다. */
+  const man = (it.field === '교통·도로') ? null : manualDeptOf(it);
+  if(man){
+    const r = man.row;
+    const who = r.dept + (r.team ? ' ' + r.team : '');
+    const tel = r.tel ? ' ☎' + r.tel : '';
+    return {
+      manual: r,
+      legal: {dept: r.dept, basis: '당직매뉴얼 「' + r.sec + '」 · ' + who + tel},
+      actor: {org: r.dept, basis: '당직매뉴얼 「' + r.sec + '」' +
+        (r.vendor && r.vendor.nm ? ' · 용역업체 ' + r.vendor.nm + (r.vendor.tel ? ' ' + r.vendor.tel : '') : '')},
+      vendor: r.vendor || null,
+      confidence: Math.min(0.97, 0.72 + man.score / 60)
+    };
+  }
   /* ② 법적 소관 — 분장사무 문장과 키워드 대조 */
   let legalDept = null, legalTask = null, score = 0;
   if(DEPT_IDX){
@@ -5031,6 +5085,14 @@ function deptWhy(id){
     (a.overridden ? '<div class="sel-kv"><span>변경</span><b>담당자가 지정</b></div>' : '') +
     '<div class="sel-h" style="margin-top:12px">근거</div>' +
     '<div class="sel-box" style="line-height:1.8">' + esc(a.legal.basis) + '</div>' +
+    /* 야간·휴일에 실제로 나가는 곳은 용역업체다 — 번호를 눌러 바로 걸 수 있게 */
+    (a.vendor && a.vendor.nm
+      ? '<div class="sel-h" style="margin-top:12px">용역업체 <span class="sub">당직매뉴얼</span></div>' +
+        '<div class="sel-box"><div class="sel-kv"><span>업체</span><b>' + esc(a.vendor.nm) + '</b></div>' +
+        (a.vendor.tel ? '<div class="sel-kv"><span>연락처</span><b>' + esc(a.vendor.tel) + '</b></div>' : '') + '</div>'
+      : '') +
+    (a.manual ? '<div class="row"><button class="cs-mini" onclick="openManual(' + String.fromCharCode(39) +
+      String(a.manual.sec).replace(/'/g, '') + String.fromCharCode(39) + ')">📘 매뉴얼 전문 보기</button></div>' : '') +
     (a.grade ? '<p class="hint">도로 등급: ' + esc(a.grade) + '</p>' : '') +
     '<div class="row"><button class="btn-g" onclick="closeModal();deptPick(' + id + ')">부서 변경</button>' +
     '<button class="btn-g" onclick="closeModal()">닫기</button></div>');
@@ -7730,7 +7792,8 @@ function manSearch(){
     for(const k of kws) snip = snip.split(manEsc(k)).join('<mark style="background:#FFE9A8;padding:0 2px;border-radius:3px">'+manEsc(k)+'</mark>');
     const tels = (c.b.match(/☏[0-9\-~\/, ]+|☎[0-9\-~\/, ]+|031-[0-9\-~]+/g)||[]).slice(0,3);
     return '<div class="mn-card" onclick="manFull('+i+')" style="cursor:pointer">'+
-      '<div style="display:flex;align-items:center;gap:8px"><b style="font-size:15.5px;color:var(--hs-blue-dark)">📄 '+manEsc(c.t)+'</b>'+
+      '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:15.5px;color:var(--hs-blue-dark)">📄 '+manEsc(c.t)+'</b>'+
+      (c.d ? '<span class="mn-dept">🏢 '+manEsc(c.d)+(c.tel?' ☎'+manEsc(c.tel):'')+'</span>' : '')+
       '<span style="margin-left:auto;font-size:13px;color:var(--hs-orange);font-weight:700">전문 보기 ▸</span></div>'+
       '<p style="font-size:13.5px;line-height:1.7;margin-top:5px;color:#333">'+snip+'</p>'+
       (tels.length?'<p style="font-size:13px;margin-top:5px">'+tels.map(t=>'<span class="mn-tel">📞 '+manEsc(t.replace(/[☏☎]\s?/,''))+'</span>').join(' ')+'</p>':'')+'</div>';
@@ -7741,6 +7804,43 @@ function manTel(s){
     if(!/[0-9]{3,4}-[0-9]{4}|^☏|^☎/.test(m)) return m;
     return '<span class="mn-tel">📞 '+m.replace(/[☏☎]\s?/,'')+'</span>';
   });
+}
+/* 매뉴얼 원문은 마크다운이다(data/manual_2026.md 에서 왔다).
+   표를 글줄로 눌러 보여 주면 연락처와 절차가 뒤엉킨다 — 표는 표로 그린다. */
+function manMd(md){
+  const lines = String(md || '').split('\n');
+  const out = [];
+  let i = 0;
+  while(i < lines.length){
+    const ln = lines[i];
+    if(/^\s*\|/.test(ln) && /^\s*\|[\s\-|]+\|\s*$/.test(lines[i+1] || '')){
+      const rows = [];
+      const cells = x => x.trim().replace(/^\||\|$/g, '').split('|').map(c=>c.trim());
+      rows.push(cells(ln));
+      i += 2;
+      while(i < lines.length && /^\s*\|/.test(lines[i])){ rows.push(cells(lines[i])); i++; }
+      const td = r => r.map(c => '<td>' + manTel(manEsc(c).split('&lt;br&gt;').join('<br>')) + '</td>').join('');
+      out.push('<div class="mn-tblwrap"><table class="mn-tbl">' +
+        '<thead><tr>' + rows[0].map(c=>'<th>' + manEsc(c).split('&lt;br&gt;').join('<br>') + '</th>').join('') + '</tr></thead>' +
+        '<tbody>' + rows.slice(1).map(r=>'<tr>' + td(r) + '</tr>').join('') + '</tbody></table></div>');
+      continue;
+    }
+    if(/^#{1,6}\s/.test(ln)){
+      out.push('<div class="mn-h">' + manEsc(ln.replace(/^#+\s*/, '')) + '</div>');
+      i++; continue;
+    }
+    const s2 = ln.trim();
+    i++;
+    if(!s2) continue;
+    const e = manTel(manEsc(s2));
+    if(/^[0-9\u2460-\u2473\u2776-\u277f\u246a-\u2473➃➄]/.test(s2) && s2.length < 120)
+      out.push('<div class="mn-step"><span class="no">' + manEsc(s2.slice(0,1)) + '</span><span>' +
+        e.replace(/^.\s*[.)]?\s*/, '') + '</span></div>');
+    else if(/^※/.test(s2)) out.push('<div class="mn-note">' + e + '</div>');
+    else if(/^[○◦•▸▶□■\-]\s?/.test(s2)) out.push('<div class="mn-bul">' + e.replace(/^[○◦•▸▶□■\-]\s?/, '') + '</div>');
+    else out.push('<p class="mn-p">' + e + '</p>');
+  }
+  return out.join('');
 }
 function manFmt(body){
   const lines = body.split("\n").map(l=>l.trim()).filter(Boolean);
@@ -7766,8 +7866,10 @@ function manFull(i){
   const box = document.getElementById('manRes');
   box.innerHTML = manNav("manSearch()") +
     '<h3 style="font-size:17px;color:var(--hs-blue-dark);margin:2px 0 10px">📄 '+manEsc(c.t)+'</h3>'+
-    '<div style="background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:6px 18px 14px">'+manFmt(c.b)+'</div>'+
-    '<p style="font-size:12px;color:var(--muted);margin-top:8px">출처: 2026 화성시 당직메뉴얼</p>' + manTopBtn();
+    (c.d ? '<p class="mn-deptline">🏢 소관 <b>'+manEsc(c.d)+'</b>'+(c.tel?' <span class="mn-tel">📞 '+manEsc(c.tel)+'</span>':'')+'</p>' : '')+
+    '<div style="background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:6px 18px 14px">'+
+      (c.md ? manMd(c.md) : manFmt(c.b))+'</div>'+
+    '<p style="font-size:12px;color:var(--muted);margin-top:8px">출처: 2026 화성시 당직메뉴얼 (원본 hwpx → data/manual_2026.md)</p>' + manTopBtn();
   box.scrollTo(0,0);
 }
 
@@ -12728,7 +12830,7 @@ function setMode(m, fromHash){
   if(m==="done") renderDone();
   if(m==="info") rpState('info');
   else if(m==="duty" && rpNow === 'info') rpState(selId != null ? 'sel' : 'home');
-  if(m!=="cit"){ deptDbLoad(); orgUnitsLoad(); }   // S-06: 배정 근거·조직도는 당직 경로에서만 로드
+  if(m!=="cit"){ deptDbLoad(); orgUnitsLoad(); manDeptLoad(); }   // S-06: 배정 근거·조직도·당직매뉴얼은 당직 경로에서만 로드
   bootFor(m);   // D-02: 이 모드에 필요한 것만 준비(중복 실행 없음)
   if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
   if((m==="duty"||m==="info") && map){

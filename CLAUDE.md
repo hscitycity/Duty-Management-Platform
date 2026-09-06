@@ -178,6 +178,20 @@ claude
 5. 치환 전 앵커를 grep 으로 실존 확인. 실패는 assert 로 시끄럽게.
 6. 커밋 전 `npm run verify` — 전부 통과해야 한다.
 
+### 13.2-1 당직매뉴얼 (2026)
+
+- 원본 `2026 화성시 당직메뉴얼.hwpx` 는 **로컬에만** 둔다(.gitignore). 저작물이다.
+- 변환 결과만 저장소에 있다 — `data/manual_2026.md` · `data/manual.json` · `data/manual_dept.json`
+- 매뉴얼이 개정되면 두 줄이면 끝난다. 손으로 고치지 않는다.
+
+```bash
+python scripts/hwpx2md.py "2026 화성시 당직메뉴얼.hwpx" data/manual_2026.md
+python scripts/md2manual.py data/manual_2026.md
+```
+
+- 쓰이는 곳: 대응매뉴얼 전문 검색(표를 표로 표출) · AI 담당부서 지정 근거(C-6a, 용역업체 포함)
+  자세한 규칙은 `docs/상황판_사양서.md` 3.17.
+
 ### 13.3 DB — 적용해야 할 것
 - **`추가테이블.sql` 을 Supabase SQL Editor 에서 1회 실행.** (여러 번 실행해도 안전)
   `orders`(조치지시) · `order_holds` · `field_reports` · `rules`/`rule_history` · `journals`

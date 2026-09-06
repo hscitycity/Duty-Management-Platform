@@ -36,3 +36,9 @@ _shp/
 
 # === 검증용 로컬 패키지(jsdom) — 커밋 대상 아님 ===
 node_modules/
+
+# === 당직매뉴얼 원본(hwpx) — 저작물이라 원격에 두지 않는다.
+#     변환 결과 data/manual_2026.md 와 data/manual*.json 만 올린다.
+2026 화성시 당직메뉴얼.hwpx
+
+__pycache__/
