@@ -2486,7 +2486,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2128';
+const BUILD_VER = 'v0906-2135';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -5069,7 +5069,7 @@ function setStatus(id, st, force){
   }
   it.st = st;
   /* 종결까지 얼마나 걸렸는지 세려면 끝난 시각이 있어야 한다 */
-  if(st === "완료" && !it.doneAt) it.doneAt = new Date().toISOString();
+  if(st === "완료"){ if(!it.doneAt) it.doneAt = new Date().toISOString(); markDone(it.id); }
   it.log.push(nowHM()+" 상태 변경: "+st+((st==="완료"&&!(it.dispN))?" (인력 미투입 종결 확인)":""));
   sbPush(it);
   if(st==="완료"){ if((it.crews||[]).length) returnAllCrews(it, "처리 완료"); toast("처리 완료 — 처리결과로 이관되었습니다"); }
@@ -8010,13 +8010,39 @@ const SB_URL = 'https://olyczpgmvuzvpmaabiow.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9seWN6cGdtdnV6dnBtYWFiaW93Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MTI3MTQsImV4cCI6MjEwMDM4ODcxNH0.izhokguIH7xXgC8XTweHDkyufWL0ECdTuHbV5zs4hIM';
 let sb = null, cloudOn = false;
 let rtOK = false, pollBusy = false;
+/* ══════════ 완료 민원은 절대 되살아나지 않는다 ══════════
+   서버 갱신이 실패하면(오프라인·권한·순간 오류) 20초 뒤 폴링이 서버의 옛 상태를
+   그대로 덮어써 완료된 민원이 접수 상태로 되돌아왔다. 민원처리 시스템에서 이것은 치명적이다.
+   ① 완료한 id 를 기기에 남기고 ② 들어오는 값이 무엇이든 완료를 이기지 못하게 하며
+   ③ 서버가 어긋나 있으면 조용히 넘어가지 않고 다시 올린다. */
+let DONE_IDS = new Set();
+try{ const v = JSON.parse(localStorage.getItem('hs_done_ids') || '[]'); if(Array.isArray(v)) DONE_IDS = new Set(v); }catch(e){}
+function doneIdsSave(){ try{ localStorage.setItem('hs_done_ids', JSON.stringify([...DONE_IDS].slice(-4000))); }catch(e){} }
+function markDone(id){ if(id == null) return; DONE_IDS.add(id); doneIdsSave(); }
+function isDoneId(id){ return DONE_IDS.has(id); }
+/* 서버가 완료를 못 받은 것이 확인되면 다시 올린다 — 조용히 넘어가지 않는다 */
+let doneFixWarned = false;
+function reassertDone(it){
+  it.st = '완료';
+  if(!it.doneAt) it.doneAt = new Date().toISOString();
+  markDone(it.id);
+  try{ sbPush(it); }catch(e){}
+  if(!doneFixWarned){
+    doneFixWarned = true;
+    setTimeout(function(){ doneFixWarned = false; }, 60000);
+    if(typeof toast === 'function') toast('⚠️ 서버에 완료 상태가 반영되지 않아 다시 올렸습니다 — 완료 민원은 되돌아가지 않습니다');
+  }
+}
 function sbMerge(r){
   /* 완료 전환 감지 → 선택 패널 정리 */
   if(!r || !r.id) return false;
   const ex = items.find(i=>i.id===r.id);
   if(ex){
-    const wasDone = ex.st === "완료";
-    Object.assign(ex, {st:r.st, sms:r.sms, dispN:r.disp_n||0, urg:r.urg, log:(r.log&&r.log.length>=(ex.log||[]).length)?r.log:ex.log});
+    const wasDone = ex.st === "완료" || isDoneId(r.id);
+    /* 완료는 마지막 상태다. 서버가 뭐라 하든 뒤로 가지 않는다 */
+    const st = (wasDone && r.st !== "완료") ? "완료" : r.st;
+    Object.assign(ex, {st:st, sms:r.sms, dispN:r.disp_n||0, urg:r.urg, log:(r.log&&r.log.length>=(ex.log||[]).length)?r.log:ex.log});
+    if(wasDone && r.st !== "완료") reassertDone(ex);
     if(!wasDone && ex.st === "완료" && selId === ex.id){
       document.getElementById('detail').innerHTML = '<p class="hint">이 민원은 완료 처리되어 <b>처리결과</b>로 이관되었습니다.</p>';
       document.getElementById('dHint').textContent = '목록/지도에서 선택';
@@ -8024,6 +8050,9 @@ function sbMerge(r){
     return false;
   }
   const it = rowIt(r);
+  /* 이 기기에서 완료한 건이 서버의 옛 값으로 되살아나는 일을 막는다 */
+  if(isDoneId(it.id) && it.st !== '완료'){ it.st = '완료'; items.push(it); reassertDone(it); 
+    if(seq <= it.id) seq = it.id + 1; return false; }
   items.push(it);
   if(seq <= it.id) seq = it.id + 1;
   return it.st === '신규접수' ? it : false;
@@ -8031,6 +8060,7 @@ function sbMerge(r){
 async function sbPoll(){
   if(!cloudOn || pollBusy) return;
   pollBusy = true;
+  pushRetry();   /* 못 올린 것부터 올리고 나서 읽는다 — 읽고 덮으면 되돌아간다 */
   try{
     const {data, error} = await sb.from('complaints').select('*').order('id');
     if(!error && data){
@@ -8074,7 +8104,8 @@ function itRow(it){
 function rowIt(r){
   const it = {id:r.id, time:r.time, gu:r.gu, loc:r.loc, field:r.field, sub:r.sub, sum:r.sum, req:r.req,
     demo:Array.isArray(r.log) && r.log.some(x=>String(x).indexOf(DEMO_TAG)>=0),   // D-04: 시연 데이터 표식 복원
-    urg:r.urg, st:(r.st==="미확인"||r.st==="신규")?"신규접수":r.st, src:r.src, sms:r.sms, dispN:r.disp_n||0, log:r.log||[], crews:[], _db:true,
+    urg:r.urg, st:(typeof isDoneId === 'function' && isDoneId(r.id)) ? "완료"
+      : ((r.st==="미확인"||r.st==="신규")?"신규접수":r.st), src:r.src, sms:r.sms, dispN:r.disp_n||0, log:r.log||[], crews:[], _db:true,
     photoReport:Array.isArray(r.photo_report)?r.photo_report:[], photoBefore:r.photo_before||null,
     photoAfter:r.photo_after||null, photoPublic:r.photo_public !== false,
     vendorBefore:r.photo_vendor_before||null, vendorAfter:r.photo_vendor_after||null,
@@ -8103,6 +8134,9 @@ async function sbInit(){
     if(data.length){
       items = data.map(rowIt);
       seq = Math.max(...items.map(i=>i.id)) + 1;
+      /* 이 기기가 완료한 건인데 서버가 모르고 있으면 다시 올린다 */
+      const gap = data.filter(function(r){ return isDoneId(r.id) && r.st !== '완료'; });
+      for(const r of gap){ const it = items.find(function(x){ return x.id === r.id; }); if(it) reassertDone(it); }
     }
     renderMap(); renderList();
     const last = [...items].filter(i=>i.st!=="완료").sort((a,b)=>b.id-a.id)[0];
@@ -8127,18 +8161,43 @@ async function sbInit(){
     setTimeout(()=>toast('⚠️ DB 연결 실패: 새로고침하거나 네트워크를 확인하세요 (자동유입 민원이 화면에 안 나타납니다)'), 2500);
   }
 }
+/* 서버에 못 올린 건은 기억해 두었다가 폴링 때 다시 올린다 — 조용한 실패가 완료를 되돌린다 */
+let PUSH_RETRY = new Set();
+let pushWarned = 0;
+function pushFailed(it, why){
+  PUSH_RETRY.add(it.id);
+  const now = Date.now();
+  if(now - pushWarned > 30000){
+    pushWarned = now;
+    if(typeof toast === 'function') toast('⚠️ 서버 저장 실패 — 잠시 뒤 다시 시도합니다 (#' + String(it.id).padStart(3,'0') + ')');
+  }
+  console.warn('sbPush 실패', it.id, why);
+}
 async function sbPush(it){
   if(!cloudOn || !it) return;
   try{
     if(it._db){
-      await sb.from('complaints').update(itRow(it)).eq('id', it.id);
+      const {error} = await sb.from('complaints').update(itRow(it)).eq('id', it.id);
+      if(error){ pushFailed(it, error.message || error); return; }
+      PUSH_RETRY.delete(it.id);
     } else {
       it._db = true; /* 중복 삽입 방지 선점 */
       const {data, error} = await sb.from('complaints').insert(itRow(it)).select().single();
-      if(error){ it._db = false; return; }
-      if(data){ const old = it.id; it.id = data.id; seq = Math.max(seq, data.id+1); if(selId===old) selId = data.id; renderList(); renderMap(); }
+      if(error){ it._db = false; pushFailed(it, error.message || error); return; }
+      if(data){ const old = it.id; it.id = data.id; seq = Math.max(seq, data.id+1); if(selId===old) selId = data.id;
+        if(isDoneId(old)) markDone(data.id);
+        PUSH_RETRY.delete(old); renderList(); renderMap(); }
     }
-  }catch(e){}
+  }catch(e){ pushFailed(it, e && e.message); }
+}
+/* 밀린 저장을 다시 올린다 */
+function pushRetry(){
+  if(!cloudOn || !PUSH_RETRY.size) return;
+  for(const id of [...PUSH_RETRY]){
+    const it = items.find(function(x){ return x.id === id; });
+    if(!it){ PUSH_RETRY.delete(id); continue; }
+    sbPush(it);
+  }
 }
 
 /* ── 공통 ── */
@@ -9306,9 +9365,9 @@ function meRender(){
       '<input id="meQ" class="rp-q oc-q" autocomplete="off" ' +
         'placeholder="' + (isDept ? '부서명으로 찾기 (예: 정책기획관, 하수과)' : '읍·면·동으로 찾기 (예: 팔탄)') + '" ' +
         'value="' + q.replace(/"/g, '&quot;') + '" oninput="meFilter(this.value)">' +
-      '<div class="me-count">' + hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '') + '</div>' +
+      '<div class="me-count" id="meCnt">' + hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '') + '</div>' +
     '</div>' +
-    '<div class="oc-wrap oc-pick">' +
+    '<div class="oc-wrap oc-pick" id="meList">' +
     (hit.length
       ? grps.map(function(g){
           const rows = hit.filter(function(x){ return x.grp === g; });
@@ -9332,7 +9391,40 @@ function meRender(){
   if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
 function meGo(step){ meStep = step; meQuery = ''; if(step === 'root') meRender(); else orgUnitsLoad().then(()=>meRender()); }
-function meFilter(v){ meQuery = v; meRender(); }
+/* 검색은 목록만 다시 그린다.
+   창 전체를 다시 그리면 입력칸이 새로 만들어져 한글 조합이 글자마다 끊긴다
+   — '환경지도과' 가 'ㅎㅗㅏㄴㄱㅕㅇ' 처럼 낱자로 들어갔다. 입력칸은 건드리지 않는다. */
+function meFilter(v){
+  meQuery = v;
+  const host = document.getElementById('meList');
+  if(!host){ meRender(); return; }
+  const isDept = (meStep === 'dept');
+  const list = isDept ? orgDeptList() : orgEmdList();
+  const q = meQuery.trim();
+  const hit = q ? list.filter(function(x){ return (x.nm + ' ' + x.grp).indexOf(q) >= 0; }) : list;
+  const grps = [];
+  for(const x of hit){ if(grps.indexOf(x.grp) < 0) grps.push(x.grp); }
+  const cnt = document.getElementById('meCnt');
+  if(cnt) cnt.textContent = hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '');
+  host.innerHTML = hit.length
+    ? grps.map(function(g){
+        const rows = hit.filter(function(x){ return x.grp === g; });
+        return '<section class="fs-grp"><div class="fs-h">' +
+          '<span class="ic">' + (isDept ? '🏢' : '📍') + '</span><b>' + esc(g) + '</b>' +
+          '<span class="cnt">' + rows.length + '곳</span></div>' +
+          '<div class="oc-chips">' + rows.map(function(x){
+            const role = isDept ? '부서장' : '읍면동장';
+            const emd = isDept ? '' : x.nm;
+            const dept = isDept ? x.nm : '';
+            const Q = String.fromCharCode(39);
+            return '<span class="oc-chip' + (q && x.nm.indexOf(q) >= 0 ? ' hit' : '') + '" ' +
+              'role="button" tabindex="0" title="' + esc(x.grp + ' · ' + x.nm) + '" ' +
+              'onclick="meSet(' + Q + role + Q + ',' + Q + x.nm + Q + ',' + Q + emd + Q + ',' + Q + dept + Q + ')">' +
+              esc(isDept ? x.nm : x.short) + '</span>';
+          }).join('') + '</div></section>';
+      }).join('')
+    : '<p class="hint">"' + esc(q) + '" 에 해당하는 곳이 없습니다.</p>';
+}
 function meBack(title){
   return '<div data-no="D-2" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
     '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:12.5px" onclick="meGo(\'root\')">← 뒤로</button>' +
