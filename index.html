@@ -2073,6 +2073,50 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .pg-n{font-family:var(--mono,ui-monospace);}
 .pg-note{margin-left:8px; font-size:12px; color:var(--muted);}
 @media (max-width:560px){ .pg-note{width:100%; text-align:center; margin:4px 0 0;} }
+/* I-3b 이상징후 경계 — 어디에 몰렸는지 원으로 */
+.surge-tip{background:#D63B1F; color:#fff; border:none; font-size:12px; font-weight:700;
+  padding:4px 9px; border-radius:7px; box-shadow:0 2px 8px rgba(214,59,31,.35);}
+.surge-tip:before{border-top-color:#D63B1F !important;}
+/* I-5 도시이상징후 처리현황 */
+.cmd-card h4 .h4n{margin-left:6px; font-size:12px; font-weight:700; color:var(--muted);}
+.ord-done-btn{margin-left:auto;}
+.cmd-card h4{display:flex; align-items:center; gap:6px;}
+.ord-list{display:flex; flex-direction:column; gap:6px; margin-top:10px;}
+.ord-item{display:flex; align-items:center; gap:8px; padding:9px 11px; cursor:pointer;
+  border:1px solid var(--line); border-radius:8px; background:#fff; font-size:12.5px;}
+.ord-item:hover{background:#F7FAFD;}
+.ord-item .t{font-family:var(--mono,ui-monospace); color:var(--muted);}
+.ord-item .ty{font-weight:800;}
+.ord-item .em{flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.ord-item .dp{color:var(--muted); white-space:nowrap;}
+.ord-item .mm{padding:1px 6px; border-radius:8px; background:#F3F0FA; color:#5B3FA8; font-size:11px; font-weight:700;}
+.ord-item .rt{padding:1px 6px; border-radius:8px; background:#FDECEA; color:#C1352B; font-size:11px; font-weight:700;}
+.ord-item .stt{padding:2px 8px; border-radius:9px; font-size:11.5px; font-weight:700; white-space:nowrap;}
+.ord-item .stt.y{background:#EAF6EE; color:#127A50;}
+.ord-item .stt.w{background:#FFF4E5; color:#8A3E0C;}
+.ord-item .stt.n{background:#EEF2F7; color:#5F758F;}
+.ord-memo{margin:0 0 12px; padding:10px 12px; border-radius:9px; font-size:13px; line-height:1.7;
+  background:#F3F0FA; border:1px solid #DDD3F0; color:var(--ink); white-space:pre-wrap;}
+.ord-memo b{display:block; margin-bottom:4px; color:#5B3FA8; font-size:12.5px;}
+.ord-rows{display:flex; flex-direction:column; gap:6px;}
+.ord-row{border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff;}
+.ord-row.ok{background:#F7FCF9; border-color:#BFE3CB;}
+.ord-row .h{display:flex; align-items:center; gap:8px; font-size:12.5px;}
+.ord-row .h b{flex:1;}
+.ord-row .n{font-family:var(--mono,ui-monospace); color:var(--muted);}
+.ord-row .st{padding:1px 7px; border-radius:9px; font-size:11px; font-weight:700;}
+.ord-row .st.y{background:#EAF6EE; color:#127A50;}
+.ord-row .st.n{background:#EEF2F7; color:#8794A6;}
+.ord-row .m{margin-top:5px; font-size:12.5px; color:var(--muted); line-height:1.6;}
+.ord-stat{display:flex; flex-wrap:wrap; gap:8px; margin-top:10px;}
+.ord-stat span{padding:6px 10px; border-radius:8px; background:#F7FAFD; border:1px solid var(--line); font-size:12.5px;}
+.ord-stat b{margin-right:5px; color:var(--hs-blue-dark);}
+.cmd-memo{width:100%; margin-top:2px;}
+/* D-2 · I-4a 부서 고르기 — 글자를 칠 때마다 창이 출렁이면 안 된다.
+   결과 수가 130개에서 2개로 줄어도 목록 칸의 높이는 그대로 두고, 안에서만 스크롤한다. */
+#meList, #orgPop{height:56vh; max-height:56vh; overflow-y:auto; overscroll-behavior:contain;}
+@media (max-height:760px){ #meList, #orgPop{height:50vh; max-height:50vh;} }
+#meList .fs-grp:last-child, #orgPop section:last-child{margin-bottom:0;}
 </style>
 </head>
 <body>
@@ -2486,7 +2530,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2135';
+const BUILD_VER = 'v0906-2146';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -8758,7 +8802,7 @@ let cmdDepts = null;    /* 부서별 인원 (조정 중) */
 let ORDERS = [];        /* 하달 이력 */
 try{ const v = localStorage.getItem('hs_orders'); if(v) ORDERS = JSON.parse(v); }catch(e){}
 /* ORDERS 는 새것이 앞(unshift)이다. slice(-40) 으로 자르면 새것부터 버려진다 */
-function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 40))); }catch(e){} }
+function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 200))); }catch(e){} }
 
 function cmdTotal(){ return Object.values(cmdDepts || {}).reduce((a,b)=>a + b, 0); }
 /* 조치 유형이 제안하는 부서 — 무엇이 추천값인지 표시한다 */
@@ -8900,10 +8944,40 @@ function surgeOn(su){
   setMode('duty');
   renderMap(); renderList();
   surgeBanner();
+  surgeRing(su);
   surgeFit(su.list);
+}
+/* I-3b 이상징후가 어디에 몰렸는지 원으로 두른다 —
+   점만 흩어 놓으면 '한 자리에 몰렸다'는 것이 눈에 들어오지 않는다 */
+let SURGE_RING = null;
+function surgeRing(su){
+  surgeRingOff();
+  if(typeof map === 'undefined' || !map || !window.L || !su || !su.list) return;
+  const pts = su.list.map(function(i){ return i.ll || i.pin; }).filter(Boolean);
+  if(!pts.length) return;
+  const c = [pts.reduce(function(a,x){ return a + x[0]; }, 0) / pts.length,
+             pts.reduce(function(a,x){ return a + x[1]; }, 0) / pts.length];
+  /* 반경은 탐지 규칙의 반경 — 규칙과 그림이 어긋나면 안 된다 */
+  let r = Number(su.radius) || 500;
+  for(const pt of pts){ const d = distM(c[0], c[1], pt[0], pt[1]); if(d > r) r = d; }
+  try{
+    SURGE_RING = L.layerGroup([
+      L.circle(c, {radius:r * 1.08, color:'#D63B1F', weight:2, opacity:.85, dashArray:'6 5',
+        fillColor:'#D63B1F', fillOpacity:.07, interactive:false}),
+      L.circleMarker(c, {radius:5, color:'#D63B1F', weight:2, fillColor:'#fff', fillOpacity:1, interactive:false})
+    ]).addTo(map);
+    SURGE_RING.getLayers()[0].bindTooltip(
+      '🚨 이상징후 ' + esc(su.emd) + ' · ' + su.list.length + '건 · 반경 ' + Math.round(r) + 'm',
+      {permanent:true, direction:'top', className:'surge-tip'}).openTooltip();
+  }catch(e){ SURGE_RING = null; }
+}
+function surgeRingOff(){
+  if(SURGE_RING && typeof map !== 'undefined' && map){ try{ map.removeLayer(SURGE_RING); }catch(e){} }
+  SURGE_RING = null;
 }
 function surgeOff(){
   surgeFocus = null;
+  surgeRingOff();
   surgeBanner();
   renderMap(); renderList();
 }
@@ -8971,6 +9045,7 @@ function cmdItemPop(id){
 function renderCmd(){
   const host = document.getElementById('cmd');
   if(!host) return;
+  if(cmdView === 'done'){ host.innerHTML = cmdDoneView(); return; }
   const surges = detectSurges();
   const th = ruleThresholds(RULES_CUR);
   const upto = surges.filter(x=>x.report);
@@ -9034,6 +9109,9 @@ function renderCmd(){
               '<button class="cmd-del" aria-label="' + d + ' 빼기" title="이 부서를 빼기" onclick="cmdDeptDel(\'' + d + '\')">✕</button></div>').join('') +
             '<button class="cmd-add" onclick="cmdDeptAdd()">＋ 부서 추가·변경</button>' +
             '<div class="cmd-warn ' + band + '">' + bandMsg + '</div>' +
+            '<label class="rd-lb" data-no="I-4b">시장 지시 의견 <span class="rd-sub">부서에 그대로 전달됩니다</span></label>' +
+            '<textarea id="cmdMemo" class="cmd-memo" style="min-height:66px" ' +
+              'placeholder="예) 하천 범람 우려 구간 우선 점검하고, 통행 제한이 필요하면 즉시 보고할 것">' + esc(cmdMemo) + '</textarea>' +
             '<div class="row"><button class="btn-o" onclick="cmdIssue()">📣 조치지시 하달</button></div>' +
             '<div class="row"><button class="btn-g" onclick="holdOpen(\'' + su.key + '\')">보류</button></div>'
           : '<div class="row"><button class="btn-g" onclick="cmdPickType(' + i + ')">이 유형으로</button></div>') +
@@ -9043,20 +9121,29 @@ function renderCmd(){
     cmdOrderList() + cmdHoldList();
 }
 /* 하달 — 부서별 수신확인이 시각과 함께 표시되고, 미수신은 자동 재통보 */
+let cmdMemo = '';   /* 시장이 적은 지시 의견 — 다시 그려도 남는다 */
 function cmdIssue(){
   if(!cmdSel){ toast('상신된 급증 건이 없습니다'); return; }
+  cmdMemo = ((document.getElementById('cmdMemo') || {}).value || '').trim();
   const o = {
     id: 'O' + Date.now(), at: new Date().toISOString(), hm: nowHM(),
     type: ACT_TYPES[cmdType].k, emd: cmdSel.emd, cnt: cmdSel.cnt, mult: cmdSel.mult,
     depts: Object.assign({}, cmdDepts), total: cmdTotal(),
     ack: Object.keys(cmdDepts).reduce((a,d)=>{ a[d] = null; return a; }, {}),
+    memo: cmdMemo,
+    ids: cmdSel.list.map(function(x){ return x.id; }),
+    reports: {},           /* 부서별 처리완료 의견 */
+    closedAt: null,        /* 시장 확인 시각 — 여기서 종결된다 */
     retry: 0
   };
   ORDERS.unshift(o); ordersSave();   /* 새것이 앞이다 — 저장도 앞에서 자른다 */
   for(const it of cmdSel.list){
-    it.log.push(nowHM() + ' 시장 조치지시 하달 (' + o.type + ' · ' + o.total + '명)');
+    it.log.push(nowHM() + ' 시장 조치지시 하달 (' + o.type + ' · ' + o.total + '명)' +
+      (o.memo ? ' — 지시: ' + o.memo.split(String.fromCharCode(10)).join(' / ') : ''));
     sbPush(it);
   }
+  cmdMemo = '';
+  cmdOrdPage = 0;   /* 새로 하달한 건은 첫 쪽에서 보인다 */
   renderList(); renderCmd();
   toast(o.type + ' 조치지시를 하달했습니다 — 총원 ' + o.total + '명');
   /* 데모: 부서별 수신확인이 순차로 들어온다. 15초까지 미수신이면 자동 재통보 */
@@ -9068,6 +9155,8 @@ function cmdIssue(){
       if(!cur) return;
       cur.ack[d] = nowHM(); ordersSave();
       if(curMode === 'cmd') renderCmd();
+      /* 시연: 수신확인한 부서가 조치를 마치고 처리완료 의견을 낸다 */
+      setTimeout(function(){ cmdReport(o.id, d); }, 4000 + i * 1500);
     }, 1500 + i * 1800);
   });
   setTimeout(()=>cmdRetry(o.id), 15000);
@@ -9082,16 +9171,144 @@ function cmdRetry(id){
   if(curMode === 'cmd') renderCmd();
   if(o.retry < 3) setTimeout(()=>cmdRetry(id), 20000);
 }
+/* ══════════ I-5 도시이상징후 처리현황 ══════════
+   하달한 건은 탐지 아래로 내려와 여기 쌓인다. 부서가 처리완료 의견을 내면
+   시장이 눌러 확인하고, 그때 비로소 종결된다(I-6 처리완료건으로 넘어간다). */
+/* 작은따옴표 — onclick 안에 넣을 때 쓴다 */
+const ORD_Q = String.fromCharCode(39);
+const ORD_PER = 5;
+let cmdOrdPage = 0, cmdDonePage = 0, cmdView = 'live';
+function cmdOrdTo(p){ cmdOrdPage = Math.max(0, p); renderCmd(); }
+function cmdDoneTo(p){ cmdDonePage = Math.max(0, p); renderCmd(); }
+function cmdViewSet(v){ cmdView = v; cmdDonePage = 0; renderCmd(); }
+function ordersLive(){ return ORDERS.filter(function(o){ return !o.closedAt; }); }
+function ordersDone(){ return ORDERS.filter(function(o){ return !!o.closedAt; }); }
+function ordDepts(o){ return Object.keys(o.depts || o.ack || {}); }
+function ordRepN(o){ return ordDepts(o).filter(function(d){ return (o.reports || {})[d]; }).length; }
+function ordAckN(o){ return ordDepts(o).filter(function(d){ return o.ack[d]; }).length; }
+function ordReady(o){ const ds = ordDepts(o); return ds.length > 0 && ordRepN(o) === ds.length; }
+function ordState(o){
+  if(o.closedAt) return {k:'done', nm:'종결', cls:'y'};
+  if(ordReady(o)) return {k:'ready', nm:'확인 대기', cls:'w'};
+  if(ordRepN(o)) return {k:'part', nm:'처리 중 ' + ordRepN(o) + '/' + ordDepts(o).length, cls:'n'};
+  return {k:'ack', nm:'수신 ' + ordAckN(o) + '/' + ordDepts(o).length, cls:'n'};
+}
+/* 부서가 처리완료 의견을 낸다 */
+const REP_MEMOS = ['현장 점검 완료 — 위험요인 제거', '순찰 강화 및 응급복구 완료',
+  '통행 제한 해제 · 정상화 확인', '임시조치 후 본복구 일정 확정', '유관기관 협조 완료 · 이상 없음'];
+function cmdReport(oid, dept, memo){
+  const o = ORDERS.find(function(x){ return x.id === oid; });
+  if(!o || o.closedAt) return;
+  o.reports = o.reports || {};
+  if(o.reports[dept]) return;
+  const idx = ordDepts(o).indexOf(dept);
+  o.reports[dept] = {hm: nowHM(), memo: memo || REP_MEMOS[(idx < 0 ? 0 : idx) % REP_MEMOS.length]};
+  ordersSave();
+  if(curMode === 'cmd') renderCmd();
+  if(ordReady(o)) toast('📥 ' + o.emd + ' — 모든 부서 처리완료 의견 도착 · 시장 확인을 기다립니다');
+}
+/* 시장이 확인해야 끝난다 */
+function cmdClose(oid){
+  const o = ORDERS.find(function(x){ return x.id === oid; });
+  if(!o) return;
+  if(!ordReady(o)){ toast('아직 처리완료 의견을 내지 않은 부서가 있습니다'); return; }
+  o.closedAt = new Date().toISOString();
+  o.closedHm = nowHM();
+  ordersSave();
+  for(const id of (o.ids || [])){
+    const it = items.find(function(x){ return x.id === id; });
+    if(it){ it.log.push(nowHM() + ' 시장 조치지시 종결 확인 (' + o.type + ')'); sbPush(it); }
+  }
+  closeModal();
+  cmdDonePage = 0;
+  renderList(); renderCmd();
+  toast('확인했습니다 — ' + o.emd + ' 건을 종결 처리했습니다');
+}
+/* I-5b 한 건의 처리현황을 팝업으로 */
+function cmdOrderPop(oid){
+  const o = ORDERS.find(function(x){ return x.id === oid; });
+  if(!o){ toast('지시 건을 찾지 못했습니다'); return; }
+  const ds = ordDepts(o);
+  const st = ordState(o);
+  showModal('<h2 data-no="I-5b">📣 도시이상징후 처리현황 <span class="sub">' + esc(o.emd) + ' · ' + o.type + '</span></h2>' +
+    '<div class="sel-box" style="margin-bottom:12px">' +
+      '<div class="sel-kv"><span>하달</span><b>' + o.hm + ' · 총원 ' + o.total + '명 · ' + ds.length + '개 부서</b></div>' +
+      '<div class="sel-kv"><span>탐지</span><b>' + esc(o.emd) + ' ' + o.cnt + '건' + (o.mult ? ' · 평소 대비 ' + o.mult + '배' : '') + '</b></div>' +
+      '<div class="sel-kv"><span>상태</span><b>' + st.nm + '</b></div>' +
+      (o.closedHm ? '<div class="sel-kv"><span>종결 확인</span><b>' + o.closedHm + '</b></div>' : '') + '</div>' +
+    (o.memo ? '<div class="ord-memo"><b>🗣 시장 지시</b>' + esc(o.memo) + '</div>' : '') +
+    '<div class="ord-rows">' + ds.map(function(d){
+      const r = (o.reports || {})[d];
+      return '<div class="ord-row' + (r ? ' ok' : '') + '">' +
+        '<div class="h"><b>' + esc(d) + '</b><span class="n">' + o.depts[d] + '명</span>' +
+          '<span class="st ' + (o.ack[d] ? 'y' : 'n') + '">' + (o.ack[d] ? '수신 ' + o.ack[d] : '미수신') + '</span>' +
+          '<span class="st ' + (r ? 'y' : 'n') + '">' + (r ? '처리완료 ' + r.hm : '처리 중') + '</span></div>' +
+        (r ? '<div class="m">' + esc(r.memo) + '</div>' : '') + '</div>';
+    }).join('') + '</div>' +
+    (o.closedAt
+      ? '<p class="hint">이 건은 <b>' + o.closedHm + '</b>에 종결 확인되었습니다.</p>'
+      : (ordReady(o)
+          ? '<p class="hint">모든 부서가 처리완료 의견을 냈습니다. 확인하시면 종결됩니다.</p>'
+          : '<p class="hint">' + ordRepN(o) + '/' + ds.length + '개 부서가 처리완료 의견을 냈습니다 — 모두 도착해야 확인할 수 있습니다.</p>')) +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button>' +
+    (o.closedAt ? '' :
+      '<button class="btn-o" data-no="I-5c"' + (ordReady(o) ? '' : ' disabled') +
+      ' onclick="cmdClose(' + ORD_Q + o.id + ORD_Q + ')">✅ 확인 · 종결</button>') + '</div>', true);
+}
+/* 목록 한 줄 */
+function cmdOrderRow(o){
+  const st = ordState(o);
+  const ds = ordDepts(o);
+  return '<div class="ord-item" data-no="I-5a" onclick="cmdOrderPop(' + ORD_Q + o.id + ORD_Q + ')" title="눌러서 처리현황 보기">' +
+    '<span class="t">' + (o.closedHm || o.hm) + '</span>' +
+    '<span class="ty">' + esc(o.type) + '</span>' +
+    '<span class="em">' + esc(o.emd) + ' ' + o.cnt + '건</span>' +
+    '<span class="dp">' + ds.length + '개 부서 · ' + o.total + '명</span>' +
+    (o.memo ? '<span class="mm" title="' + esc(o.memo) + '">🗣 지시</span>' : '') +
+    (o.retry ? '<span class="rt">재통보 ' + o.retry + '</span>' : '') +
+    '<span class="stt ' + st.cls + '">' + st.nm + '</span></div>';
+}
 function cmdOrderList(){
-  if(!ORDERS.length) return '';
-  return '<div class="cmd-card" data-no="I-5" style="margin-top:16px"><h4>📣 하달 이력 · 수신확인</h4>' +
-    ORDERS.slice(0, 5).map(o=>
-      '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">' +
-      '<div style="font-size:13px;font-weight:700">' + o.hm + ' · ' + o.type + ' · ' + o.emd + ' (' + o.cnt + '건) · 총원 ' + o.total + '명' +
-      (o.retry ? ' <span class="badge b-urg">재통보 ' + o.retry + '회</span>' : '') + '</div>' +
-      Object.keys(o.ack).map(d=>'<div class="ack"><span>' + d + '</span>' +
-        '<span class="st ' + (o.ack[d] ? 'y' : 'n') + '">' + (o.ack[d] ? '수신확인' : '미수신') + '</span>' +
-        '<span class="t">' + (o.ack[d] || '—') + '</span></div>').join('') + '</div>').join('') + '</div>';
+  const live = ordersLive();
+  const done = ordersDone();
+  const btn = '<button class="cs-mini ord-done-btn" data-no="I-6" onclick="cmdViewSet(' + ORD_Q + 'done' + ORD_Q + ')">' +
+    '✅ 처리완료건 ' + done.length + '</button>';
+  if(!live.length && !done.length) return '';
+  const pages = Math.max(1, Math.ceil(live.length / ORD_PER));
+  if(cmdOrdPage > pages - 1) cmdOrdPage = pages - 1;
+  const from = cmdOrdPage * ORD_PER;
+  const page = live.slice(from, from + ORD_PER);
+  return '<div class="cmd-card" data-no="I-5" style="margin-top:16px">' +
+    '<h4>📣 도시이상징후 처리현황 <span class="h4n">' + live.length + '건</span>' + btn + '</h4>' +
+    (live.length
+      ? '<div class="ord-list">' + page.map(cmdOrderRow).join('') + '</div>' +
+        (pages > 1 ? pager('I-5d', cmdOrdPage, pages, 'cmdOrdTo',
+          (from + 1) + '–' + Math.min(from + ORD_PER, live.length) + ' / ' + live.length + '건') : '')
+      : '<p class="hint">진행 중인 조치지시가 없습니다.</p>') + '</div>';
+}
+/* I-6 처리완료건 — 종결된 지시만 모아 본다 */
+function cmdDoneView(){
+  const done = ordersDone();
+  const pages = Math.max(1, Math.ceil(done.length / ORD_PER));
+  if(cmdDonePage > pages - 1) cmdDonePage = pages - 1;
+  const from = cmdDonePage * ORD_PER;
+  const page = done.slice(from, from + ORD_PER);
+  const byType = {};
+  for(const o of done){ byType[o.type] = (byType[o.type] || 0) + 1; }
+  return '<div class="rd-head" data-no="I-6"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">' +
+      '✅ 도시이상징후 처리완료건</h2>' +
+    '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:13px" onclick="cmdViewSet(' + ORD_Q + 'live' + ORD_Q + ')">← 조치지시로</button>' +
+    '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="renderCmd()">↻ 새로고침</button></div>' +
+    '<div class="cmd-card" data-no="I-6a"><h4>📊 종결 ' + done.length + '건</h4>' +
+    (done.length
+      ? '<div class="ord-stat">' + Object.keys(byType).map(function(k){
+          return '<span><b>' + esc(k) + '</b>' + byType[k] + '건</span>'; }).join('') +
+        '<span><b>투입 총원</b>' + done.reduce(function(a,o){ return a + (o.total || 0); }, 0) + '명</span>' +
+        '<span><b>참여 부서</b>' + done.reduce(function(a,o){ return a + ordDepts(o).length; }, 0) + '곳</span></div>' +
+        '<div class="ord-list">' + page.map(cmdOrderRow).join('') + '</div>' +
+        (pages > 1 ? pager('I-6b', cmdDonePage, pages, 'cmdDoneTo',
+          (from + 1) + '–' + Math.min(from + ORD_PER, done.length) + ' / ' + done.length + '건') : '')
+      : '<p class="hint">아직 종결된 조치지시가 없습니다.</p>') + '</div>';
 }
 
 /* ══════════ S-08 규칙 설정 화면 ══════════ */
@@ -9406,6 +9623,7 @@ function meFilter(v){
   for(const x of hit){ if(grps.indexOf(x.grp) < 0) grps.push(x.grp); }
   const cnt = document.getElementById('meCnt');
   if(cnt) cnt.textContent = hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '');
+  const top = host.scrollTop;
   host.innerHTML = hit.length
     ? grps.map(function(g){
         const rows = hit.filter(function(x){ return x.grp === g; });
@@ -9424,6 +9642,8 @@ function meFilter(v){
           }).join('') + '</div></section>';
       }).join('')
     : '<p class="hint">"' + esc(q) + '" 에 해당하는 곳이 없습니다.</p>';
+  /* 글자를 더 지웠을 때는 보던 자리를 지키고, 좁혀 갈 때는 위부터 */
+  host.scrollTop = (hit.length >= list.length) ? top : 0;
 }
 function meBack(title){
   return '<div data-no="D-2" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
