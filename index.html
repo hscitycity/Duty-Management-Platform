@@ -793,6 +793,33 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
 .btn-csv.sm .ico-csv{width:14px; height:14px;}
 @media (prefers-reduced-motion: reduce){ .cs-body{transition:none;} }
 
+/* ── 꺾은선 그래프 ── */
+.lc{position:relative; display:grid; grid-template-columns:26px 1fr; grid-template-rows:1fr auto auto;
+  gap:0 4px; width:100%; height:100%; min-height:0;}
+.lc-y{grid-column:1; grid-row:1; display:flex; flex-direction:column; justify-content:space-between;
+  font-family:var(--mono,ui-monospace); font-size:10px; color:#8D9299; text-align:right; padding:1px 0;}
+.lc-svg{grid-column:2; grid-row:1; width:100%; height:100%; min-height:34px; overflow:visible;}
+.lc-grid{stroke:#E3EDF7; stroke-width:1; vector-effect:non-scaling-stroke;}
+.lc-band{fill:#1D4994; opacity:.045;}
+.lc-now{stroke:#F07B27; stroke-width:1.2; stroke-dasharray:3 3; vector-effect:non-scaling-stroke;}
+.lc-hot circle{opacity:0; transition:opacity .12s ease;}
+.lc-hot:hover circle{opacity:1;}
+.lc-x{grid-column:2; grid-row:2; display:flex; justify-content:space-between;
+  font-family:var(--mono,ui-monospace); font-size:10px; color:#8D9299; padding-top:2px;}
+.lc-x span{flex:1 1 0; min-width:0; text-align:center; overflow:hidden;}
+.lc-lg{grid-column:2; grid-row:3; display:flex; gap:10px; font-size:10.5px; color:#5F758F; padding-top:2px;}
+.lc-lg span{display:flex; align-items:center; gap:4px;}
+.lc-lg i{width:8px; height:2px; border-radius:1px; display:inline-block;}
+/* 대시보드 7일 추이 — 선 아래에 날짜 클릭 영역 */
+#dTrend .lc{height:150px;}
+.lc-click{display:flex; gap:2px; margin-top:6px;}
+.lc-click .c{flex:1; text-align:center; font-size:11px; color:var(--muted); cursor:pointer;
+  border-radius:6px; padding:3px 0;}
+.lc-click .c:hover{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+@media (prefers-reduced-motion: reduce){ .lc-hot circle{transition:none;} }
+
+.lc-click .c.on{background:var(--hs-blue); color:#fff;}
+
 </style>
 </head>
 <body>
@@ -1143,7 +1170,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0959';
+const BUILD_VER = 'v0906-1002';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1826,25 +1853,42 @@ function csStripRender(){
   const ev = document.getElementById('csEvents');
   const kp = document.getElementById('csKpis');
   if(!tl) return;
-  const now = csNow(), span = csRangeH * 3600 * 1000, bins = 24;
+  /* 24시간을 1시간 단위 24점으로 — '구간' 단위보다 해상도가 높다 */
+  const now = csNow(), span = csRangeH * 3600 * 1000, bins = csRangeH <= 6 ? csRangeH * 4 : 24;
+  const step = span / bins;
   const arr = new Array(bins).fill(0), urgArr = new Array(bins).fill(0);
   for(const it of scopeItems(realItems())){
     const t = itemStart(it).getTime();
-    const k = Math.floor((t - (now - span)) / (span / bins));
+    const k = Math.floor((t - (now - span)) / step);
     if(k < 0 || k >= bins) continue;
     arr[k]++; if(it.urg === '긴급') urgArr[k]++;
   }
-  const mx = Math.max(1, ...arr);
-  /* F: 한 구간에 몰리면 나머지가 안 보인다 — 제곱근 스케일로 낮은 값도 읽히게 하고 최댓값을 함께 적는다 */
-  tl.innerHTML = arr.map((v,i)=>{
-    const h = v === 0 ? 2 : Math.max(6, Math.round(Math.sqrt(v / mx) * 100));
-    const cls = urgArr[i] ? ' u' : '';
-    return '<div class="cs-tlbar' + cls + (i === bins - 1 ? ' sel' : '') + '" style="height:' + h + '%" ' +
-      'title="' + csBinLabel(now, span, bins, i) + ' · ' + v + '건' + (urgArr[i] ? ' (긴급 ' + urgArr[i] + ')' : '') + '"></div>';
-  }).join('');
+  const hourAt = i => new Date(now - span + step * i).getHours();
+  /* 당직 시간대(21~06시)를 배경으로 옅게 */
+  const bands = [];
+  let bs = -1;
+  for(let i = 0; i < bins; i++){
+    const nite = (hourAt(i) >= 21 || hourAt(i) < 6);
+    if(nite && bs < 0) bs = i;
+    if((!nite || i === bins - 1) && bs >= 0){ bands.push([bs, i]); bs = -1; }
+  }
+  /* 라벨은 6시간마다 */
+  const labels = Array.from({length: bins}, (_, i)=>{
+    const h = hourAt(i);
+    return (i === 0 || i === bins - 1 || h % 6 === 0) ? String(h).padStart(2, '0') : '';
+  });
+  tl.innerHTML = lineChart({
+    series: [
+      {data: arr,    color: '#1D4994', name: '전체'},
+      {data: urgArr, color: '#D63B1F', name: '긴급', fill: false}
+    ],
+    labels: labels, bands: bands, nowAt: bins - 1, minTop: 5,
+    aria: '최근 ' + csRangeH + '시간 접수 추이',
+    tip: i => csBinLabel(now, span, bins, i) + ' · 전체 ' + arr[i] + '건' + (urgArr[i] ? ' · 긴급 ' + urgArr[i] + '건' : '')
+  });
   const lb = document.getElementById('csTlLabel');
-  if(lb) lb.innerHTML = '최근 ' + csRangeH + '시간 · 총 ' + arr.reduce((a,b)=>a+b,0) + '건 ' +
-    '<span class="cs-tlmax">최대 ' + mx + '건/구간</span>';
+  /* 최댓값 표기는 축에서 읽힌다 — 헤더에서 뺀다 */
+  if(lb) lb.textContent = '최근 ' + csRangeH + '시간 · 총 ' + arr.reduce((a,b)=>a+b,0) + '건';
   if(ev){
     const rows = [];
     for(const it of scopeItems(realItems()).slice().sort((a,b)=>b.id - a.id).slice(0, 20)){
@@ -2066,6 +2110,56 @@ function crewTick(){
   if(crewFollow && followTo) map.panTo(followTo, {animate:true, duration:0.6});
 }
 crewTickTimer = setInterval(crewTick, 500);
+
+/* ══════════ 꺾은선(area) 그래프 ══════════
+   막대는 값이 한 구간에 몰리면 나머지가 0으로 깔려 읽히지 않는다.
+   선은 실제 시각 위치에 값을 찍고, 여유 상한을 두어 천장에 붙지 않게 한다. */
+function lineChart(opt){
+  const W = 100, H = 100;                      /* viewBox 기준 — 실제 크기는 CSS 가 잡는다 */
+  const series = opt.series || [];              /* [{data:[], color, name}] */
+  const labels = opt.labels || [];
+  const n = Math.max(1, (series[0] && series[0].data.length) || 1);
+  /* 세로 축: 최댓값 + 여유 20%, 하한 5 — 1~2건일 때 선이 요동치지 않게 */
+  let peak = 0;
+  for(const sr of series) for(const v of sr.data) if(v > peak) peak = v;
+  const top = Math.max(opt.minTop || 5, Math.ceil(peak * 1.2));
+  const x = i => (n === 1 ? W / 2 : (i / (n - 1)) * W);
+  const y = v => H - (v / top) * H;
+  const path = d => d.map((v, i)=>(i ? 'L' : 'M') + x(i).toFixed(2) + ' ' + y(v).toFixed(2)).join(' ');
+  const area = d => path(d) + ' L' + x(n - 1).toFixed(2) + ' ' + H + ' L' + x(0).toFixed(2) + ' ' + H + ' Z';
+
+  /* 눈금선 2~3개, 아주 옅게 */
+  const ticks = [0.5, 1].map(f=>'<line x1="0" y1="' + (H - f * H).toFixed(1) + '" x2="' + W + '" y2="' + (H - f * H).toFixed(1) +
+    '" class="lc-grid"/>').join('');
+  /* 당직 시간대(21~06시) 배경 */
+  const bands = (opt.bands || []).map(b=>
+    '<rect x="' + x(b[0]).toFixed(2) + '" y="0" width="' + (x(b[1]) - x(b[0])).toFixed(2) + '" height="' + H + '" class="lc-band"/>').join('');
+  /* 현재 시각 기준선 */
+  const nowLine = (opt.nowAt != null)
+    ? '<line x1="' + x(opt.nowAt).toFixed(2) + '" y1="0" x2="' + x(opt.nowAt).toFixed(2) + '" y2="' + H + '" class="lc-now"/>' : '';
+
+  const paths = series.map((sr, k)=>
+    (sr.fill !== false ? '<path d="' + area(sr.data) + '" fill="' + sr.color + '" opacity=".08"/>' : '') +
+    '<path d="' + path(sr.data) + '" fill="none" stroke="' + sr.color + '" stroke-width="' + (k ? 1.6 : 2) + '" ' +
+    'vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/>').join('');
+
+  /* 마우스를 올린 지점만 점 + 값 — 데이터 점은 평소에 그리지 않는다 */
+  const hots = Array.from({length: n}, (_, i)=>{
+    const tip = (opt.tip ? opt.tip(i) : (labels[i] || i) + ' · ' + series.map(sr=>sr.data[i]).join(' / '));
+    return '<g class="lc-hot"><rect x="' + (x(i) - (W / n / 2)).toFixed(2) + '" y="0" width="' + (W / n).toFixed(2) + '" height="' + H + '" fill="transparent"><title>' + tip + '</title></rect>' +
+      series.map(sr=>'<circle cx="' + x(i).toFixed(2) + '" cy="' + y(sr.data[i]).toFixed(2) + '" r="2.4" fill="' + sr.color + '"/>').join('') + '</g>';
+  }).join('');
+
+  const axis = labels.length
+    ? '<div class="lc-x">' + labels.map(l=>'<span>' + l + '</span>').join('') + '</div>' : '';
+  const legend = (series.length > 1)
+    ? '<div class="lc-lg">' + series.map(sr=>'<span><i style="background:' + sr.color + '"></i>' + sr.name + '</span>').join('') + '</div>' : '';
+
+  return '<div class="lc">' +
+    '<div class="lc-y"><span>' + top + '</span><span>' + Math.round(top / 2) + '</span><span>0</span></div>' +
+    '<svg class="lc-svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" role="img" aria-label="' + (opt.aria || '추이 그래프') + '">' +
+    bands + ticks + paths + nowLine + hots + '</svg>' + axis + legend + '</div>';
+}
 
 /* ══════════ D-M1 지도 전체화면 ══════════
    카드를 화면 전체로 펼친다. 레이어 바·배경 바는 이미 지도 위 오버레이라 그대로 따라 커지고,
@@ -4361,9 +4455,17 @@ function renderDash(){
   const mx = Math.max(...byDay, 1);
   const d10 = document.getElementById('dOps');
   if(d10) d10.innerHTML = d10Html();
-  document.getElementById('dTrend').innerHTML = days.map((d,i)=>
-    '<div class="c" style="cursor:pointer'+(dashF&&dashF.type==="day"&&dashF.val===d?';outline:2px solid var(--hs-orange);border-radius:8px':'')+'" onclick="dashClick(\'day\',\''+d+'\')"><span class="cv">'+byDay[i]+'</span><div class="bar2" style="height:'+Math.round(byDay[i]/mx*84)+'px"></div><span class="d">'+d+'</span></div>').join("");
-  /* 🕐 시간대별 접수 분포 (3시간 단위 8구간) */
+  /* 7일 추이 — 한 막대만 크게 나오던 문제. 선 + 여유 상한으로 */
+  document.getElementById('dTrend').innerHTML = lineChart({
+    series: [{data: byDay, color: '#1D4994', name: '접수'}],
+    labels: days.map(d=>d.split('/')[1] || d), minTop: 5,
+    aria: '최근 7일 접수 추이',
+    tip: i => days[i] + ' · ' + byDay[i] + '건'
+  }) + '<div class="lc-click">' + days.map((d,i)=>
+    '<div class="c' + (dashF && dashF.type === "day" && dashF.val === d ? ' on' : '') +
+     '" onclick="dashClick(\'day\',\'' + d + '\')" title="' + d + ' · ' + byDay[i] + '건">' + d + '</div>').join("") + '</div>';
+  /* 막대 대신 선을 쓰되, 날짜 클릭 필터는 그대로 남긴다 */
+  /* 🕐 시간대별 접수 분포 (3시간 단위 8구간 — 막대가 적절해 그대로 둔다) */
   const slots = ["00-03","03-06","06-09","09-12","12-15","15-18","18-21","21-24"];
   const byHour = new Array(8).fill(0);
   all.forEach(x=>{ const h=parseInt((x.time||"0").split(":")[0]); if(!isNaN(h)) byHour[Math.min(7,Math.floor(h/3))]++; });
