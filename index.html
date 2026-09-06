@@ -1338,12 +1338,23 @@ body[data-mode="cmd"] footer, body[data-mode="track"] footer{display:none;}
 
 /* Leaflet 기본 컨트롤(줌·우상단 버튼)은 z-index 800~1000 이라 패널·모달을 덮는다.
    지도 안의 도구이므로 지도 도구 단계(400)로 끌어내린다. */
-.leaflet-pane, .leaflet-top, .leaflet-bottom{z-index:var(--z-maptool);}
+/* .leaflet-pane 은 건드리지 않는다 — 타일 400 · 마커 600 · 팝업 700 의 내부 순서가 무너진다.
+   지도 컨트롤(모서리)만 지도 도구 단계로 맞춘다. */
+.leaflet-top, .leaflet-bottom{z-index:var(--z-maptool);}
 .leaflet-control{z-index:var(--z-maptool);}
+/* 지도 팝업은 지도 위 도구보다 위에 온다 — 칩이 팝업을 가리면 내용을 읽을 수 없다 */
+.leaflet-popup-pane{z-index:700;}
 /* 모달이 열려 있으면 지도 위 도구는 아예 손이 닿지 않는다 */
 body.modal-on #mapLayerBar, body.modal-on #mapBaseBar, body.modal-on #mapWxBadge,
 body.modal-on #mapPickBar, body.modal-on #layerPanel, body.modal-on .leaflet-control{
   visibility:hidden;}
+
+/* 오버레이 패널의 표시 옵션 — 라벨 없는 버튼을 만들지 않는다(§0 ⑤) */
+.ly-opt{display:flex; align-items:center; gap:8px; width:100%; padding:7px 9px; margin-bottom:4px;
+  border-radius:6px; font-size:12.5px; font-weight:600; text-align:left;
+  background:#F7FAFD; color:var(--smuted); border:1px solid transparent;}
+.ly-opt:hover{background:var(--hs-blue-bg); border-color:var(--hs-blue-line);}
+.ly-opt.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;}
 
 </style>
 </head>
@@ -1456,19 +1467,26 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
               <button class="cs-mini" id="mapCapBtn" onclick="csCapture()" title="지도 이미지 내려받기 (보고서 삽입용)">📸 캡처</button>
               <button class="cs-mini" onclick="layerPanelToggle(false)" aria-label="레이어 패널 닫기">✕</button></div>
             <div id="layerList"></div>
+            <div class="ly-grp">표시 옵션</div>
+            <button class="ly-opt" id="lblBtn" onclick="toggleLbl()" aria-pressed="false"
+                    title="켜면 각 레이어의 설명 라벨이 지도에 함께 표시됩니다">🏷️ 레이어 설명 라벨</button>
+            <button class="ly-opt" id="followBtn2" onclick="crewFollowToggle()" aria-pressed="false"
+                    title="출동 인력을 지도가 따라갑니다. 지도를 조작하면 자동으로 풀립니다">🛵 출동 인력 따라가기</button>
           </div>
           <div id="mapPickBar" hidden>📍 <b>지도를 클릭해 민원 위치를 지정하세요</b>
             <span>핀을 끌어 미세 조정할 수 있습니다</span>
             <button class="cs-mini" onclick="rpState('home')">취소</button></div>
           <button id="mapWxBadge" onclick="openWxDetail()" title="기상·대기 상세">기상 정보 불러오는 중…</button>
           <div id="mapBaseBar">
-            <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
-            <button class="lb" id="wxBtn" onclick="toggleWx()">🌦️ 기상</button>
-            <button class="lb" id="nightBtn" onclick="toggleNight()">🌙 야간</button>
-            <button class="lb" id="panBtn" onclick="togglePan()" aria-label="탐색 모드" aria-pressed="false" title="탐색 모드 — 켜면 지도를 클릭해도 접수 위치가 지정되지 않습니다">✋</button>
-            <button class="lb" id="myLocBtn" onclick="goMyLoc(map)" aria-label="내 위치" title="내 위치로 이동">🎯</button>
-            <button class="lb" id="followBtn" onclick="crewFollowToggle()" aria-label="출동 따라가기" aria-pressed="false" title="출동 인력 따라가기 — 상황판은 기본 꺼짐">🎥</button>
-            <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-label="지도 전체화면 전환" aria-pressed="false" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶</button>
+            <!-- §5.1 우상단 세로 6개 · 32px 알약 · 아이콘 + 라벨(§0 ⑤ 라벨 없는 버튼 금지) -->
+            <button class="lb" id="satBtn" onclick="toggleSat()" aria-pressed="false" title="항공사진 배경으로 전환">🛰️ 항공</button>
+            <button class="lb" id="wxBtn" onclick="toggleWx()" aria-pressed="false" title="기상 관제(Windy) 겹쳐 보기">🌦️ 기상</button>
+            <button class="lb" id="nightBtn" onclick="toggleNight()" aria-pressed="false" title="야간 배경으로 전환 (21~02시 자동)">🌙 야간</button>
+            <button class="lb" id="panBtn" onclick="togglePan()" aria-pressed="false" title="켜면 지도를 클릭해도 접수 위치가 지정되지 않습니다">✋ 탐색</button>
+            <button class="lb" id="myLocBtn" onclick="goMyLoc(map)" title="내 위치로 이동">🎯 내위치</button>
+            <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-pressed="false" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶ 전체화면</button>
+            <!-- 🛵 따라가기는 표시 옵션이라 레이어 오버레이 패널로 옮겼다(§5.2) -->
+            <button class="lb" id="followBtn" hidden onclick="crewFollowToggle()" aria-pressed="false">🎥 따라가기</button>
           </div>
         </div>
       </main>
@@ -1735,7 +1753,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1435';
+const BUILD_VER = 'v0906-1444';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2213,24 +2231,10 @@ function initMap(){
   map.on('zoomend', zGate); zGate();
   map.getContainer().classList.add('lbloff');   // 기본: 아이콘만(설명 라벨 숨김) — 🏷️설명 버튼으로 표시
   // 🏷️ 설명 토글 — 지도 우측 상단 컨트롤
-  const LblCtl = L.Control.extend({options:{position:'topright'}, onAdd:function(){
-    const b = L.DomUtil.create('button','lb'); b.id='lblBtn'; b.textContent='🏷️ 설명';
-    b.style.cssText = 'box-shadow:0 1px 5px rgba(0,0,0,.3); cursor:pointer;';
-    L.DomEvent.disableClickPropagation(b);
-    L.DomEvent.on(b,'click',e=>{ L.DomEvent.stop(e); toggleLbl(); });
-    return b;
-  }});
-  map.addControl(new LblCtl());
+  /* 🏷️ 설명 라벨 토글은 레이어 오버레이 패널의 표시 옵션으로 옮겼다(§5.1 우상단 6개 상한) */
   // ✋ 탐색 모드 — 켜면 지도 클릭해도 접수 위치를 지정하지 않음(이동·상세보기 전용)
-  const PanCtl = L.Control.extend({options:{position:'topright'}, onAdd:function(){
-    const b = L.DomUtil.create('button','lb'); b.id='panBtn'; b.textContent='✋ 탐색';
-    b.title = '켜면 지도를 클릭해도 접수 위치가 지정되지 않습니다 (이동·정보 확인 전용)';
-    b.style.cssText = 'box-shadow:0 1px 5px rgba(0,0,0,.3); cursor:pointer;';
-    L.DomEvent.disableClickPropagation(b);
-    L.DomEvent.on(b,'click',e=>{ L.DomEvent.stop(e); togglePan(); });
-    return b;
-  }});
-  map.addControl(new PanCtl());
+  /* ✋ 탐색·🎯 내위치·⛶ 전체화면은 우상단 도구 묶음(#mapBaseBar)이 맡는다.
+     지도 컨트롤로 또 만들면 같은 id 가 둘이 되어 상태 표시가 어긋난다. */
   map.fitBounds([[b[1],b[0]],[b[3],b[2]]], {padding:[8,8]});
   /* 4.1: 내 위치·탐색은 우상단 묶음으로 옮겼다(지도 위 컨트롤 중복 제거) */
   crewFollowBind();
@@ -2660,8 +2664,11 @@ let crewFollowUser = false;
 function crewFollowToggle(force){
   crewFollow = (force === undefined) ? !crewFollow : !!force;
   crewFollowUser = false;
-  const b = document.getElementById('followBtn');
-  if(b){ b.classList.toggle('on', crewFollow); b.setAttribute('aria-pressed', String(crewFollow)); }
+  /* 도구 묶음의 followBtn 은 숨겼고 오버레이 패널의 followBtn2 가 실물이다 — 둘을 함께 맞춘다 */
+  for(const fid of ['followBtn','followBtn2']){
+    const b = document.getElementById(fid);
+    if(b){ b.classList.toggle('on', crewFollow); b.setAttribute('aria-pressed', String(crewFollow)); }
+  }
   toast(crewFollow ? '출동 인력을 따라갑니다 — 지도를 만지면 해제됩니다' : '따라가기 해제');
 }
 /* 지도를 직접 조작하면 즉시 해제 */
@@ -4554,7 +4561,8 @@ function selPinSync(){
 // 🏷️ 설명 라벨 전체 토글 (아이콘만 ↔ 아이콘+설명). 켜진 레이어의 상시 라벨을 CSS로 표시/숨김
 function toggleLbl(){
   const off = map.getContainer().classList.toggle('lbloff');
-  document.getElementById('lblBtn').classList.toggle('on', !off);
+  const lb = document.getElementById('lblBtn');
+  if(lb){ lb.classList.toggle('on', !off); lb.setAttribute('aria-pressed', String(!off)); }
   toast(off ? '레이어 설명 라벨 숨김 (아이콘만 표시)' : '레이어 설명 라벨 표시 — 켜진 레이어의 정보가 아이콘 위에 나타납니다');
 }
 async function refreshFestivals(){
