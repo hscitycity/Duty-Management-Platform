@@ -1182,13 +1182,22 @@ body[data-mode="new"] footer, body[data-mode="log"] footer{display:none;}
 
 /* ── §4.1 분류 카드 3개 ── */
 .cls-cards{flex:0 0 auto; display:grid; grid-template-columns:repeat(3,1fr); gap:8px; padding:12px 12px 8px;}
-.cls-card{height:64px; border-radius:10px; background:#fff; border:1.5px solid var(--c);
+.cls-card{height:64px; border-radius:10px; border:none; cursor:pointer;
+  color:#fff; background:linear-gradient(160deg, var(--g1) 0%, var(--g2) 60%, var(--g3) 100%);
+  box-shadow:0 3px 0 rgba(0,0,0,.18), 0 4px 12px rgba(16,32,64,.20);
+  transition:transform .1s ease, box-shadow .1s ease, filter .1s ease;
+  filter:saturate(.55) brightness(1.06);
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;}
-.cls-card .l{font-size:12px; font-weight:700; color:var(--c); white-space:nowrap;}
-.cls-card .n{font-family:var(--mono,ui-monospace); font-size:22px; font-weight:800; color:var(--c); line-height:1;}
-.cls-card.on{background:var(--c); border-color:var(--c);}
-.cls-card.on .l, .cls-card.on .n{color:#fff;}
-.cls-card:hover{filter:brightness(.97);}
+.cls-card .l{font-size:12px; font-weight:700; color:#fff; white-space:nowrap; opacity:.92;}
+.cls-card .n{font-family:var(--mono,ui-monospace); font-size:22px; font-weight:800; color:#fff; line-height:1;}
+/* 고른 카드만 제 색을 낸다 — 나머지는 색을 죽여 어느 것을 보고 있는지 한눈에 */
+.cls-card.on{filter:none; box-shadow:0 3px 0 rgba(0,0,0,.24), 0 6px 16px rgba(16,32,64,.30);}
+.cls-card.on:after{content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
+  border:5px solid transparent; border-top-color:var(--g2);}
+.cls-card{position:relative;}
+.cls-card:hover{filter:none; transform:translateY(-1px);
+  box-shadow:0 4px 0 rgba(0,0,0,.18), 0 7px 18px rgba(16,32,64,.26);}
+.cls-card:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18);}
 .flt-note{font-size:12px; color:var(--smuted); padding:0 12px 6px;}
 .flt-note b{color:var(--hs-orange);} .flt-note a{color:var(--hs-blue); font-weight:700;}
 .cs-blkhead{padding:0 12px 8px; background:transparent; border-bottom:1px solid var(--sline);}
@@ -1607,7 +1616,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div class="cls-cards" id="clsCards" data-no="C-2"></div>
           <!-- §4.2 한 줄 통계 -->
           <div class="cs-blkhead">
-            <span class="cs-sum1" id="statLine"></span>
+            <span class="cs-sum1" id="statLine" data-no="C-16"></span>
             <button type="button" class="btn-csv ico" onclick="scopeExport()" aria-label="현재 범위를 CSV 파일로 내려받기" title="현재 범위를 CSV 파일로 내려받기">
               <img class="ico-csv" src="data/icons/csv.png" alt=""></button>
           </div>
@@ -1640,7 +1649,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div id="apiErrList" style="margin-top:5px"></div>
         </div>
         <!-- D-M1: 지도 껍데기 — 레이어 조작은 전부 지도 위 오버레이라 지도 영역을 침범하지 않는다 -->
-        <div id="mapBox">
+        <div id="mapBox" data-no="G-0">
           <div id="map" role="application" aria-label="화성시 접수 현황 지도"></div>
           <!-- 좌상단: 자주 쓰는 레이어 + 더보기 -->
           <div id="mapLayerBar" data-no="G-1">
@@ -1680,7 +1689,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
             <button class="ly-opt" id="followBtn2" onclick="crewFollowToggle()" aria-pressed="false"
                     title="출동 인력을 지도가 따라갑니다. 지도를 조작하면 자동으로 풀립니다">🛵 출동 인력 따라가기</button>
           </div>
-          <div id="mapPickBar" hidden>📍 <b>지도를 클릭해 민원 위치를 지정하세요</b>
+          <div id="mapPickBar" hidden data-no="G-5">📍 <b>지도를 클릭해 민원 위치를 지정하세요</b>
             <span>핀을 끌어 미세 조정할 수 있습니다</span>
             <button class="cs-mini" onclick="rpState('home')">취소</button></div>
           <button id="mapWxBadge" data-no="G-4" onclick="openWxDetail()" title="기상·대기 상세">기상 정보 불러오는 중…</button>
@@ -1700,7 +1709,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 
       <!-- ── 5장 우측: 접이식 섹션, 조치 버튼은 고정 ── -->
       <!-- E-2 우측 경계 -->
-      <div class="cs-gut" id="gutR" title="끌어서 폭 조절 · 우클릭 초기화"
+      <div class="cs-gut" id="gutR" data-no="E-3" title="끌어서 폭 조절 · 우클릭 초기화"
            onmousedown="gutDown(event,'R')" oncontextmenu="gutReset(event,'R')">
         <button class="gut-h" data-no="E-2" onclick="sideToggle('R')" onmousedown="event.stopPropagation()"
                 aria-label="업무 패널 접기" title="업무 패널 접기 / 펼치기">›</button>
@@ -1711,10 +1720,10 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <div class="ph-grip" id="phGripR"></div>
 
         <!-- ① 기본 — 접수 입구 3개 -->
-        <div class="rp" id="rpHome">
+        <div class="rp" id="rpHome" data-no="C-12">
           <div class="cs-rbody">
             <p class="rp-empty">목록이나 지도에서 민원을 고르세요.</p>
-            <div class="rp-entries" data-no="C-12">
+            <div class="rp-entries">
               <button class="rp-ent" onclick="rpForm('gen')">
                 <span class="e-i">📝</span><span class="e-t">일반민원 접수</span><span class="e-s">당직자 · 타 부서 직원</span></button>
               <button class="rp-ent" onclick="rpForm('road')">
@@ -1723,13 +1732,13 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
                 <span class="e-i">📕</span><span class="e-t">재난상황일지 작성</span><span class="e-s">재난안전상황실 직원</span></button>
             </div>
             <div class="rp-h">최근 처리</div>
-            <div class="rp-recent" id="rpRecent"></div>
+            <div class="rp-recent" id="rpRecent" data-no="C-15"></div>
           </div>
         </div>
 
         <!-- ② 민원 상세 -->
-        <div class="rp" id="rpSel" hidden>
-        <div class="cs-rhead" id="selHead"><span class="cs-rempty">목록이나 지도에서 민원을 고르세요</span></div>
+        <div class="rp" id="rpSel" hidden data-no="C-13">
+        <div class="cs-rhead" id="selHead" data-no="C-13a"><span class="cs-rempty">목록이나 지도에서 민원을 고르세요</span></div>
         <div class="cs-racts" id="selActs"></div>
         <div class="cs-rbody" id="selBody">
       <div class="card">
@@ -1754,20 +1763,20 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         </div>
 
         <!-- ③ 접수 입력 — 세 서식이 여기로 들어온다(부팅 시 이동) -->
-        <div class="rp" id="rpForm" hidden>
+        <div class="rp" id="rpForm" hidden data-no="C-14">
           <div class="rp-head"><b id="rpFormTit">접수</b>
             <button class="cs-mini" onclick="rpState('home')" aria-label="접수 닫기">✕</button></div>
           <div class="cs-rbody" id="rpFormBody">
-            <div class="rp-sub" id="fmGen" hidden></div>
-            <div class="rp-sub" id="fmRoad" hidden></div>
-            <div class="rp-sub" id="fmJrn" hidden></div>
+            <div class="rp-sub" id="fmGen" hidden data-no="C-14a"></div>
+            <div class="rp-sub" id="fmRoad" hidden data-no="C-14b"></div>
+            <div class="rp-sub" id="fmJrn" hidden data-no="C-14c"></div>
           </div>
         </div>
 
         <!-- 기동단 안내는 기동단 화면(#road) 안에서 펼친다 — 여기 두지 않는다 -->
 
         <!-- ④ 일반현황 — 인력·부서현황·뉴스·기상·지표 -->
-        <div class="rp" id="rpInfo" hidden>
+        <div class="rp" id="rpInfo" hidden data-no="F-0">
           <div class="rp-head"><b>일반현황</b>
             <span class="rp-hs">인력 · 부서 · 뉴스 · 기상 · 지표</span></div>
           <div class="cs-rbody" id="rpInfoBody"></div>
@@ -1930,11 +1939,11 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <div id="citizen">
   <div id="citWrap">
     <div id="citMap"></div>
-    <div id="citCross">📍</div>
-    <div id="citTop"></div>
-    <button id="citStart" onclick="citFlow('type')">🚨 신고하기</button>
-    <button id="citNear" onclick="citNearby()">👀 근처 신고</button>
-    <div id="citSheet"><div class="grip"></div><div id="citSheetBody"></div></div>
+    <div id="citCross" data-no="A-2">📍</div>
+    <div id="citTop" data-no="A-2"></div>
+    <button id="citStart" data-no="A-1" onclick="citFlow('loc')">🚨 신고하기</button>
+    <button id="citNear" data-no="A-9" onclick="citNearby()">👀 근처 신고</button>
+    <div id="citSheet" data-no="A-7"><div class="grip"></div><div id="citSheetBody"></div></div>
   </div>
   <p class="hint" style="margin-top:10px">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
 </div>
@@ -1956,7 +1965,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1533';
+const BUILD_VER = 'v0906-1542';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3143,31 +3152,26 @@ function renderHeader(m){
 
   if(o.search){
     html += '<span class="cs-sep"></span>' +
-      '<button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="민원 검색 — 단축키 Ctrl+K">🔍 민원검색</button>';
+      '<button class="cs-chip" data-no="C-17" id="csSearchBtn" onclick="csSearch()" title="민원 검색 — 단축키 Ctrl+K">🔍 민원검색</button>';
   }
-  if(o.filter){
-    html += '<span class="cs-sep"></span>' +
-      '<span class="cs-flabel" title="지도와 목록에 표시할 민원 분류입니다. 좌측 분류 카드와 함께 움직입니다.">표시 상태:</span>' +
-      '<button class="cs-chip" id="fltUrg"  onclick="csFilter(\'긴급\')">긴급</button>' +
-      '<button class="cs-chip" id="fltNor"  onclick="csFilter(\'일반\')">일반</button>' +
-      '<button class="cs-chip" id="fltRoad" onclick="csFilter(\'교통도로\')">교통·도로 기동단</button>';
-  }
+  /* 표시 상태 필터는 두지 않는다 — 좌측 분류 카드(C-2)가 같은 일을 한다.
+     같은 축의 조작기를 두 군데 두면 어느 쪽이 참인지 알 수 없다. */
   if(o.live){
     html += '<span class="cs-sep"></span>' +
-      '<button class="cs-live' + (live ? ' on' : '') + '" id="csLive" onclick="csLiveToggle()" ' +
+      '<button class="cs-live' + (live ? ' on' : '') + '" data-no="C-18" id="csLive" onclick="csLiveToggle()" ' +
       'aria-pressed="' + live + '" title="실시간 수신 상태 — 끄면 화면이 갱신되지 않습니다"><i></i>LIVE</button>';
   }
   html += '<span class="cs-spacer"></span>' +
-          '<span class="cs-clock" id="csClock" title="현재 시각"></span>';
+          '<span class="cs-clock" data-no="C-19" id="csClock" title="현재 시각"></span>';
   if(o.me){
     html += '<button class="cs-chip" data-no="D-1" onclick="openMe()" id="csMe" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">' +
             '👤 <span id="csMeTxt">소속</span></button>';
   }
   if(o.actions){
     html += '<span class="cs-sep"></span>' +
-      '<button class="hb-cmd" id="btnCmd" onclick="goCmd()" title="동일 지역 유사 민원 급증 시 시장 조치지시를 상신합니다">' +
+      '<button class="hb-cmd" data-no="C-20" id="btnCmd" onclick="goCmd()" title="동일 지역 유사 민원 급증 시 시장 조치지시를 상신합니다">' +
         '조치지시<span class="n" id="btnCmdN" hidden></span></button>' +
-      '<button class="hb-cit" id="btnCit" onclick="openCitWindow()" title="시민이 보는 화면입니다. 새 창으로 열립니다.">' +
+      '<button class="hb-cit" data-no="C-21" id="btnCit" onclick="openCitWindow()" title="시민이 보는 화면입니다. 새 창으로 열립니다.">' +
         '24시간 민원접수창구</button>';
   } else if(m === 'cit' || m === 'track'){
     /* 시민 화면에서 당직 화면으로 돌아가는 길만 남긴다. 탭이 아니므로 cs-chip 을 쓰지 않는다.
@@ -3175,12 +3179,7 @@ function renderHeader(m){
     html += '<button class="cs-back" onclick="setMode(\'duty\')" title="당직 업무 화면으로">업무 화면</button>';
   }
   h.innerHTML = html;
-  /* 그린 뒤 상태를 다시 입힌다 */
-  if(o.filter && typeof clsSel !== 'undefined'){
-    const id = clsSel === '긴급' ? 'fltUrg' : (clsSel === '일반' ? 'fltNor' : 'fltRoad');
-    const b = document.getElementById(id);
-    if(b) b.classList.add('on');
-  }
+  /* 분류 상태는 좌측 카드(C-2)가 쥔다 — 헤더에 다시 입힐 것이 없다 */
   if(typeof meChipSync === 'function') meChipSync();
   if(typeof csClockTick === 'function') csClockTick();
   if(typeof cmdBadgeSync === 'function') cmdBadgeSync();
@@ -3390,10 +3389,14 @@ function progBar(st){
 /* 기동단 §1-1: 긴급과 기동단은 축이 다르다.
    인명·안전 위험이면 긴급으로 표시되고 당직이 우선 조치하되 기동단이 병행 관리한다.
    따라서 한 건이 긴급 카드와 교통·도로 카드에 모두 나타날 수 있다(중복 허용). */
+/* C-2 분류 카드 — 색은 하는 일로 나눈다. 그라데이션은 조치 3버튼(C-4)과 같은 규칙 */
 const CLS_DEFS = [
-  {k:'긴급',     nm:'긴급민원',           color:'#D63B1F', test:i=>i.urg === '긴급'},
-  {k:'일반',     nm:'일반민원',           color:'#1D4994', test:i=>i.urg !== '긴급' && !isRoadTeam(i)},
-  {k:'교통도로', nm:'교통·도로 기동단',    color:'#F07B27', test:i=>isRoadTeam(i)}
+  {k:'긴급',     nm:'긴급민원',           color:'#D63B1F', no:'C-2a',
+   g1:'#F0654A', g2:'#D63B1F', g3:'#B32E14', test:i=>i.urg === '긴급'},
+  {k:'일반',     nm:'일반민원',           color:'#1D4994', no:'C-2b',
+   g1:'#4A7FD1', g2:'#1D4994', g3:'#143567', test:i=>i.urg !== '긴급' && !isRoadTeam(i)},
+  {k:'교통도로', nm:'교통·도로 기동단',    color:'#F07B27', no:'C-2c',
+   g1:'#F7A85C', g2:'#F07B27', g3:'#C55F14', test:i=>isRoadTeam(i)}
 ];
 let clsSel = '긴급';
 function clsOf(k){ return CLS_DEFS.find(c=>c.k === k) || CLS_DEFS[0]; }
@@ -3402,11 +3405,6 @@ function clsCount(k){ return scopeItems().filter(i=>i.st !== '완료' && clsOf(k
 function csFilter(k){
   clsSel = k;
   renderClsCards();
-  for(const c of CLS_DEFS){
-    const id = c.k === '긴급' ? 'fltUrg' : (c.k === '일반' ? 'fltNor' : 'fltRoad');
-    const b = document.getElementById(id);
-    if(b) b.classList.toggle('on', c.k === k);
-  }
   renderList(); renderMap();
 }
 function renderClsCards(){
@@ -3415,8 +3413,10 @@ function renderClsCards(){
   host.innerHTML = CLS_DEFS.map(c=>{
     const n = clsCount(c.k);
     const on = clsSel === c.k;
-    return '<button class="cls-card' + (on ? ' on' : '') + '" style="--c:' + c.color + '" ' +
-      'onclick="csFilter(\'' + c.k + '\')" aria-pressed="' + on + '" title="' + c.nm + ' ' + n + '건">' +
+    return '<button class="cls-card' + (on ? ' on' : '') + '" data-no="' + c.no + '" ' +
+      'style="--c:' + c.color + ';--g1:' + c.g1 + ';--g2:' + c.g2 + ';--g3:' + c.g3 + '" ' +
+      'onclick="csFilter(\'' + c.k + '\')" aria-pressed="' + on + '" ' +
+      'title="' + c.nm + ' ' + n + '건 — 눌러서 이 분류만 보기">' +
       '<span class="l">' + (c.k === '교통도로' ? '교통·도로' : c.nm.replace('민원', '')) + '</span>' +
       '<span class="n">' + n + '</span></button>';
   }).join('');
@@ -4381,7 +4381,7 @@ function citSubmit(){
   }
   const done=document.getElementById('citSheetBody');
   citStage='done'; citCross(false); citBtns(false);
-  done.innerHTML='<div class="confirm" style="border-color:var(--hs-orange);background:var(--hs-orange-bg)">'+
+  done.innerHTML='<div class="confirm" data-no="A-8" style="border-color:var(--hs-orange);background:var(--hs-orange-bg)">'+
     '✅ <b style="font-size:17px">접수되었습니다 — 접수번호 제'+String(it.id).padStart(4,"0")+'호</b><br>'+
     '당직 근무자가 확인 후 처리하며, 아래에서 진행 상황을 바로 보실 수 있습니다.</div>'+
     '<div class="row"><button class="btn-p" style="font-size:17px" onclick="openTrack('+it.id+')">📍 처리 현황 보기</button></div>'+
@@ -7638,7 +7638,7 @@ function meRender(){
 function meGo(step){ meStep = step; meQuery = ''; if(step === 'root') meRender(); else orgUnitsLoad().then(()=>meRender()); }
 function meFilter(v){ meQuery = v; meRender(); }
 function meBack(title){
-  return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
+  return '<div data-no="D-2" style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
     '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:12.5px" onclick="meGo(\'root\')">← 뒤로</button>' +
     '<b style="font-size:15px;color:var(--hs-blue-dark)">' + title + '</b></div>';
 }
@@ -7837,21 +7837,7 @@ function citFlow(stage){
     citSheet(true);
     return;
   }
-  if(stage === 'etc'){
-    /* 기존 8분야 2계층 유지 */
-    body.innerHTML = '<h3>그 밖의 신고</h3><p class="desc">분야를 고르시면 세부 유형이 나옵니다.</p>' +
-      '<div class="catgrid" id="citCats"></div>' +
-      '<div id="citSubWrap" style="display:none"><p style="font-size:14px;font-weight:700;margin-top:14px;color:var(--hs-blue-dark)">세부 유형을 선택해 주세요</p>' +
-      '<div class="catgrid" id="citSubs"></div></div>' +
-      '<div id="citEtcWrap" style="display:none;margin-top:12px">' +
-      '<label style="font-size:13px;font-weight:700;color:var(--muted)">내용을 직접 적어주세요</label>' +
-      '<textarea id="citEtcText" style="margin-top:6px;min-height:76px" placeholder="예) 공원 벤치가 부서져 있어요"></textarea></div>' +
-      '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'type\')">← 뒤로</button>' +
-      '<button class="btn-p" id="citNext2" onclick="citEtcNext()" disabled style="opacity:.5">다음</button></div>';
-    citRenderCats();
-    citSheet(true);
-    return;
-  }
+  /* 옛 'etc'(8분야 2계층) 단계는 A-5 세부분류 · A-6 직접 작성이 대신한다 */
   if(stage === 'loc'){
     citTop('📍 어디에서 보셨나요?<span class="sub">지도를 움직여 가운데 핀을 맞춰 주세요</span>');
     body.innerHTML = '<h3 id="citLocNm">위치를 확인하고 있습니다…</h3>' +
@@ -7895,12 +7881,16 @@ function citEtcNext2(){
   citFlow('confirm');
 }
 
+/* 옛 5종 바로가기 — 지금은 쓰지 않는다(위치 → 대분류 → 세부분류 순서로 바뀌었다).
+   외부에서 부를 수 있으니 새 흐름의 알맞은 자리로 넘긴다. */
 function citPickType(i){
   const t = NIGHT5[i];
+  cit.cat = (t.field === '교통·도로') ? '도로' : '생활';
   cit.field = FIELDS.find(f=>f.f === t.field);
-  cit.sub = t.sub; cit.etc = '';
-  citFlow('loc');
+  cit.sub = t.sub; cit.subLabel = t.sub; cit.etc = '';
+  citFlow(cit.ll ? 'confirm' : 'loc');
 }
+/* 옛 '그 밖' 다음 버튼 — A-6 의 citEtcNext2 를 쓴다 */
 function citEtcNext(){
   if(cit.field && (cit.field.f === '기타' || cit.sub === '기타(직접 작성)')){
     const v = document.getElementById('citEtcText');
@@ -8537,7 +8527,7 @@ function assignAsk(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const cur = assigneeOf(it);
   const sug = isRoadType(it) ? '교통·도로 기동단' : '생활민원';
-  showModal('<h2>🧭 담당 주체 배정</h2>' +
+  showModal('<h2 data-no="C-11">🧭 담당 주체 배정</h2>' +
     '<p style="font-size:14px;line-height:1.8">#' + String(it.id).padStart(3,'0') + ' ' + it.sub + '<br>' +
     '<span style="font-size:13px;color:var(--muted)">AI 제안: <b>' + sug + '</b> · ' +
     (isRoadType(it) ? roadCat(it).nm + ' 유형' : '교통·도로 5분류에 해당하지 않음') + '</span></p>' +
@@ -9005,7 +8995,7 @@ function renderRoad(){
       'title="접수 화면으로 이동합니다 — 지도에서 위치를 찍고 통화 내용을 적으면 됩니다">📞 전화 접수</button>' +
     '<button class="cs-mini" onclick="renderRoad()">↻ 새로고침</button></div>' +
 
-    '<div class="rd-guide" id="rdGuide" hidden></div>' +
+    '<div class="rd-guide" id="rdGuide" hidden data-no="B-2a"></div>' +
     '<div class="rd-clocks" data-no="B-4">' +
     '<div class="rd-c1 ' + waitState + '">' +
       '<div class="k">안내 대기</div>' +
@@ -9038,7 +9028,7 @@ function renderRoad(){
     const empty = c === '안내대기'
       ? '<p class="rd-ok">✅ 안내 대기 없음 — 정상 상태입니다</p>'
       : '<p class="rd-empty">해당 건이 없습니다.</p>';
-    return '<div class="rd-col' + (c === '안내대기' ? ' col-wait' : '') + '">' +
+    return '<div class="rd-col' + (c === '안내대기' ? ' col-wait' : '') + '" data-no="B-5">' +
       '<h3>' + m.ico + ' ' + (c === '안내대기' ? '안내 대기' : c) +
         '<span class="cnt">' + rows.length + '건</span></h3>' +
       '<div class="rd-rule">' + m.rule + '</div>' +
