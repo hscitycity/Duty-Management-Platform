@@ -55,7 +55,9 @@ header .duty b{color:var(--ink); font-weight:600;}
 /* ── 지도 ── */
 #map{width:100%; height:calc(100vh - 265px); min-height:540px; border-radius:12px; z-index:0; border:1.5px solid var(--line);}
 .leaflet-container{font-family:Pretendard,sans-serif; font-size:14px;}
-.pin{width:30px;height:30px;border-radius:50%;border:3.5px solid #ccc;box-shadow:0 2px 6px rgba(0,0,0,.45);}
+/* §5.1 마커는 28px 이내 단순한 형태. 장식적인 큰 아이콘은 서로 겹쳐 덩어리로 보인다 */
+.pin{width:26px;height:26px;font-size:13px;border-radius:50%;border:2.5px solid #ccc;
+  box-shadow:0 1px 4px rgba(0,0,0,.32);}
 .pin.pulse{animation:pp 1.5s infinite;}
 @keyframes pp{0%{box-shadow:0 0 0 0 rgba(217,48,37,.45)}70%{box-shadow:0 0 0 14px rgba(217,48,37,0)}100%{box-shadow:0 0 0 0 rgba(217,48,37,0)}}
 .pin.sel{outline:3px dashed rgba(29,73,148,.8); outline-offset:3px; transform:scale(1.4); box-shadow:0 0 0 6px rgba(240,123,39,.30), 0 4px 14px rgba(0,0,0,.5);}
@@ -506,9 +508,28 @@ body[data-mode="duty"] header{display:none;}
 .cs-clock{font-family:var(--mono); font-size:13px; color:var(--sink); white-space:nowrap;}
 
 /* ── 1장 본문 3열 ── */
-.cs-body{flex:1 1 auto; display:grid; grid-template-columns:320px minmax(560px,1fr) 340px;
+.cs-body{flex:1 1 auto; display:grid;
+  grid-template-columns:var(--wL,320px) 5px minmax(480px,1fr) 5px var(--wR,340px);
   min-height:0; overflow:hidden;}
-@media(max-width:1439px){.cs-body{grid-template-columns:280px minmax(560px,1fr) 300px;}}
+@media(max-width:1439px){.cs-body{--wL:280px; --wR:300px;}}
+/* §2.1 접힘 — 24px 세로 탭만 남고 지도가 넓어진다 */
+.cs-body.cl-L{grid-template-columns:0 0 minmax(480px,1fr) 5px var(--wR,340px);}
+.cs-body.cl-R{grid-template-columns:var(--wL,320px) 5px minmax(480px,1fr) 0 0;}
+.cs-body.cl-L.cl-R{grid-template-columns:0 0 minmax(480px,1fr) 0 0;}
+.cs-body.cl-L .cs-left, .cs-body.cl-L #gutL,
+.cs-body.cl-R .cs-right, .cs-body.cl-R #gutR{display:none;}
+/* §2.2 폭 조절 경계 */
+.cs-gut{background:var(--sline); cursor:col-resize; position:relative;}
+.cs-gut:hover, .cs-gut.drag{background:var(--hs-blue);}
+.cs-gut:after{content:""; position:absolute; inset:0 -4px;}
+body.gut-on{cursor:col-resize; user-select:none;}
+/* 접힘 상태의 세로 탭 */
+.cs-rail{position:absolute; top:50%; transform:translateY(-50%); z-index:420;
+  width:24px; padding:14px 0; border-radius:0 8px 8px 0; font-size:12px; font-weight:800;
+  background:var(--hs-blue); color:#fff; border:none; cursor:pointer;}
+.cs-rail span{writing-mode:vertical-rl; letter-spacing:2px;}
+#railL{left:0;} #railR{right:0; border-radius:8px 0 0 8px;}
+.cs-body.cl-L #railL, .cs-body.cl-R #railR{display:block;}
 .cs-left, .cs-right{display:flex; flex-direction:column; min-height:0; background:#fff;}
 .cs-left{border-right:1px solid var(--sline);}
 .cs-right{border-left:1px solid var(--sline);}
@@ -595,17 +616,19 @@ body[data-mode="duty"] header{display:none;}
 .cs-map #mapBox{position:absolute; inset:0; border:none; border-radius:0; min-height:0;}
 .cs-map #map{position:absolute; inset:0; width:100%; height:100%; min-height:0; border:none; border-radius:0;}
 .cs-map #apiErrBox{position:absolute; left:12px; right:12px; bottom:52px; z-index:1150; margin:0;}
-#mapLayerBar{position:absolute; left:12px; top:12px; z-index:1100; max-width:calc(100% - 70px);}
+#mapLayerBar{position:absolute; left:12px; top:12px; z-index:400; max-width:calc(100% - 180px);}
 .mlb-quick{display:flex; flex-wrap:nowrap; gap:6px;}
 .mlb-more-panel{display:none;}
-#mapBaseBar{position:absolute; right:12px; top:12px; z-index:1100;
+#mapBaseBar{position:absolute; right:12px; top:12px; z-index:400;
   display:flex; flex-direction:column; gap:6px;}
 #mapLayerBar .lb{height:32px; min-height:32px; padding:0 10px; font-size:12.5px;
   display:inline-flex; align-items:center; white-space:nowrap; border-radius:8px;
   background:rgba(255,255,255,.96); border:1.5px solid var(--hs-blue-line); color:var(--hs-blue-d);
   box-shadow:0 1px 5px rgba(16,32,64,.18);}
-#mapBaseBar .lb{width:32px; height:32px; min-height:32px; padding:0; font-size:15px;
-  display:inline-flex; align-items:center; justify-content:center; border-radius:8px;
+#mapBaseBar{align-items:flex-end; top:56px;}   /* 좌상단 칩 줄과 겹치지 않게 아래로 (§10 #3) */
+#mapBaseBar .lb{width:auto; height:32px; min-height:32px; padding:0 12px; font-size:12.5px;
+  font-weight:700; gap:6px; white-space:nowrap;
+  display:inline-flex; align-items:center; justify-content:center; border-radius:999px;
   background:rgba(255,255,255,.96); border:1.5px solid var(--hs-blue-line); color:var(--hs-blue-d);
   box-shadow:0 1px 5px rgba(16,32,64,.18);}
 #mapLayerBar .lb.on, #mapBaseBar .lb.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;
@@ -613,7 +636,7 @@ body[data-mode="duty"] header{display:none;}
 #mapLayerBar .lb:hover, #mapBaseBar .lb:hover{background:var(--hs-blue-bg);}
 #mapLayerBar .lb.on:hover, #mapBaseBar .lb.on:hover{background:var(--hs-blue-d);}
 /* 전체 칩 → 지도 위 오버레이 패널 */
-#layerPanel{position:absolute; left:12px; top:52px; z-index:1200; width:290px; max-height:calc(100% - 76px);
+#layerPanel{position:absolute; left:12px; top:52px; z-index:1000; width:290px; max-height:calc(100% - 76px);
   overflow-y:auto; background:rgba(255,255,255,.98); border:1.5px solid var(--hs-blue-line);
   border-radius:12px; box-shadow:0 8px 28px rgba(16,32,64,.24); padding:10px;}
 #layerPanel[hidden]{display:none;}
@@ -635,7 +658,7 @@ body[data-mode="duty"] header{display:none;}
 .ly-row.on .eye{background:rgba(255,255,255,.22); color:#fff;}
 .ly-row.on .gr{color:#D8E6FF;}
 /* 좌하단 기상·대기 배지 */
-#mapWxBadge{position:absolute; left:12px; bottom:12px; z-index:1100; display:flex; align-items:center; gap:8px;
+#mapWxBadge{position:absolute; left:12px; bottom:12px; z-index:400; display:flex; align-items:center; gap:8px;
   height:32px; padding:0 12px; border-radius:8px; cursor:pointer;
   background:rgba(255,255,255,.96); border:1.5px solid var(--hs-blue-line); color:var(--sink);
   font-size:12.5px; font-weight:700; box-shadow:0 1px 5px rgba(16,32,64,.18); white-space:nowrap;}
@@ -658,6 +681,51 @@ body[data-mode="duty"] header{display:none;}
 .cs-racts:empty{display:none;}
 .cs-racts button{height:40px; border-radius:8px; font-size:13px; font-weight:700;}
 .cs-rbody{flex:1 1 auto; min-height:0; overflow-y:auto; padding:10px 12px;}
+/* ── §6 우측 4상태 — 한 번에 하나만 ── */
+.cs-right{position:relative;}
+.rp{position:absolute; inset:0; display:flex; flex-direction:column; min-height:0; background:#fff;}
+.rp[hidden]{display:none;}
+.rp-head{flex:0 0 auto; display:flex; align-items:center; gap:8px; padding:10px 12px;
+  background:#F7FAFD; border-bottom:1px solid var(--sline);}
+.rp-head b{font-size:15px; color:var(--hs-blue-d);}
+.rp-head .cs-mini{margin-left:auto;}
+.rp-hs{font-size:12px; color:var(--sdim); margin-left:auto;}
+.rp-empty{font-size:13px; color:var(--sdim); margin:0 0 14px; line-height:1.5;}
+/* ①  접수 입구 3개 — 이 셋으로 화성시 민원이 전부 커버된다 */
+.rp-entries{display:flex; flex-direction:column; gap:8px;}
+.rp-ent{display:grid; grid-template-columns:28px 1fr; grid-template-rows:auto auto;
+  align-items:center; gap:0 10px; min-height:56px; padding:8px 12px; text-align:left;
+  border:1.5px solid var(--hs-blue-line); border-radius:8px; background:#fff; cursor:pointer;}
+.rp-ent:hover{background:var(--hs-blue-bg); border-color:var(--hs-blue);}
+.rp-ent .e-i{grid-row:1/3; font-size:17px;}
+.rp-ent .e-t{font-size:15px; font-weight:700; color:var(--hs-blue-d);}
+.rp-ent .e-s{font-size:12px; color:var(--smuted);}
+.rp-h{display:flex; align-items:center; gap:6px; font-size:13px; font-weight:800;
+  color:var(--hs-blue-d); margin:16px 0 6px;}
+.rp-h span{font-size:12px; font-weight:400; color:var(--sdim);}
+.rp-recent{font-size:12px; line-height:1.9; color:var(--smuted);}
+.rp-recent div{white-space:nowrap; overflow:hidden; text-overflow:ellipsis; cursor:pointer;}
+.rp-recent div:hover{color:var(--hs-blue);}
+.rp-recent .t{font-family:var(--mono); color:var(--hs-blue); margin-right:6px;}
+/* ③ 접수 입력 */
+.rp-sub[hidden]{display:none;}
+.rp-sub .card{border:none; box-shadow:none; padding:0; margin:0 0 12px; background:transparent;}
+.rp-sub textarea{min-height:160px;}
+.rp-due{margin-top:10px; padding:9px 12px; border-radius:8px; font-size:13px;
+  background:#FFF4E6; border:1px solid #E8C89A; color:#8A5200; line-height:1.6;}
+.rd-cats{display:grid; grid-template-columns:1fr 1fr; gap:6px; margin:10px 0;}
+.rd-cats button{height:40px; font-size:13px; font-weight:700; border-radius:8px;
+  background:#F1F5FA; color:var(--smuted); border:1px solid var(--sline);}
+.rd-cats button.on{background:var(--hs-orange); border-color:var(--hs-orange); color:#fff;}
+/* ④ 일반현황 */
+.rp-sec{border-bottom:1px solid var(--sline); padding-bottom:12px; margin-bottom:4px;}
+.rp-sec:last-child{border-bottom:none;}
+.rp-secbody{font-size:13px; line-height:1.7;}
+.rp-q{height:32px; font-size:13px; margin-bottom:8px;}
+.org-row{display:flex; gap:8px; font-size:12.5px; padding:5px 0; border-bottom:1px dashed var(--sline);}
+.org-row b{flex:0 0 auto; color:var(--hs-blue-d); font-weight:700;}
+.org-row span{color:var(--smuted); margin-left:auto; white-space:nowrap;}
+.org-grp{font-size:12px; font-weight:800; color:var(--smuted); margin:10px 0 2px;}
 .cs-rtabs{flex:0 0 auto; display:flex; gap:6px; padding:8px 12px; border-top:1px solid var(--sline);}
 .cs-rtabs button{flex:1; height:28px;}
 /* 접이식 섹션 */
@@ -669,8 +737,18 @@ body[data-mode="duty"] header{display:none;}
 .acc[open] > summary:after{content:"▴";}
 .acc > .acc-in{padding:10px;}
 
-/* ── 7장 하단 스트립 120px ── */
-.cs-strip{flex:0 0 auto; background:#fff; border-top:1px solid var(--sline); position:relative;}
+/* §2 하단 스트립 제거 — 잔재가 남아도 자리를 차지하지 않게 못 박는다 */
+.cs-strip, .cs-stripbody, .cs-stripbtn{display:none !important;}
+/* §6.3 접수 위치 지정 안내 띠 */
+#mapPickBar{position:absolute; left:50%; top:12px; transform:translateX(-50%); z-index:400;
+  display:flex; align-items:center; gap:10px; height:36px; padding:0 14px; border-radius:8px;
+  background:var(--hs-orange); color:#fff; font-size:13px; white-space:nowrap;
+  box-shadow:0 3px 12px rgba(16,32,64,.28);}
+#mapPickBar[hidden]{display:none;}
+#mapPickBar span{font-size:12px; opacity:.9; font-weight:400;}
+#mapPickBar .cs-mini{background:rgba(255,255,255,.9); border-color:transparent;}
+.cs-map.picking{cursor:crosshair;}
+.cs-strip-old{flex:0 0 auto; background:#fff; border-top:1px solid var(--sline); position:relative;}
 .cs-stripbtn{position:absolute; right:12px; top:-24px; height:24px; padding:0 10px; z-index:5;
   font-size:12px; font-weight:700; background:#fff; color:var(--smuted);
   border:1px solid var(--sline); border-bottom:none; border-radius:6px 6px 0 0;}
@@ -742,8 +820,14 @@ button .ico-csv, a .ico-csv{pointer-events:none;}
 
 /* ── 5장 확장 패널 ── */
 .cs-body{transition:grid-template-columns .2s ease;}
-body.sel-open .cs-body{grid-template-columns:320px minmax(480px,1fr) 640px;}
-@media(max-width:1439px){ body.sel-open .cs-body{grid-template-columns:280px minmax(480px,1fr) 640px;} }
+body.sel-open .cs-body{--wR:640px;}
+body.sel-open .cs-body.cl-R{--wR:640px;}
+/* §6 1280px 미만에서는 확장 대신 전체 폭 오버레이 */
+@media(max-width:1279px){
+  body.sel-open .cs-right{position:fixed; inset:48px 0 0 auto; width:min(560px,100%); z-index:1400;
+    box-shadow:-8px 0 28px rgba(16,32,64,.22);}
+  body.sel-open .cs-body{--wR:340px;}
+}
 .sel-2col{display:grid; grid-template-columns:1fr; gap:12px;}
 body.sel-open .sel-2col{grid-template-columns:1fr 1fr;}
 .sel-col{min-width:0;}
@@ -1177,6 +1261,73 @@ body[data-mode="cmd"] footer, body[data-mode="track"] footer{display:none;}
 .rule-flow i{font-style:normal; color:var(--muted);}
 .rule-ul{font-size:13.5px; line-height:1.9; padding-left:18px; margin:0 0 10px;}
 
+/* §7 용역업체 조치결과 보고 */
+.dn-pg{max-width:560px; margin:0 auto; padding:16px 14px 40px;}
+.dn-shot{width:100%; border-radius:8px; margin-top:8px;}
+.dn-shots{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.dn-btn{display:flex; align-items:center; justify-content:center; height:64px; cursor:pointer;
+  border:1.5px dashed var(--hs-blue-line); border-radius:8px; font-size:15px; font-weight:700;
+  color:var(--hs-blue-dark); background:#F7FAFD;}
+.dn-btn.on{background:var(--hs-blue); color:#fff; border-style:solid; border-color:var(--hs-blue);}
+.dn-prev{display:flex; gap:10px; margin-top:10px;}
+.dn-prev figure{margin:0; flex:1;} .dn-prev img{width:100%; border-radius:6px;}
+.dn-prev figcaption{font-size:12px; color:var(--muted); text-align:center; margin-top:3px;}
+.dn-res{display:grid; grid-template-columns:1fr 1fr 1fr; gap:8px;}
+.dn-res button{height:48px; font-size:13px; font-weight:700; border-radius:8px;
+  background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
+.dn-res button.on{background:var(--ok,#127A50); border-color:var(--ok,#127A50); color:#fff;}
+.dn-send{width:100%; height:48px; font-size:16px; font-weight:800; margin-top:16px;}
+
+/* §6.5 기동단 안내 — 색·글자는 8장 규격 그대로 */
+.rg-open{display:inline-block; margin-bottom:10px; padding:5px 11px; border-radius:999px;
+  font-size:12px; font-weight:700; background:var(--hs-orange); color:#fff;}
+.rg-lead{font-size:13px; line-height:1.7; color:var(--smuted); margin:0 0 12px;}
+.rg-p{font-size:13px; line-height:1.7; margin:0 0 8px; color:var(--sink);}
+.rg-p:last-child{margin-bottom:0;}
+.rg-tel{font-family:var(--mono); font-weight:800; color:var(--hs-blue); text-decoration:none;}
+.rg-tel:hover{text-decoration:underline;}
+.rg-cnt{font-size:12px; font-weight:400; color:var(--sdim); margin-left:6px;}
+.rg-sub{margin-bottom:6px;} .rg-sub:last-child{margin-bottom:0;}
+.rg-sub > summary{font-size:13px; background:#fff;}
+.rg-org{font-size:12px; color:var(--smuted); margin:6px 0 0;}
+.rg-step{font-size:13px; line-height:1.7; padding:8px 0; border-bottom:1px dashed var(--sline);}
+.rg-step:last-child{border-bottom:none;}
+.rg-step b{display:block; color:var(--hs-blue-d);}
+.rg-step > span{display:block; font-size:12px; color:var(--smuted);}
+.rg-sla{display:flex; gap:8px; align-items:baseline; font-size:12px; margin-top:5px;}
+.rg-sla b{display:inline; flex:0 0 46px; color:var(--hs-blue-d);}
+.rg-rule{flex:0 0 auto; color:var(--sink); font-weight:700;}
+.rg-ex{color:var(--smuted); min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+
+/* §6.2 조치 4구획 — 진행 상태는 색으로만 구분한다. 구획마다 다른 배경색을 쓰지 않는다 */
+.act{border:1px solid var(--sline); border-left:3px solid var(--plan,#7A8CA0);
+  border-radius:6px; margin-bottom:8px; background:#fff;}
+.act.prog{border-left-color:var(--prog,#F5A623);}
+.act.done{border-left-color:var(--done,#2B7DE0);}
+.act-h{display:flex; align-items:center; gap:8px; padding:7px 10px; font-size:13px;
+  font-weight:800; color:var(--hs-blue-d); background:#F7FAFD; border-bottom:1px solid var(--sline);}
+.act-s{margin-left:auto; font-size:11px; font-weight:700; padding:1px 8px; border-radius:999px;
+  background:#EEF2F7; color:var(--plan,#7A8CA0);}
+.act.prog .act-s{background:#FFF3E0; color:#9A6700;}
+.act.done .act-s{background:#E7F0FC; color:var(--done,#2B7DE0);}
+.act-b{padding:8px 10px; font-size:12.5px;}
+.act-n{font-size:12px; color:var(--smuted); line-height:1.6; margin:6px 0 0;}
+.act-r{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+.act-ph{display:flex; gap:8px; margin-top:8px;}
+.act-ph figure{margin:0; flex:1;} .act-ph img{width:100%; border-radius:6px;}
+.act-ph figcaption{font-size:11px; color:var(--smuted); text-align:center; margin-top:2px;}
+/* 구획 머리글은 같은 크기·같은 색. 강조는 상태색만 쓴다 */
+#selBody .sel-h{font-size:13px; font-weight:800; color:var(--hs-blue-d); margin:12px 0 5px;}
+#selBody .sel-h:first-child{margin-top:0;}
+
+/* 시민 화면의 복귀 경로 — 탭이 아니므로 탭 모양을 쓰지 않는다 */
+.cs-back{height:28px; padding:0 11px; border-radius:8px; font-size:12px; font-weight:700;
+  background:#F1F5FA; color:var(--smuted); border:1px solid var(--sline); white-space:nowrap;}
+.cs-back:hover{background:var(--hs-blue-bg); color:var(--hs-blue-d);}
+
+.act-st{height:24px; font-size:12px; padding:0 6px; border-radius:4px;
+  border:1px solid var(--sline); background:#fff; color:var(--smuted);}
+
 </style>
 </head>
 <body>
@@ -1221,6 +1372,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div class="cls-cards" id="clsCards"></div>
           <!-- §4.2 한 줄 통계 -->
           <div class="cs-blkhead">
+            <button class="cs-mini" onclick="sideToggle('L')" title="목록 접기" aria-label="민원 목록 접기">◀</button>
             <span class="cs-sum1" id="statLine"></span>
             <button type="button" class="btn-csv ico" onclick="scopeExport()" aria-label="현재 범위를 CSV 파일로 내려받기" title="현재 범위를 CSV 파일로 내려받기">
               <img class="ico-csv" src="data/icons/csv.png" alt=""></button>
@@ -1239,7 +1391,13 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <div id="wxCard" hidden><div id="wxBody"></div><div id="airBody"></div></div>
       </aside>
 
-      <!-- ── 4장 지도: 잔여 전체, 도구는 오버레이 ── -->
+      <!-- §2.1 좌측 접기 · §2.2 폭 조절 경계 -->
+      <div class="cs-gut" id="gutL" title="끌어서 폭 조절 · 우클릭 초기화"
+           onmousedown="gutDown(event,'L')" oncontextmenu="gutReset(event,'L')"></div>
+      <button class="cs-rail" id="railL" onclick="sideToggle('L')" hidden
+              aria-label="민원 목록 펼치기"><span>민원 목록</span></button>
+
+      <!-- ── 5장 지도: 잔여 전체, 도구는 오버레이 ── -->
       <main class="cs-map" id="mapCard">
         <div id="apiErrBox" style="display:none;border-radius:8px;padding:8px 12px;margin-bottom:8px">
           <span style="font-size:13px;font-weight:800;color:#B3261E">⚠️ API 연계오류 조치중</span>
@@ -1282,6 +1440,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
               <button class="cs-mini" onclick="layerPanelToggle(false)" aria-label="레이어 패널 닫기">✕</button></div>
             <div id="layerList"></div>
           </div>
+          <div id="mapPickBar" hidden>📍 <b>지도를 클릭해 민원 위치를 지정하세요</b>
+            <span>핀을 끌어 미세 조정할 수 있습니다</span>
+            <button class="cs-mini" onclick="rpState('home')">취소</button></div>
           <button id="mapWxBadge" onclick="openWxDetail()" title="기상·대기 상세">기상 정보 불러오는 중…</button>
           <div id="mapBaseBar">
             <button class="lb" id="satBtn" onclick="toggleSat()">🛰️ 항공</button>
@@ -1296,8 +1457,34 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
       </main>
 
       <!-- ── 5장 우측: 접이식 섹션, 조치 버튼은 고정 ── -->
+      <div class="cs-gut" id="gutR" title="끌어서 폭 조절 · 우클릭 초기화"
+           onmousedown="gutDown(event,'R')" oncontextmenu="gutReset(event,'R')"></div>
+      <button class="cs-rail" id="railR" onclick="sideToggle('R')" hidden
+              aria-label="우측 패널 펼치기"><span>업무 패널</span></button>
+
+      <!-- ── 6장 우측 패널: 네 가지 상태. 한 번에 하나만 ── -->
       <aside class="cs-right" id="csRight">
         <div class="ph-grip" id="phGripR"></div>
+
+        <!-- ① 기본 — 접수 입구 3개 -->
+        <div class="rp" id="rpHome">
+          <div class="cs-rbody">
+            <p class="rp-empty">목록이나 지도에서 민원을 고르세요.</p>
+            <div class="rp-entries">
+              <button class="rp-ent" onclick="rpForm('gen')">
+                <span class="e-i">📝</span><span class="e-t">일반민원 접수</span><span class="e-s">당직자 · 타 부서 직원</span></button>
+              <button class="rp-ent" onclick="rpForm('road')">
+                <span class="e-i">🚧</span><span class="e-t">교통·도로 기동단 접수</span><span class="e-s">기동단 전담 인력</span></button>
+              <button class="rp-ent" onclick="rpForm('jrn')">
+                <span class="e-i">📕</span><span class="e-t">재난상황일지 작성</span><span class="e-s">재난안전상황실 직원</span></button>
+            </div>
+            <div class="rp-h">최근 처리</div>
+            <div class="rp-recent" id="rpRecent"></div>
+          </div>
+        </div>
+
+        <!-- ② 민원 상세 -->
+        <div class="rp" id="rpSel" hidden>
         <div class="cs-rhead" id="selHead"><span class="cs-rempty">목록이나 지도에서 민원을 고르세요</span></div>
         <div class="cs-racts" id="selActs"></div>
         <div class="cs-rbody" id="selBody">
@@ -1321,37 +1508,68 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <p class="hint">핀 클릭=상세 보기 · <b>빈 지도 클릭=신규 접수 위치 지정</b>(관할구 자동, 오른쪽 AI 서기와 연동)</p>
         </div>
         </div>
+
+        <!-- ③ 접수 입력 — 세 서식이 여기로 들어온다(부팅 시 이동) -->
+        <div class="rp" id="rpForm" hidden>
+          <div class="rp-head"><b id="rpFormTit">접수</b>
+            <button class="cs-mini" onclick="rpState('home')" aria-label="접수 닫기">✕</button></div>
+          <div class="cs-rbody" id="rpFormBody">
+            <div class="rp-sub" id="fmGen" hidden></div>
+            <div class="rp-sub" id="fmRoad" hidden></div>
+            <div class="rp-sub" id="fmJrn" hidden></div>
+          </div>
+        </div>
+
+        <!-- ⑤ 기동단 안내 — 전화를 받으며 설명하므로 모달로 띄우지 않는다 -->
+        <div class="rp" id="rpRoad" hidden>
+          <div class="rp-head"><b>교통·도로민원 신속처리 기동단</b>
+            <button class="cs-mini" onclick="rpBack()" aria-label="안내 닫기">✕</button></div>
+          <div class="cs-rbody" id="rpRoadBody"></div>
+        </div>
+
+        <!-- ④ 일반현황 — 인력·부서현황·뉴스·기상·지표 -->
+        <div class="rp" id="rpInfo" hidden>
+          <div class="rp-head"><b>일반현황</b>
+            <span class="rp-hs">인력 · 부서 · 뉴스 · 기상 · 지표</span></div>
+          <div class="cs-rbody" id="rpInfoBody"></div>
+        </div>
       </aside>
     </div>
 
-    <!-- ── 7장 하단 스트립 120px ── -->
-    <!-- §7 하단 스트립 140px — 인력 · 뉴스 · 지표 (시간대별 차트는 처리결과 화면으로) -->
-    <div class="cs-strip" id="csStrip">
-      <button class="cs-stripbtn" id="csStripBtn" onclick="csStripToggle()" aria-expanded="true">▾ 접기</button>
-      <div class="cs-stripbody" id="csStripBody">
-        <div class="cs-strip-col">
-          <div class="cs-secthead">인력 현황 <span class="cs-shift" id="csShift"></span>
-            <button class="cs-mini" style="margin-left:auto" onclick="openRoster()">편성표</button></div>
-          <div class="cs-blkbody nos" id="staffBody"></div>
-          <div class="cs-blkbody nos" id="svcBody"></div>
-        </div>
-        <div class="cs-strip-col">
-          <div class="cs-secthead">실시간 뉴스 <span>키워드 · 화성시</span></div>
-          <div class="cs-blkbody nos" id="feed">이슈를 불러오는 중…</div>
-        </div>
-        <div class="cs-strip-col">
-          <div class="cs-secthead">처리 지표</div>
-          <div class="cs-kpis" id="csKpis"></div>
-        </div>
-      </div>
+    <!-- §2 하단 스트립은 없앤다. 인력·뉴스·지표는 일반현황(#info) 우측 패널로 옮겼다.
+         아래 묶음은 부팅 시 #rpInfoBody 로 이동한다(기존 갱신 함수를 그대로 쓰기 위해 id 는 유지). -->
+    <div id="infoSrc" hidden>
+      <section class="rp-sec">
+        <div class="rp-h">인력 현황 <span class="cs-shift" id="csShift"></span>
+          <button class="cs-mini" style="margin-left:auto" onclick="openRoster()">편성표</button></div>
+        <div class="rp-secbody" id="staffBody"></div>
+        <div class="rp-secbody" id="svcBody"></div>
+      </section>
+      <section class="rp-sec">
+        <div class="rp-h">부서현황 <span>행정조직도 기준</span></div>
+        <input id="orgQ" class="rp-q" placeholder="부서·업무 검색 (예: 도로, 상하수도, 공원)" oninput="renderOrgPane()">
+        <div class="rp-secbody" id="orgPane"></div>
+      </section>
+      <section class="rp-sec">
+        <div class="rp-h">실시간 뉴스 <span>키워드 · 화성시</span></div>
+        <div class="rp-secbody" id="feed">이슈를 불러오는 중…</div>
+      </section>
+      <section class="rp-sec">
+        <div class="rp-h">기상·대기 <span>실황 · 특보 · 미세먼지</span></div>
+        <div class="rp-secbody" id="wxPane"></div>
+      </section>
+      <section class="rp-sec">
+        <div class="rp-h">처리 지표</div>
+        <div class="cs-kpis" id="csKpis"></div>
+      </section>
     </div>
     <!-- 타임라인은 처리결과 화면으로 옮겼다(§7) -->
     <div id="csTimeline" hidden></div><div id="csTlLabel" hidden></div><div id="csEvents" hidden></div>
   </div>
 </div>
 
-<!-- ══════════ §9 민원 접수 (#new) — 전화를 받으며 넓게 입력한다 ══════════ -->
-<div id="new">
+<!-- §1 접수·일지는 별도 화면이 아니다. 아래 두 묶음은 부팅 시 우측 패널 ③으로 옮긴다. -->
+<div id="genSrc" hidden>
   <div class="pg">
     <!-- 화면 전환은 헤더 탭만으로 한다 -->
     <div class="pg-2col">
@@ -1395,8 +1613,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   </div>
 </div>
 
-<!-- ══════════ §10 재난상황일지 (#log) ══════════ -->
-<div id="log">
+<div id="jrnSrc" hidden>
   <div class="pg">
     <!-- 화면 전환은 헤더 탭만으로 한다 -->
     <div class="pg-2col">
@@ -1490,6 +1707,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   <button id="dbWork" onclick="dutySheet('r')">🧑‍💼 상세</button>
 </div>
 <div id="cmd"></div>
+<div id="done" style="display:none"></div>
 <div id="track"></div>
 <div id="road" style="display:none"></div>
 <footer>화성특례시 당직 업무 플랫폼 프로토타입 · AI공모전 출품용 데모 — 데이터는 예시이며 실제 접수되지 않습니다.<br>인계 문자·연락처는 데모용으로 일부 마스킹되어 있습니다.</footer>
@@ -1500,7 +1718,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1139';
+const BUILD_VER = 'v0906-1202';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1807,6 +2025,13 @@ function assignDept(it){
 }
 
 /* 담당자가 바꾼 이력 — 값은 브라우저에, 사실은 처리이력에 남는다 */
+function deptOverrideSet(id, v){
+  try{
+    const all = JSON.parse(localStorage.getItem('hs_dept_ov') || '{}');
+    all[id] = v; localStorage.setItem('hs_dept_ov', JSON.stringify(all));
+  }catch(e){}
+  try{ if(typeof DEPT_CACHE === 'object') for(const k of Object.keys(DEPT_CACHE)) delete DEPT_CACHE[k]; }catch(e){}
+}
 function deptOverrideGet(id){
   try{ const v = localStorage.getItem('hs_dept_ov_' + id); return v ? JSON.parse(v) : null; }catch(e){ return null; }
 }
@@ -1961,7 +2186,9 @@ function initMap(){
     if(bldgOn){ bldgQuery(e.latlng); return; }
     if(jjOn){ jjQuery(e.latlng); return; }
     if(panMode) return;   // ✋ 탐색 모드 — 접수 위치 지정 안 함
-    mapPlace(e.latlng, pointInGu(e.latlng.lat, e.latlng.lng));
+    const gu = pointInGu(e.latlng.lat, e.latlng.lng);
+    mapPlace(e.latlng, gu);
+    if(rpPick) pickApply(e.latlng, gu);   /* §6.3 접수 중이면 주소칸까지 채운다 */
   }catch(err){ toast('지도 클릭 오류: '+err.message); } });
   markerLayer = L.layerGroup().addTo(map);
   // 줌 13 미만에서는 병원 등 밀집 라벨 숨김(클러터 방지)
@@ -2655,19 +2882,20 @@ setInterval(cmdBadgeSync, 20000);
    헤더 — 한 곳에서만 그린다(상황판_사양서 §3).
    화면별 차이는 인자로만 처리한다. 개별 헤더 마크업을 만들지 않는다.
    ══════════════════════════════════════════════════════════ */
+/* §1 화면 4개. 접수·일지는 별도 화면이 아니라 민원현황 우측 패널의 한 상태다(§6). */
 const HDR_TABS = [
   {k:'duty', nm:'민원현황'},
-  {k:'new',  nm:'접수'},
-  {k:'log',  nm:'일지'},
+  {k:'info', nm:'일반현황'},
   {k:'dash', nm:'처리결과'},
   {k:'road', nm:'교통·도로 기동단'}
 ];
-const SCR_TITLE = {duty:'민원현황', new:'민원 접수', log:'재난상황일지', dash:'처리결과',
-                   road:'교통·도로 기동단', cmd:'조치지시', cit:'24시간 민원접수창구', track:'처리 현황'};
-/* 화면별 표시 규칙 */
+const SCR_TITLE = {duty:'민원현황', info:'일반현황', dash:'처리결과',
+                   road:'교통·도로 기동단', cmd:'조치지시',
+                   cit:'24시간 민원접수창구', track:'처리 현황', done:'조치결과 보고'};
+/* 화면별 표시 규칙 — 차이는 인자로만 처리한다(§3.2-1) */
 function hdrOpts(m){
-  if(m === 'cit' || m === 'track') return {tabs:false, filter:false, me:false, live:false, search:false, actions:false};
-  if(m === 'new' || m === 'log')   return {tabs:true,  filter:false, me:true,  live:true,  search:true,  actions:true};
+  if(m === 'cit' || m === 'track' || m === 'done')
+    return {tabs:false, filter:false, me:false, live:false, search:false, actions:false};
   return {tabs:true, filter:true, me:true, live:true, search:true, actions:true};
 }
 function renderHeader(m){
@@ -2715,8 +2943,9 @@ function renderHeader(m){
       '<button class="hb-cit" id="btnCit" onclick="openCitWindow()" title="시민이 보는 화면입니다. 새 창으로 열립니다.">' +
         '24시간 민원접수창구</button>';
   } else if(m === 'cit' || m === 'track'){
-    /* 시민 화면에서 당직 화면으로 돌아가는 길만 남긴다 */
-    html += '<button class="cs-chip" onclick="setMode(\'duty\')" title="당직 업무 화면으로">업무 화면</button>';
+    /* 시민 화면에서 당직 화면으로 돌아가는 길만 남긴다. 탭이 아니므로 cs-chip 을 쓰지 않는다.
+       업체 화면(#done)에는 내부로 들어오는 길을 두지 않는다(§7.4). */
+    html += '<button class="cs-back" onclick="setMode(\'duty\')" title="당직 업무 화면으로">업무 화면</button>';
   }
   h.innerHTML = html;
   /* 그린 뒤 상태를 다시 입힌다 */
@@ -2881,6 +3110,7 @@ function clearMapPin(){
 let mkById = {};
 function renderMap(){
   if(!map) return;
+  selPinSync();
   markerLayer.clearLayers();
   mkById = {};   // D-06: 묶음/개별 전환 시 남은 마커 참조 제거
   const hasSel = selId!=null && items.some(i=>i.id===selId && i.st!=="완료");
@@ -3028,7 +3258,8 @@ function renderList(){
 }
 function clearSel(){
   selId = null;
-  panelExpand(false);
+  if(typeof rpState === 'function' && rpNow === 'sel'){ rpState('home'); }
+  else panelExpand(false);
   const h = document.getElementById("selHead");
   if(h) h.innerHTML = '<span class="cs-rempty">목록이나 지도에서 민원을 고르세요</span>';
   const ac = document.getElementById("selActs"); if(ac) ac.innerHTML = "";
@@ -3062,7 +3293,7 @@ function selectItem(id){
   dutySheetAuto();
   const it = items.find(i=>i.id===id);
   if(!it) return;
-  if(typeof csRightTab === 'function' && curMode === 'duty') csRightTab('sel');
+  if(typeof rpState === 'function') rpState('sel');
   if(map && it.ll){ map.panTo(it.ll); if(mkById[it.id]) setTimeout(()=>mkById[it.id].openPopup(), 120); }
   panelExpand(true);
   renderSel(it);
@@ -3106,52 +3337,166 @@ function renderSel(it){
   const tel = handoffTarget(it);
   const vendor = needVendor(it) ? '<div class="dept">🚚 권역 위탁업체: <b>' + SEWER_VENDOR[it.gu] + '</b></div>' : '';
 
-  /* 좌열 — 조치. 긴급 대응 안내는 붉은 한 줄로 요약(같은 문장을 반복하지 않는다) */
-  const colA =
-    (it.urg === '긴급'
+  /* ── 좌열: 조치 4구획. 진행 상태를 색으로 표시한다(대기 회색 / 진행 주황 / 완료 파랑) ── */
+  const box = (nm, state, inner, btn) =>
+    '<div class="act ' + state + '"><div class="act-h">' + nm +
+      '<span class="act-s">' + ({wait:'대기', prog:'진행', done:'완료'}[state]) + '</span></div>' +
+    '<div class="act-b">' + inner + (btn || '') + '</div></div>';
+
+  const crewCnt = (it.crews || []).length;
+  const a1 = box('현장확인', it.fieldCheckAt ? 'done' : (crewCnt ? 'prog' : 'wait'),
+    (it.fieldCheckAt
+      ? '<div class="sel-kv"><span>확인</span><b>' + hm(it.fieldCheckAt) + ' · ' + (it.fieldCheckBy || '당직자') + '</b></div>' +
+        (it.roadSla ? '<div class="sel-kv"><span>판정</span><b>' + it.roadSla + ' 처리</b></div>' : '')
+      : '<div class="sel-kv"><span>확인</span><b>아직 확인 전</b></div>') +
+    '<div class="sel-kv"><span>인력 투입</span><b>' + (crewCnt ? crewCnt + '명 출동 중' : '없음') + '</b></div>',
+    '<div class="act-r"><button class="cs-mini" onclick="reportOpen(' + it.id + ')">현장 확인 기록</button>' +
+    '<button class="cs-mini" onclick="askDispatch(' + it.id + ')">인력 투입</button></div>');
+
+  const a2 = box('용역업체 문자발송', it.sms ? 'done' : 'wait',
+    '<div class="sel-kv"><span>수신</span><b>' + tel + '</b></div>' +
+    '<div class="sel-kv"><span>발송</span><b>' + (it.sms ? (it.smsAt ? hm(it.smsAt) : '발송함') : '미발송') + '</b></div>' +
+    '<p class="act-n">처리요청과 함께 <b>조치결과 보고 링크</b>를 동봉합니다. 업체는 사진만 올리면 됩니다.</p>',
+    '<div class="act-r"><button class="cs-mini" onclick="openHandoff(' + it.id + ')">문자 인계</button>' +
+    '<button class="cs-mini" onclick="doneCopy(' + it.id + ')">보고 링크 복사</button></div>');
+
+  const a3 = box('조치결과', it.vendorResult ? 'done' : (it.sms ? 'prog' : 'wait'),
+    '<div class="sel-kv"><span>결과</span><b>' + (it.vendorResult || '미보고') + '</b></div>' +
+    (it.vendorAt ? '<div class="sel-kv"><span>보고</span><b>' + hm(it.vendorAt) + ' · 용역업체</b></div>' : '') +
+    (it.vendorMemo ? '<div class="sel-kv"><span>메모</span><b>' + it.vendorMemo + '</b></div>' : '') +
+    ((it.photoBefore || it.photoAfter)
+      ? '<div class="act-ph">' +
+        (it.photoBefore ? '<figure><img src="' + it.photoBefore + '" alt=""><figcaption>조치 전</figcaption></figure>' : '') +
+        (it.photoAfter ? '<figure><img src="' + it.photoAfter + '" alt=""><figcaption>조치 후</figcaption></figure>' : '') + '</div>'
+      : '<p class="act-n">업체가 외부에서 올린 사진도 이 자리에 그대로 표시됩니다.</p>'));
+
+  const a4 = box('민원회신', it.replyAt ? 'done' : (it.st === '완료' ? 'prog' : 'wait'),
+    '<div class="sel-kv"><span>통보</span><b>' + (it.replyAt ? hm(it.replyAt) + ' · ' + (it.replyVia || '전화') : '미통보') + '</b></div>' +
+    (it.replyMemo ? '<div class="sel-kv"><span>내용</span><b>' + it.replyMemo + '</b></div>' : ''),
+    '<div class="act-r"><select class="act-st" onchange="setStatus(' + it.id + ', this.value)" aria-label="처리 단계 되돌리기">' +
+      ['신규접수','처리중','완료'].map(x=>'<option' + (x === it.st ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>' +
+    '<button class="cs-mini" onclick="replyOpen(' + it.id + ')">회신 기록</button>' +
+    '<button class="cs-mini" onclick="nextStage(' + it.id + ')"' + (it.st === '완료' ? ' disabled' : '') + '>' +
+      (it.st === '신규접수' ? '처리중으로' : (it.st === '처리중' ? '종결' : '완료됨')) + '</button></div>');
+
+  const colA = (it.urg === '긴급'
       ? '<div class="sel-urg">⚡ 인명·안전 위험 시 <b>119/112 즉시 공동대응</b> → 재난안전상황실 ☎5189-2119</div>' : '') +
-    '<div class="sel-h">📋 민원 내용</div>' +
-    '<div class="sel-box">' + it.sum + (it.req ? ' · <b>' + it.req + '</b>' : '') + '</div>' +
-    '<div class="sel-h">🧭 담당 주체</div>' +
-    '<div class="sel-box">' + assigneeOf(it) +
-      (it.assignedAt ? ' <span style="font-size:11.5px;color:var(--muted)">· ' + hm(it.assignedAt) + ' 배정' +
-        (it.assignedWhy ? ' (' + it.assignedWhy + ')' : '') + '</span>' : ' <span style="font-size:11.5px;color:var(--muted)">· AI 제안</span>') +
-      '<button class="cs-mini" style="margin-left:8px" onclick="assignAsk(' + it.id + ')">변경</button></div>' +
-    '<div class="sel-h">☎ 담당 연락처</div>' +
-    '<div class="sel-box"><b>' + tel + '</b></div>' + vendor +
-    '<div class="sel-h">✅ 처리 순서</div>' +
-    '<ol class="sel-ol">' + r.steps.slice(0, 3).map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
-    '<div class="row"><select onchange="setStatus(' + it.id + ', this.value)" aria-label="단계 되돌리기">' +
-      ['신규접수','처리중','완료'].map(x=>'<option' + (x === it.st ? ' selected' : '') + '>' + x + '</option>').join('') +
-    '</select></div>';
+    a1 + a2 + a3 + a4;
 
-  /* 우열 — 정보 */
+  /* ── 우열: 세부 6구획. 이 순서 고정. 모든 구획은 펼침이 기본이다 ── */
   const colB =
-    '<details class="acc" open><summary>📷 현장 사진</summary><div class="acc-in">' + photoBlock(it) + '</div></details>' +
-    '<details class="acc" open><summary>🏢 배정·속성</summary><div class="acc-in">' +
-      deptBlock(it) +
-      '<div class="sel-kv"><span>접수시각</span><b>' + it.time + '</b></div>' +
-      '<div class="sel-kv"><span>긴급도</span><b>' + it.urg + '</b></div>' +
-      '<div class="sel-kv"><span>관할구</span><b>' + it.gu + '</b></div>' +
-      (a.grade ? '<div class="sel-kv"><span>도로 등급</span><b>' + a.grade + '</b></div>' : '') +
-      (it.ll ? '<div class="sel-kv"><span>좌표</span><b>' + it.ll[0].toFixed(5) + ', ' + it.ll[1].toFixed(5) + '</b></div>' : '') +
-    '</div></details>' +
-    '<details class="acc"><summary>🤖 AI 분석</summary><div class="acc-in">' +
-      '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
-      '<div class="sel-kv"><span>처리구분(참고)</span><b>' + triage(it) + '</b></div>' +
-      '<div class="sel-kv"><span>유사 민원</span><b>' + similarCount(it) + '건</b></div>' +
-      '<p class="hint">' + a.legal.basis + '</p></div></details>' +
-    '<details class="acc"><summary>📘 대응 매뉴얼</summary><div class="acc-in">' +
-      '<ol class="sel-ol">' + r.steps.map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
-      '<div class="row"><button class="btn-g" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">📖 매뉴얼 전문 검색</button></div>' +
-    '</div></details>' +
-    '<details class="acc"><summary>🕘 처리 이력</summary><div class="acc-in">' +
-      '<ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div></details>';
+    /* 1 민원내용 — 위치 · 문제상황 · 조치필요사항 */
+    '<div class="sel-h">1. 민원내용</div>' +
+    '<div class="sel-box">' +
+      '<div class="sel-kv"><span>위치</span><b>' + it.loc + ' (' + it.gu + ')</b></div>' +
+      '<div class="sel-kv"><span>문제상황</span><b>' + it.sum + '</b></div>' +
+      '<div class="sel-kv"><span>조치필요</span><b>' + (it.req || '—') + '</b></div>' +
+      '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + it.urg + '</b></div></div>' +
 
+    /* 2 담당부서 — AI 분석 결과 · 배정 근거 · 확신도. 변경은 부서 목록에서 고른다 */
+    '<div class="sel-h">2. 담당부서</div>' +
+    '<div class="sel-box">' + deptBlock(it) +
+      '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
+      '<div class="sel-kv"><span>처리구분</span><b>' + triage(it) + '</b></div>' +
+      '<div class="sel-kv"><span>유사 민원</span><b>' + similarCount(it) + '건 (반경 1km)</b></div>' +
+      '<div class="sel-kv"><span>담당 주체</span><b>' + assigneeOf(it) + '</b></div>' +
+      '<p class="act-n">' + a.legal.basis + '</p>' +
+      '<div class="act-r"><button class="cs-mini" onclick="deptPick(' + it.id + ')">처리주체 변경</button>' +
+      '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">당직 · 기동단 배정</button></div></div>' +
+
+    /* 3 담당연락처 — 같은 문장을 제목·본문에 반복하지 않는다(§10 #5) */
+    '<div class="sel-h">3. 담당연락처</div>' +
+    '<div class="sel-box"><div class="sel-kv"><span>부서</span><b>' + a.actor.org + '</b></div>' +
+      '<div class="sel-kv"><span>업체</span><b>' + tel + '</b></div>' + vendor + '</div>' +
+
+    /* 4 현장사진 — 신고 / 조치 전 / 조치 후 */
+    '<div class="sel-h">4. 현장사진</div>' +
+    '<div class="sel-box">' + photoBlock(it) + '</div>' +
+
+    /* 5 대응매뉴얼 */
+    '<div class="sel-h">5. 대응매뉴얼</div>' +
+    '<div class="sel-box"><ol class="sel-ol">' + r.steps.map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
+      '<div class="act-r"><button class="cs-mini" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">매뉴얼 전문 검색</button></div></div>' +
+
+    /* 6 처리이력 */
+    '<div class="sel-h">6. 처리이력</div>' +
+    '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div>';
+
+  /* 640px 에서 2열: 좌열 조치 4구획, 우열 세부 6구획. 한 덩어리로 스크롤한다 */
   body.innerHTML = '<div class="sel-2col"><div class="sel-col">' + colA + '</div><div class="sel-col">' + colB + '</div></div>';
   const dh = document.getElementById('dHint');
   if(dh) dh.textContent = '#' + String(it.id).padStart(3,'0');
 }
+/* §6.2 처리주체 변경은 부서 목록에서 고른다. 직접 입력을 받지 않는다.
+   목록 출처는 행정조직도(ORG_UNITS)이며 분장사무 데이터로 만들지 않는다. */
+function deptOptions(){
+  const out = [];
+  if(typeof ORG_UNITS === 'undefined' || !ORG_UNITS) return out;
+  for(const g of (ORG_UNITS.본청 || [])) for(const d of (g.과 || [])) out.push({g:(g.실국 || '본청'), d:d});
+  for(const g of (ORG_UNITS.구청 || [])) for(const d of (g.과 || [])) out.push({g:(g.기관 || '구청'), d:g.기관 + ' ' + d});
+  for(const g of (ORG_UNITS.사업소 || [])) for(const d of (g.과 || [])) out.push({g:(g.기관 || '사업소'), d:g.기관 + ' ' + d});
+  for(const g of (ORG_UNITS.읍면동 || [])) for(const d of (g.목록 || [])) out.push({g:g.구 + ' 행정복지센터', d:d + ' 행정복지센터'});
+  return out;
+}
+function deptPick(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const opts = deptOptions();
+  if(!opts.length){ toast('행정조직도를 아직 불러오지 못했습니다'); return; }
+  const cur = deptOf(it).actor.org;
+  const grp = {};
+  for(const o of opts){ (grp[o.g] = grp[o.g] || []).push(o.d); }
+  showModal('<h2>🏢 처리주체 변경</h2>' +
+    '<p class="hint">행정조직도에 있는 부서 중에서 고릅니다. 직접 입력할 수 없습니다.</p>' +
+    '<select id="dpSel" size="12" style="width:100%; font-size:13.5px">' +
+      Object.keys(grp).map(g=>'<optgroup label="' + esc(g) + '">' +
+        grp[g].map(d=>'<option' + (d === cur ? ' selected' : '') + '>' + esc(d) + '</option>').join('') +
+      '</optgroup>').join('') + '</select>' +
+    '<label class="rd-lb">변경 사유 (선택)</label><input id="dpWhy" placeholder="예) 도로 등급상 구청 소관">' +
+    '<div class="row"><button class="btn-o" onclick="deptPickSave(' + id + ')">이 부서로 변경</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>' +
+    '<p class="hint">' + opts.length + '개 부서 · 출처 행정조직도</p>');
+}
+function deptPickSave(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const org = (document.getElementById('dpSel') || {}).value || '';
+  if(!org){ toast('부서를 골라 주세요'); return; }
+  const why = ((document.getElementById('dpWhy') || {}).value || '').trim();
+  deptOverrideSet(id, {org: org, basis: '담당자 지정' + (why ? ' — ' + why : '')});
+  it.log.push(nowHM() + ' 처리주체 변경 → ' + org + (why ? ' (' + why + ')' : ''));
+  try{ sbPush(it); }catch(e){}
+  closeModal(); renderSel(it); renderList();
+  toast('처리주체를 ' + org + '(으)로 변경했습니다');
+}
+/* §6.2 민원회신 — 신고인에게 알린 내용·시각·방법을 남긴다 */
+function replyOpen(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  showModal('<h2>📞 민원회신 기록</h2>' +
+    '<p class="hint">신고인에게 알린 내용을 남깁니다. 처리 결과 통보 여부가 이 기록으로 확인됩니다.</p>' +
+    '<label class="rd-lb">방법</label>' +
+    '<select id="rpVia"><option>전화</option><option>문자</option><option>방문</option></select>' +
+    '<label class="rd-lb">내용</label>' +
+    '<input id="rpMemo" placeholder="예) 포트홀 임시 포장 완료, 본포장은 다음 주 예정" value="' + esc(it.replyMemo || '') + '">' +
+    '<div class="row"><button class="btn-o" onclick="replySave(' + id + ')">회신 기록</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function replySave(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  it.replyVia = (document.getElementById('rpVia') || {}).value || '전화';
+  it.replyMemo = ((document.getElementById('rpMemo') || {}).value || '').trim();
+  it.replyAt = new Date().toISOString();
+  it.log.push(nowHM() + ' 민원회신(' + it.replyVia + ')' + (it.replyMemo ? ': ' + it.replyMemo : ''));
+  try{ sbPush(it); }catch(e){}
+  closeModal(); renderSel(it);
+  toast('민원회신을 기록했습니다');
+}
+/* 업체용 조치결과 보고 링크 */
+function doneCopy(id){
+  const url = doneLink(id);
+  try{ navigator.clipboard.writeText(url); toast('보고 링크를 복사했습니다 — 문자에 붙여 넣으세요'); }
+  catch(e){ showModal('<h2>조치결과 보고 링크</h2><div class="msgprev">' + esc(url) + '</div>' +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>'); }
+}
+
 /* 미선택 상태 — 대기 안내 + 최근 처리 요약 */
 function selIdleHtml(){
   const recent = realItems().filter(i=>i.st === '완료').sort((a,b)=>b.id - a.id).slice(0, 5);
@@ -3294,7 +3639,8 @@ function registerItem(){
   document.getElementById("parsedForm").style.display="none";
   document.getElementById("aiAsk").style.display="none";
   document.getElementById("rawText").value="";
-  renderMap(); renderList(); selectItem(it.id);
+  renderMap(); renderList();
+  selectItem(it.id);   /* 등록 후 배정된 건이 선택된 상태로 열린다(§6.3) */
   toast("접수 등록 완료 — 지도에 표시되었습니다");
   /* §1-1: 담당 주체를 접수자가 확정한다(AI 제안 표시) */
   setTimeout(()=>assignAsk(it.id), 350);
@@ -4167,11 +4513,26 @@ function toggleFest(){
 }
 // 🚨 민원 마커 레이어 토글
 let cplOn = true;
+/* §5.1 민원 레이어를 꺼도 선택한 민원 하나는 지도에 남긴다.
+   목록에서 고른 건이 지도에서 사라지면 위치를 확인할 수 없다. */
+let selLayer = null;
 function toggleCpl(){
   cplOn = !cplOn;
   document.getElementById('cplBtn').classList.toggle('on', cplOn);
   if(cplOn){ markerLayer.addTo(map); toast('민원 마커 표시'); }
-  else { map.removeLayer(markerLayer); toast('민원 마커 숨김'); }
+  else { map.removeLayer(markerLayer); toast('민원 마커 숨김 — 선택한 민원은 계속 표시됩니다'); }
+  selPinSync();
+}
+function selPinSync(){
+  if(typeof map === 'undefined' || !map || !window.L) return;
+  if(selLayer){ try{ map.removeLayer(selLayer); }catch(e){} selLayer = null; }
+  if(cplOn || selId == null) return;
+  const it = items.find(i=>i.id === selId);
+  if(!it || !it.ll) return;
+  selLayer = L.marker(it.ll, {icon: L.divIcon({className:'', iconSize:[28,28],
+    html:'<div class="pin sel" style="background:#fff;border-color:var(--urgent);display:flex;' +
+         'align-items:center;justify-content:center">' + (it.urg === '긴급' ? '🚨' : '📢') + '</div>'})})
+    .addTo(map).bindTooltip('선택한 민원 #' + String(it.id).padStart(3,'0'), {permanent:false});
 }
 // 🏷️ 설명 라벨 전체 토글 (아이콘만 ↔ 아이콘+설명). 켜진 레이어의 상시 라벨을 CSS로 표시/숨김
 function toggleLbl(){
@@ -7946,11 +8307,17 @@ function roadIntakeSave(){
   });
   if(!it) return;
   it.roadCategory = cat.k;
+  if(typeof pendingLL !== 'undefined' && pendingLL){ it.pin = pendingLL; it.ll = pendingLL; clearMapPin(); }
   it.intakeChannel = '전화(1833-4088)';
   it.guideDue = new Date(guideDue(it)).toISOString();
   it.log.push(nowHM() + ' 교통·도로 기동단 전화 접수(1833-4088) · ' + cat.nm);
   sbPush(it);
-  closeModal();
+  if(typeof rpNow !== 'undefined' && rpNow === 'form'){
+    const t = document.getElementById('riSum'), l = document.getElementById('riLoc');
+    if(t) t.value = ''; if(l) l.value = '';
+    rdIntakeCat = null;
+    ROAD_CATS.forEach((c,k)=>{ const b = document.getElementById('ric' + k); if(b) b.classList.remove('on'); });
+  } else closeModal();
   const due = new Date(guideDue(it));
   showModal('<h2>✅ 접수 완료 <span class="rd-mno">#' + String(it.id).padStart(3,'0') + '</span></h2>' +
     '<div class="rd-due-big">⏱ 처리방안 안내 마감<br><b>' +
@@ -8031,7 +8398,8 @@ function renderRoad(){
   const head =
     '<div class="rd-head">' +
     '<h2>🚚 교통·도로민원 신속처리 기동단</h2>' +
-    '<span class="rd-tel">대표전화 1833-4088</span>' +
+    '<span class="rd-tel">대표전화 <a href="tel:18334088">1833-4088</a></span>' +
+    '<button class="cs-mini" onclick="rpRoadGuide()" title="우측 패널에 안내가 열립니다 — 지도·목록은 그대로 보입니다">기동단이란?</button>' +
     '<button class="btn-p" style="margin-left:auto" onclick="roadIntake()">📞 전화 접수</button>' +
     '<button class="cs-mini" onclick="renderRoad()">↻ 새로고침</button></div>' +
 
@@ -8086,7 +8454,7 @@ function renderRoad(){
 setInterval(()=>{ if(curMode === 'road') renderRoad(); }, 30000);
 function roadOpen(id){ roadDetail(id); }
 /* ── D-02 주소 기반 화면 분기 — 주소는 하나(#cit #duty #dash #road). QR은 #cit ── */
-const MODES = ["duty","new","log","dash","cit","road","track","cmd"];
+const MODES = ["duty","info","dash","cit","road","track","cmd","done"];
 let curMode = "duty";
 function modeFromHash(){
   const h = (location.hash||"").replace("#","").split("?")[0];
@@ -8101,7 +8469,400 @@ function applyHash(){
 function isPhone(){ return window.matchMedia && window.matchMedia("(max-width: 700px)").matches; }
 window.addEventListener("hashchange", applyHash);
 
+/* ══════════ §6.5 ⑤ 기동단 안내 ══════════
+   전화를 받으며 시민에게 설명하는 화면이다. 지도와 목록을 계속 봐야 하므로
+   모달이 아니라 우측 패널의 한 상태로 둔다.
+   【중요】 5개 유형과 처리구분 기한은 여기서 다시 적지 않는다.
+   ROAD_CATS(3장) · TRIAGE_META/TRIAGE_MS(2장) · GUIDE_MIN(5.1)을 그대로 읽는다.
+   따로 하드코딩하면 유형이 늘 때 안내문·접수 버튼·분류 로직 세 군데가 어긋난다. */
+const ROAD_OPEN_DAY = '2026-09-07';
+function roadOpenBadge(){
+  const d = new Date(ROAD_OPEN_DAY + 'T00:00:00+09:00');
+  if(Date.now() >= d.getTime()) return '';   /* 시작일이 지나면 사라진다 */
+  return '<div class="rg-open">🗓 ' + d.getFullYear() + '년 ' + (d.getMonth()+1) + '월 ' + d.getDate() + '일 운영 시작</div>';
+}
+/* 각 유형의 예시 — ROAD_CATS 의 subs 를 쓰되, 비어 있으면 안내용 예시를 보탠다 */
+const ROAD_EX = {
+  도로파손:   '포트홀, 도로 침하, 보도 파손',
+  교통시설:   '신호기 고장, 표지판·반사경 파손, BIS 오류',
+  불법주정차: '불법주정차, 방치 PM, 무단방치 차량',
+  버스불편:   '무정차, 난폭운전, 배차간격, 정류장 시설',
+  교통체계:   '도로 혼잡, 신호체계 개선, 버스노선 개선'
+};
+function roadEx(c){ return ROAD_EX[c.k] || (c.subs || []).join(', '); }
+function rpRoadGuide(){ rpState('road'); }
+function rpBack(){ rpState(rpPrev === 'road' ? 'home' : rpPrev); }
+function renderRoadGuide(){
+  const el = document.getElementById('rpRoadBody');
+  if(!el) return;
+  const NUM = ['①','②','③','④','⑤'];
+  /* 처리구분 — 기한 문구는 TRIAGE_META 의 rule 을 그대로 쓴다 */
+  const slaRows = [
+    {k:'즉시',   ex:ROAD_EX.교통시설},
+    {k:'단기',   ex:'시설물 파손, 정류장 시설 개선'},
+    {k:'중장기', ex:ROAD_EX.교통체계}
+  ].map(r=>'<div class="rg-sla"><b>' + r.k + '</b>' +
+      '<span class="rg-rule">' + TRIAGE_META[r.k].rule + '</span>' +
+      '<span class="rg-ex">' + esc(r.ex) + '</span></div>').join('');
+
+  el.innerHTML =
+    roadOpenBadge() +
+    '<p class="rg-lead">전화를 받으며 그대로 읽어 드리면 됩니다. ' +
+      '대표전화 <a class="rg-tel" href="tel:18334088">1833-4088</a></p>' +
+
+    '<details class="acc" open><summary>기동단이란</summary><div class="acc-in">' +
+      '<p class="rg-p">도로 파손부터 교통시설 고장, 불법주정차, 버스 이용 불편까지 ' +
+      '다양한 민원을 한 번에 접수·처리하는 <b>통합 민원 창구</b>입니다.</p>' +
+      '<p class="rg-p">접수된 민원은 기동단이 <b>현장을 확인하고 분류</b>한 뒤 ' +
+      '관련 부서·기관과 협력해 처리합니다.</p>' +
+      '<p class="rg-p">접수 후 <b>' + GUIDE_MIN + '분 이내</b>에 처리 방안을 안내해 드립니다.</p>' +
+    '</div></details>' +
+
+    '<details class="acc" ><summary>이런 불편을 알려주세요 <span class="rg-cnt">' +
+      ROAD_CATS.length + '개 유형</span></summary><div class="acc-in">' +
+      ROAD_CATS.map((c,i)=>
+        '<details class="acc rg-sub"><summary>' + NUM[i] + ' ' + c.ico + ' ' + esc(c.nm) + '</summary>' +
+        '<div class="acc-in"><p class="rg-p">' + esc(roadEx(c)) + '</p>' +
+        '<p class="rg-org">소관 ' + esc(c.org) + '</p></div></details>').join('') +
+    '</div></details>' +
+
+    '<details class="acc"><summary>이렇게 처리됩니다</summary><div class="acc-in">' +
+      '<div class="rg-step"><b>① 전화 한 통으로 접수</b>' +
+        '<span>대표전화 <a class="rg-tel" href="tel:18334088">1833-4088</a></span></div>' +
+      '<div class="rg-step"><b>② 기동단 확인 및 민원 분류</b>' + slaRows + '</div>' +
+      '<div class="rg-step"><b>③ 처리 방안 안내</b><span>접수 후 ' + GUIDE_MIN + '분 이내</span></div>' +
+      '<div class="rg-step"><b>④ 진행 상황 및 처리 결과 안내</b>' +
+        '<span>관련 부서·기관과 협력해 처리합니다</span></div>' +
+    '</div></details>' +
+
+    '<div class="row"><button class="btn-o" onclick="rpForm(\'road\')">🚧 이 내용으로 접수하기</button></div>';
+}
+
+/* ══════════ §6 우측 패널 — 네 가지 상태. 한 번에 하나만 ══════════
+   ① home 기본(접수 입구 3개) ② sel 민원 상세 ③ form 접수 입력 ④ info 일반현황
+   상세를 보다 접수를 누르면 상세는 닫힌다. 반대도 같다. */
+let rpNow = 'home', rpPrev = 'home', rpFormSub = null;
+function esc(v){ return String(v == null ? '' : v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function rpState(k, sub){
+  if(k !== rpNow) rpPrev = rpNow;
+  rpNow = k;
+  for(const x of ['home','sel','form','info','road']){
+    const el = document.getElementById('rp' + x.charAt(0).toUpperCase() + x.slice(1));
+    if(!el) continue;
+    if(x === k) el.removeAttribute('hidden'); else el.setAttribute('hidden','');
+  }
+  /* ①만 340px, 나머지는 640px */
+  panelExpand(k !== 'home');
+  /* 안내 중에는 지도가 위치 지정 모드로 바뀌지 않는다 */
+  /* 접수 상태에서만 지도가 위치 지정 모드가 된다(§6.3) */
+  pickMode(k === 'form');
+  if(k === 'home'){ rpFormSub = null; rpRecent(); }
+  /* 안내는 잠깐 겹쳐 보는 것이므로 선택을 풀지 않는다 */
+  if(k !== 'sel' && k !== 'road' && selId != null){ selId = null; renderMap(); renderList(); }
+  if(k === 'info') renderInfoPane();
+  if(k === 'road') renderRoadGuide();
+  setTimeout(()=>{ try{ if(typeof map !== 'undefined' && map) map.invalidateSize(); }catch(e){} }, 220);
+}
+/* ③ 접수 입력 — 세 서식 중 하나 */
+const RP_FORM_TIT = {gen:'📝 일반민원 접수', road:'🚧 교통·도로 기동단 접수', jrn:'📕 재난상황일지 작성'};
+function rpForm(sub){
+  rpFormSub = sub;
+  const t = document.getElementById('rpFormTit');
+  if(t) t.textContent = RP_FORM_TIT[sub] || '접수';
+  for(const x of ['gen','road','jrn']){
+    const el = document.getElementById('fm' + x.charAt(0).toUpperCase() + x.slice(1));
+    if(!el) continue;
+    if(x === sub) el.removeAttribute('hidden'); else el.setAttribute('hidden','');
+  }
+  if(sub === 'road') roadIntakePane();
+  if(sub === 'jrn' && typeof renderLogHist === 'function') renderLogHist();
+  rpState('form');
+}
+/* ① 최근 처리 — 카드·박스로 만들지 않는다 */
+function rpRecent(){
+  const el = document.getElementById('rpRecent');
+  if(!el) return;
+  const rows = (typeof realItems === 'function' ? scopeItems(realItems()) : [])
+    .slice().sort((a,b)=>b.id - a.id).slice(0, 6)
+    .map(it=>'<div onclick="selectItem(' + it.id + ')" title="' + esc(it.loc) + '">' +
+      '<span class="t">' + String(it.time).slice(0,5) + '</span>' + esc(it.sub) + ' · ' + esc(it.gu || '') + '</div>');
+  el.innerHTML = rows.join('') || '<div style="color:var(--sdim)">최근 처리한 민원이 없습니다.</div>';
+}
+/* ── §2.1 사이드바 접기 · §2.2 폭 조절 ── */
+function sideToggle(side){
+  const b = document.querySelector('#duty .cs-body');
+  if(!b) return;
+  const on = b.classList.toggle('cl-' + side);
+  try{ localStorage.setItem('hs_side_' + side, on ? '1' : '0'); }catch(e){}
+  setTimeout(()=>{ try{ if(map) map.invalidateSize(); }catch(e){} }, 220);
+}
+const GUT_MIN = {L:260, R:300}, GUT_MAX = {L:480, R:720}, MAP_MIN = 480;
+let gutSide = null;
+function gutDown(ev, side){
+  ev.preventDefault();
+  gutSide = side;
+  document.body.classList.add('gut-on');
+  const g = document.getElementById('gut' + side); if(g) g.classList.add('drag');
+  window.addEventListener('mousemove', gutMove);
+  window.addEventListener('mouseup', gutUp);
+}
+function gutMove(ev){
+  if(!gutSide) return;
+  const b = document.querySelector('#duty .cs-body');
+  if(!b) return;
+  const r = b.getBoundingClientRect();
+  let w = (gutSide === 'L') ? (ev.clientX - r.left) : (r.right - ev.clientX);
+  w = Math.max(GUT_MIN[gutSide], Math.min(GUT_MAX[gutSide], Math.round(w)));
+  /* 지도는 480px 아래로 내려가지 않는다 — 그보다 좁아지는 드래그는 멈춘다(§2.2) */
+  const other = parseInt(getComputedStyle(b).getPropertyValue(gutSide === 'L' ? '--wR' : '--wL')) || 340;
+  if(r.width - w - other - 10 < MAP_MIN) return;
+  b.style.setProperty(gutSide === 'L' ? '--wL' : '--wR', w + 'px');
+}
+function gutUp(){
+  const b = document.querySelector('#duty .cs-body');
+  if(gutSide && b){
+    try{ localStorage.setItem('hs_w' + gutSide, b.style.getPropertyValue(gutSide === 'L' ? '--wL' : '--wR')); }catch(e){}
+  }
+  const g = gutSide && document.getElementById('gut' + gutSide); if(g) g.classList.remove('drag');
+  gutSide = null;
+  document.body.classList.remove('gut-on');
+  window.removeEventListener('mousemove', gutMove);
+  window.removeEventListener('mouseup', gutUp);
+  /* 놓는 순간 타일 깨짐을 막는다(§2.2) */
+  setTimeout(()=>{ try{ if(map) map.invalidateSize(); }catch(e){} }, 60);
+}
+function gutReset(ev, side){
+  ev.preventDefault();
+  const b = document.querySelector('#duty .cs-body');
+  if(!b) return;
+  b.style.removeProperty(side === 'L' ? '--wL' : '--wR');
+  try{ localStorage.removeItem('hs_w' + side); }catch(e){}
+  toast((side === 'L' ? '좌측' : '우측') + ' 폭을 기본값으로 되돌렸습니다');
+  setTimeout(()=>{ try{ if(map) map.invalidateSize(); }catch(e){} }, 60);
+  return false;
+}
+/* 접힘·폭은 다음 접속에도 유지한다 */
+function shellRestore(){
+  const b = document.querySelector('#duty .cs-body');
+  if(!b) return;
+  for(const side of ['L','R']){
+    try{
+      if(localStorage.getItem('hs_side_' + side) === '1') b.classList.add('cl-' + side);
+      const w = localStorage.getItem('hs_w' + side);
+      if(w) b.style.setProperty(side === 'L' ? '--wL' : '--wR', w);
+    }catch(e){}
+  }
+}
+/* ── §6.3 지도 위치 지정 모드 ── */
+let rpPick = false;
+function pickMode(on){
+  rpPick = !!on;
+  const bar = document.getElementById('mapPickBar');
+  if(bar){ if(on) bar.removeAttribute('hidden'); else bar.setAttribute('hidden',''); }
+  const mc = document.getElementById('mapCard');
+  if(mc) mc.classList.toggle('picking', !!on);
+}
+/* 지도를 클릭하면 그 지점이 민원 위치가 된다. 주소는 역지오코딩으로 채운다. */
+function pickApply(latlng, gu){
+  const el = document.getElementById((rpFormSub === 'road') ? 'riLoc' : 'fLoc');
+  if(!el) return;
+  /* 먼저 가까운 읍면동으로 채워 두고, 역지오코딩이 오면 정확한 주소로 바꾼다 */
+  el.value = [gu || '', (typeof pendingNear === 'string' ? pendingNear : '')].filter(Boolean).join(' ') + ' 일원';
+  revGeoAddr(latlng).then(a=>{ if(a) el.value = a; }).catch(()=>{});
+}
+/* VWorld 역지오코딩 — 주소를 직접 입력하지 않아도 되게 한다(§6.3) */
+function revGeoAddr(latlng){
+  const u = 'https://api.vworld.kr/req/address?service=address&request=getAddress&version=2.0' +
+    '&crs=epsg:4326&point=' + latlng.lng + ',' + latlng.lat + '&format=json&type=parcel&key=' + VWORLD_KEY;
+  return fetch(u).then(r=>r.json()).then(j=>{
+    const r0 = j && j.response && j.response.result && j.response.result[0];
+    return (r0 && r0.text) ? r0.text : '';
+  });
+}
+/* ── §6.4 일반현황 ── */
+function renderInfoPane(){
+  if(typeof csStripRender === 'function') csStripRender();
+  renderOrgPane();
+  renderWxPane();
+}
+/* 부서현황은 행정조직도를 근거로 만든다. 분장사무 데이터로 목록을 만들지 않는다(§6.4) */
+function renderOrgPane(){
+  const el = document.getElementById('orgPane');
+  if(!el) return;
+  if(typeof ORG_UNITS === 'undefined' || !ORG_UNITS){ el.innerHTML = '<p class="hint">행정조직도를 불러오는 중…</p>'; return; }
+  const q = ((document.getElementById('orgQ') || {}).value || '').trim();
+  const out = [];
+  let cnt = 0;
+  const put = (grp, rows) => {
+    const hit = rows.filter(r => !q || r.indexOf(q) >= 0 || grp.indexOf(q) >= 0);
+    if(!hit.length) return;
+    out.push('<div class="org-grp">' + esc(grp) + '</div>');
+    for(const r of hit){ out.push('<div class="org-row"><b>' + esc(r) + '</b></div>'); cnt++; }
+  };
+  for(const g of (ORG_UNITS.본청 || [])) put((g.상위 ? g.상위 + ' · ' : '') + (g.실국 || '본청'), g.과 || []);
+  for(const g of (ORG_UNITS.구청 || [])) put(g.기관 || '구청', g.과 || []);
+  for(const g of (ORG_UNITS.사업소 || [])) put(g.기관 || '사업소', g.과 || []);
+  /* 읍면동은 행정복지센터로 부른다(행정조직도 §0) */
+  for(const g of (ORG_UNITS.읍면동 || []))
+    put(g.구 + ' 행정복지센터', (g.목록 || []).map(x=>x + ' 행정복지센터'));
+  el.innerHTML = (out.join('') || '<p class="hint">해당하는 부서가 없습니다.</p>') +
+    '<p class="hint" style="margin-top:8px">' + cnt + '개 부서 · 출처 행정조직도</p>';
+}
+function renderWxPane(){
+  const el = document.getElementById('wxPane');
+  if(!el) return;
+  const w = document.getElementById('wxBody'), a = document.getElementById('airBody');
+  el.innerHTML = ((w && w.innerHTML) || '') + ((a && a.innerHTML) || '') ||
+    '<p class="hint">기상·대기 정보를 불러오는 중…</p>';
+}
+/* ── §6.3 교통·도로 기동단 접수 — 모달이 아니라 우측 패널에서 ── */
+function roadIntakePane(){
+  const el = document.getElementById('fmRoad');
+  if(!el) return;
+  if(el.dataset.built === '1') return;
+  el.dataset.built = '1';
+  rdIntakeCat = null;
+  el.innerHTML =
+    '<p class="hint">전화를 받으며 그대로 이어 적으세요. 접수 즉시 안내 마감 시각이 표시됩니다. <b>1833-4088</b></p>' +
+    '<label class="rd-lb">① 통화 기록</label>' +
+    '<textarea id="riSum" placeholder="들리는 대로 계속 이어 적으세요"></textarea>' +
+    '<label class="rd-lb">② 민원 유형</label>' +
+    '<div class="rd-cats">' + ROAD_CATS.map((c,i)=>
+      '<button type="button" id="ric' + i + '" onclick="roadIntakeCat(' + i + ')">' +
+      c.ico + ' ' + c.nm + '</button>').join('') + '</div>' +
+    '<label class="rd-lb">③ 위치 — 지도를 클릭하세요</label>' +
+    '<input id="riLoc" placeholder="지도를 클릭하면 자동으로 채워집니다">' +
+    '<div class="rp-due" id="riDue">⏱ 접수하면 <b>접수 + 60분</b>이 처리방안 안내 마감이 됩니다 — 시민과의 첫 약속입니다.</div>' +
+    '<div class="row"><button class="btn-o" onclick="roadIntakeSave()">접수 등록</button>' +
+    '<button class="btn-g" onclick="rpState(\'home\')">취소</button></div>';
+}
+/* ── 부팅: 접수·일지 서식과 일반현황 묶음을 우측 패널로 옮긴다 ──
+   기능(함수·API)은 재사용한다. 껍데기만 옮기므로 id 는 그대로 둔다(§12.4). */
+function rpMount(){
+  const mv = (srcSel, dstId) => {
+    const src = document.querySelector(srcSel), dst = document.getElementById(dstId);
+    if(!src || !dst) return false;
+    while(src.firstChild) dst.appendChild(src.firstChild);
+    return true;
+  };
+  mv('#genSrc .ai-box', 'fmGen');
+  mv('#jrnSrc #journalCard', 'fmJrn');
+  const jd = document.querySelector('#jrnSrc .pg-col:last-child');
+  if(jd) { const dst = document.getElementById('fmJrn'); if(dst) while(jd.firstChild) dst.appendChild(jd.firstChild); }
+  mv('#infoSrc', 'rpInfoBody');
+  /* 빈 껍데기는 남기지 않는다 */
+  for(const id of ['genSrc','jrnSrc','infoSrc']){ const e = document.getElementById(id); if(e) e.remove(); }
+  shellRestore();
+  rpState('home');
+}
+
+/* ══════════ §7 용역업체 조치결과 보고 (#done) ══════════
+   문자 인계 시 전용 링크를 함께 보낸다. 업체 직원이 현장에서 사진만 올리면 끝난다.
+   로그인·앱 설치 없음. 텍스트 입력을 요구하지 않는다. */
+function doneToken(id){ return 'd' + String(id).padStart(3,'0') + Math.abs(id * 7919 % 9973).toString(36); }
+function doneLink(id){ return location.origin + location.pathname + '?t=' + doneToken(id) + '#done'; }
+let donePhoto = {before:null, after:null}, doneItemId = null;
+function doneFind(){
+  const t = new URLSearchParams(location.search).get('t') || '';
+  return items.find(i => doneToken(i.id) === t) || null;
+}
+function renderDone(){
+  const el = document.getElementById('done');
+  if(!el) return;
+  const it = doneFind();
+  if(!it){ el.innerHTML = '<div class="pg"><div class="card"><h2>링크를 확인해 주세요</h2>' +
+    '<p class="hint">이 주소로는 조치결과를 등록할 수 없습니다. 문자로 받은 링크를 다시 눌러 주세요.</p></div></div>'; return; }
+  if(it.st === '완료'){ el.innerHTML = '<div class="pg"><div class="card"><h2>이미 처리된 민원입니다</h2>' +
+    '<p class="hint">조치결과가 접수되어 링크가 만료되었습니다.</p></div></div>'; return; }
+  doneItemId = it.id;
+  /* §7.4 신고인 개인정보를 표시하지 않는다 — 유형·주소·요청사항까지만 */
+  el.innerHTML =
+    '<div class="pg dn-pg">' +
+      '<div class="card"><h2>① 민원 요약</h2>' +
+        '<div class="sel-kv"><span>유형</span><b>' + esc(it.field) + ' · ' + esc(it.sub) + '</b></div>' +
+        '<div class="sel-kv"><span>주소</span><b>' + esc(it.loc) + '</b></div>' +
+        '<div class="sel-kv"><span>요청사항</span><b>' + esc(it.req || it.sum) + '</b></div>' +
+        (it.photoUrl ? '<img src="' + it.photoUrl + '" alt="신고 사진" class="dn-shot">' : '') +
+      '</div>' +
+      '<div class="card"><h2>② 사진 촬영</h2>' +
+        '<div class="dn-shots">' +
+          '<label class="dn-btn" id="dnB"><input type="file" accept="image/*" capture="environment" ' +
+            'onchange="donePick(this,\'before\')" hidden>📷 조치 전</label>' +
+          '<label class="dn-btn" id="dnA"><input type="file" accept="image/*" capture="environment" ' +
+            'onchange="donePick(this,\'after\')" hidden>📷 조치 후</label>' +
+        '</div>' +
+        '<div class="dn-prev" id="dnPrev"></div>' +
+      '</div>' +
+      '<div class="card"><h2>③ 결과 선택</h2>' +
+        '<div class="dn-res">' + ['완료','추가 작업 필요','현장 이상 없음'].map((x,i)=>
+          '<button type="button" id="dnR' + i + '" onclick="doneRes(' + i + ')">' + x + '</button>').join('') + '</div>' +
+      '</div>' +
+      '<details class="acc"><summary>메모 (선택)</summary><div class="acc-in">' +
+        '<textarea id="dnMemo" placeholder="필요하면 적어 주세요. 적지 않아도 됩니다."></textarea></div></details>' +
+      '<button class="btn-o dn-send" id="dnSend" onclick="doneSend()">전송</button>' +
+      '<p class="hint">회선이 나쁘면 자동으로 다시 보냅니다. 촬영한 사진은 자동으로 압축됩니다.</p>' +
+    '</div>';
+}
+let doneResIdx = null;
+function doneRes(i){
+  doneResIdx = i;
+  for(let k = 0; k < 3; k++){ const b = document.getElementById('dnR' + k); if(b) b.classList.toggle('on', k === i); }
+}
+function donePick(inp, which){
+  const f = inp.files && inp.files[0];
+  if(!f) return;
+  /* 촬영 즉시 압축 — 장변 1600px */
+  const img = new Image();
+  img.onload = ()=>{
+    const sc = Math.min(1, 1600 / Math.max(img.width, img.height));
+    const c = document.createElement('canvas');
+    c.width = Math.round(img.width * sc); c.height = Math.round(img.height * sc);
+    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+    donePhoto[which] = c.toDataURL('image/jpeg', 0.72);
+    const b = document.getElementById(which === 'before' ? 'dnB' : 'dnA');
+    if(b) b.classList.add('on');
+    donePrev();
+  };
+  img.onerror = ()=>toast('사진을 읽지 못했습니다 — 다시 촬영해 주세요');
+  img.src = URL.createObjectURL(f);
+}
+function donePrev(){
+  const el = document.getElementById('dnPrev');
+  if(!el) return;
+  el.innerHTML = ['before','after'].filter(k=>donePhoto[k])
+    .map(k=>'<figure><img src="' + donePhoto[k] + '" alt=""><figcaption>조치 ' + (k === 'before' ? '전' : '후') + '</figcaption></figure>').join('');
+}
+function doneSend(){
+  if(doneResIdx == null){ toast('결과를 골라 주세요'); return; }
+  if(!donePhoto.after){ toast('조치 후 사진을 촬영해 주세요'); return; }
+  const btn = document.getElementById('dnSend');
+  if(btn){ btn.disabled = true; btn.textContent = '전송 중'; }
+  const it = items.find(i=>i.id === doneItemId);
+  const res = ['완료','추가 작업 필요','현장 이상 없음'][doneResIdx];
+  const memo = ((document.getElementById('dnMemo') || {}).value || '').trim();
+  if(it){
+    it.vendorResult = res;
+    it.vendorAt = new Date().toISOString();
+    if(donePhoto.before) it.photoBefore = donePhoto.before;
+    it.photoAfter = donePhoto.after;
+    if(memo) it.vendorMemo = memo;
+    it.log.push(nowHM() + ' 용역업체 조치결과 등록 — ' + res + (memo ? ' · ' + memo : ''));
+    if(res === '완료') it.st = '완료';
+    try{ sbPush(it); }catch(e){}
+  }
+  const el = document.getElementById('done');
+  if(el) el.innerHTML = '<div class="pg"><div class="card"><h2>✅ 전송되었습니다</h2>' +
+    '<p class="hint">조치결과가 당직실로 전달되었습니다. 이 링크는 만료됩니다. 창을 닫으셔도 됩니다.</p></div></div>';
+}
+
 function setMode(m, fromHash){
+  /* v2의 #new·#log 는 취소됐다 — 민원현황 우측 접수 상태로 넘긴다(§1) */
+  if(m === "new" || m === "log"){
+    const sub = (m === "log") ? 'jrn' : 'gen';
+    setMode("duty", fromHash);
+    setTimeout(()=>rpForm(sub), 0);
+    return;
+  }
   if(MODES.indexOf(m) < 0) m = "duty";
   curMode = m;
   if(!fromHash && location.hash !== "#"+m){ history.replaceState(null, "", "#"+m); }
@@ -8109,26 +8870,28 @@ function setMode(m, fromHash){
   document.getElementById("road").style.display = m==="road"?"block":"none";
   document.getElementById("track").style.display = m==="track"?"block":"none";
   document.getElementById("cmd").style.display = m==="cmd"?"block":"none";
-  document.getElementById("new").style.display = m==="new"?"block":"none";
-  document.getElementById("log").style.display = m==="log"?"block":"none";
-  document.getElementById("duty").style.display = m==="duty"?"block":"none";
+  /* 민원현황과 일반현황은 같은 셸을 쓰고 우측 패널만 바뀐다(§1·§6.4) */
+  document.getElementById("duty").style.display = (m==="duty"||m==="info")?"block":"none";
+  const dn = document.getElementById("done"); if(dn) dn.style.display = m==="done"?"block":"none";
   document.getElementById("dash").style.display = m==="dash"?"block":"none";
   document.getElementById("citizen").style.display = m==="cit"?"block":"none";
   renderHeader(m);   /* 헤더는 한 곳에서만 그린다 */
   if(m==="road") renderRoad();
   if(m==="track") renderTrack();
   if(m==="cmd") renderCmd();
-  if(m==="new") initNewMap();
-  if(m==="log") renderLogHist();
+  if(m==="done") renderDone();
+  if(m==="info") rpState('info');
+  else if(m==="duty" && rpNow === 'info') rpState(selId != null ? 'sel' : 'home');
   if(m!=="cit"){ deptDbLoad(); orgUnitsLoad(); }   // S-06: 배정 근거·조직도는 당직 경로에서만 로드
   bootFor(m);   // D-02: 이 모드에 필요한 것만 준비(중복 실행 없음)
   if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
-  if(m==="duty" && map){
+  if((m==="duty"||m==="info") && map){
     dutyLayersInit();
     if(typeof renderLayerPanel === 'function') renderLayerPanel();
     if(typeof csApply === 'function') csApply();
     setTimeout(()=>map.invalidateSize(),50);
   }
+  if(m==="info") renderInfoPane();
   if(m==="duty" && notifyQueue.length){
     const nid = notifyQueue.shift();
     const nit = items.find(i=>i.id===nid);
@@ -8234,6 +8997,7 @@ const bootRestored = loadState();
 renderHeader('duty');                         /* 헤더를 먼저 그린다 */
 applyHash();                                  /* setMode → bootFor 로 필요한 것만 준비 */
 spStep("db");
+try{ rpMount(); }catch(e){ console.error('우측 패널 조립 실패', e); }
 sbInit().finally(()=>spStep("done"));         /* 민원 원천은 어느 모드에서나 필요하다 */
 
 
