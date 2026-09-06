@@ -2036,6 +2036,36 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
   .rd-top h2{padding-right:0;}
   .rd-top .dp-acts{position:static; margin:0 0 8px;}
 }
+/* B-11 기동단 완료민원 */
+.rd-done-btn .q.ok{background:#127A50; color:#fff;}
+.rd-done-btn b{margin-left:2px; font-family:var(--mono,ui-monospace);}
+.rdd-stats{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0;}
+@media (max-width:900px){ .rdd-stats{grid-template-columns:1fr;} }
+.rdd-stat{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+.rdd-stat h3{font-size:13px; margin:0 0 8px; color:var(--hs-blue-dark);}
+.rdd-stat table{width:100%; border-collapse:collapse; font-size:12.5px;}
+.rdd-stat th{text-align:left; color:var(--muted); font-weight:700; padding:5px 6px; border-bottom:1px solid var(--line);}
+.rdd-stat td{padding:6px; border-bottom:1px solid var(--line);}
+.rdd-stat tr:last-child td{border-bottom:none;}
+.rdd-stat td.n{text-align:right; font-family:var(--mono,ui-monospace);}
+.rdd-stat tr.z{color:var(--smuted);}
+.rdd-list{display:flex; flex-direction:column; gap:6px;}
+.rdd-card{background:#fff; border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+.rdd-card > summary{list-style:none; cursor:pointer; display:flex; align-items:center; gap:8px;
+  padding:9px 12px; font-size:12.5px;}
+.rdd-card > summary::-webkit-details-marker{display:none;}
+.rdd-card .nm{font-weight:700; white-space:nowrap;}
+.rdd-card .loc{color:var(--muted); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.rdd-card .sla{padding:1px 7px; border-radius:9px; font-size:11px; font-weight:700; background:#EEF2F7; color:#5F758F;}
+.rdd-card .sla.s-즉시{background:#FDECEA; color:#C1352B;}
+.rdd-card .sla.s-단기{background:#FFF8E8; color:#9A6700;}
+.rdd-card .sp{font-size:11.5px; color:var(--muted); white-space:nowrap;}
+.rdd-card .sp b{font-family:var(--mono,ui-monospace);}
+.rdd-card .sp b.over{color:#D63B1F;} .rdd-card .sp b.ok{color:#127A50;}
+.rdd-card .no{font-family:var(--mono,ui-monospace); color:var(--smuted); font-size:11.5px;}
+.rdd-card[open] > summary{background:#F7FAFD; border-bottom:1px solid var(--line);}
+.rdd-in{padding:12px;}
+@media (max-width:700px){ .rdd-card .loc, .rdd-card .sp{display:none;} }
 </style>
 </head>
 <body>
@@ -2449,7 +2479,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2102';
+const BUILD_VER = 'v0906-2109';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -4716,8 +4746,8 @@ function replySave2(id){
     x.log.push(nowHM() + ' 민원인 회신(' + via + ')' +
       (all.length > 1 ? ' · 유사제보 ' + all.length + '건 일괄 (#' + String(it.id).padStart(3,'0') + ' 대표)' : '') +
       ': ' + memo.split(String.fromCharCode(10)).join(' / '));
-    if(DONE_RESULTS.indexOf(x.actResult) >= 0) stageDone(x.id, '회신 완료');
-    else stageAuto(x.id, '민원인 회신');
+    /* 신고인에게 알렸으면 그 민원은 끝난 것이다 — 회신이 마지막 절차다 */
+    stageDone(x.id, '민원인 회신 완료');
     try{ sbPush(x); }catch(e){}
     if(via === '문자') replySms(x, memo);
   }
@@ -5031,6 +5061,8 @@ function setStatus(id, st, force){
     return;
   }
   it.st = st;
+  /* 종결까지 얼마나 걸렸는지 세려면 끝난 시각이 있어야 한다 */
+  if(st === "완료" && !it.doneAt) it.doneAt = new Date().toISOString();
   it.log.push(nowHM()+" 상태 변경: "+st+((st==="완료"&&!(it.dispN))?" (인력 미투입 종결 확인)":""));
   sbPush(it);
   if(st==="완료"){ if((it.crews||[]).length) returnAllCrews(it, "처리 완료"); toast("처리 완료 — 처리결과로 이관되었습니다"); }
@@ -10874,9 +10906,135 @@ function roadToIntake(){
   rpForm('road');   /* setMode 는 동기다 — 미루면 화면이 잠깐 다른 상태로 보인다 */
 }
 
+/* ══════════ B-11 완료민원 — 끝난 건은 작업판에서 내려오고 여기 쌓인다 ══════════
+   무엇을 어떻게 처리했는지(내용·이력·사진)와 얼마나 걸렸는지(안내·종결)를 함께 본다. */
+let roadView = 'work';                 /* work: 작업판 · done: 완료민원 */
+let rdDoneSla = 'all', rdDoneCat = 'all';
+function roadViewSet(v){ roadView = v; rdDoneSla = 'all'; rdDoneCat = 'all'; renderRoad(); }
+function roadDoneSla(v){ rdDoneSla = v; renderRoad(); }
+function roadDoneCat(v){ rdDoneCat = v; renderRoad(); }
+function roadDoneAll(){ return realItems().filter(function(i){ return isRoadItem(i) && i.st === '완료'; }); }
+/* 끝난 시각 — 기록이 없으면 처리이력의 '상태 변경: 완료' 줄에서 찾는다 */
+function doneTime(it){
+  if(it.doneAt) return new Date(it.doneAt);
+  const row = (it.log || []).filter(function(x){ return String(x).indexOf('상태 변경: 완료') >= 0; }).pop();
+  const m = row && String(row).match(/^(\d{1,2}):(\d{2})/);
+  if(!m) return null;
+  const d = itemStart(it);
+  const t = new Date(d);
+  t.setHours(Number(m[1]), Number(m[2]), 0, 0);
+  if(t < d) t.setDate(t.getDate() + 1);
+  return t;
+}
+/* 접수 → 안내 / 접수 → 종결 까지 걸린 분 */
+function roadSpan(it){
+  const s0 = itemStart(it).getTime();
+  const g = it.guideAt ? Math.round((new Date(it.guideAt).getTime() - s0) / 60000) : null;
+  const dt = doneTime(it);
+  const c = dt ? Math.round((dt.getTime() - s0) / 60000) : null;
+  return {guide: (g != null && g >= 0) ? g : null, close: (c != null && c >= 0) ? c : null};
+}
+function spanText(m){
+  if(m == null) return '—';
+  if(m < 60) return m + '분';
+  if(m < 1440) return Math.floor(m/60) + '시간 ' + (m%60) + '분';
+  return Math.floor(m/1440) + '일 ' + Math.floor((m%1440)/60) + '시간';
+}
+function avgOf(list, f){
+  const v = list.map(f).filter(function(x){ return x != null; });
+  return v.length ? Math.round(v.reduce(function(a,b){ return a+b; }, 0) / v.length) : null;
+}
+/* 완료민원 한 건 — 내용 · 처리이력 · 현장사진을 한 덩어리로 */
+function roadDoneCard(it){
+  const cat = roadCat(it);
+  const sp = roadSpan(it);
+  const sla = it.roadSla || triage(it);
+  const late = (sp.guide != null && sp.guide > GUIDE_MIN);
+  const dt = doneTime(it);
+  return '<details class="rdd-card" data-no="B-11c"><summary>' +
+    '<span class="ic">' + cat.ico + '</span>' +
+    '<span class="nm">' + esc(it.sub) + '</span>' +
+    '<span class="loc">' + esc(it.loc) + '</span>' +
+    '<span class="sla s-' + sla + '">' + sla + '</span>' +
+    '<span class="sp">안내 <b class="' + (late ? 'over' : 'ok') + '">' + spanText(sp.guide) + '</b>' +
+      ' · 종결 <b>' + spanText(sp.close) + '</b></span>' +
+    '<span class="no">#' + String(it.id).padStart(3,'0') + '</span></summary>' +
+    '<div class="rdd-in">' +
+      '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + (it.intakeChannel || it.src || '') + '</b></div>' +
+      '<div class="sel-kv"><span>위치</span><b>' + esc(it.gu + ' ' + it.loc) + '</b></div>' +
+      '<div class="sel-kv"><span>내용</span><b>' + esc(it.sum || '') + '</b></div>' +
+      '<div class="sel-kv"><span>처리 결과</span><b>' + esc(it.actResult || it.resultType || '완료') + '</b></div>' +
+      (it.actMemo ? '<div class="sel-kv"><span>조치 내용</span><b>' + esc(it.actMemo.split(String.fromCharCode(10)).join(' / ')) + '</b></div>' : '') +
+      (it.guideAt ? '<div class="sel-kv"><span>처리방안 안내</span><b>' + hm(it.guideAt) + ' (' + esc(it.guideMethod || '') + ') ' + esc(it.guideMemo || '') + '</b></div>' : '') +
+      (it.partnerReply ? '<div class="sel-kv"><span>유관기관 의견</span><b>' + esc(it.partnerOrg || '') + ' — ' + esc(it.partnerReply) + '</b></div>' : '') +
+      (it.replyAt ? '<div class="sel-kv"><span>민원인 회신</span><b>' + hm(it.replyAt) + ' (' + esc(it.replyVia || '') + ') ' + esc(it.replyMemo || '') + '</b></div>' : '') +
+      (dt ? '<div class="sel-kv"><span>종결</span><b>' + dt.toLocaleString('ko-KR') + '</b></div>' : '') +
+      '<div class="rd-shots"><div class="rd-shots-h">현장사진</div>' + photoBlock(it) + '</div>' +
+      '<div class="rd-shots-h" style="margin-top:10px">처리이력</div>' +
+      '<ol class="sel-log">' + (it.log || []).map(function(x){ return '<li>' + esc(x) + '</li>'; }).join('') + '</ol>' +
+    '</div></details>';
+}
+function renderRoadDone(host){
+  const all = roadDoneAll();
+  const list = all.filter(function(i){
+    if(rdDoneSla !== 'all' && (i.roadSla || triage(i)) !== rdDoneSla) return false;
+    if(rdDoneCat !== 'all' && roadCat(i).k !== rdDoneCat) return false;
+    return true;
+  }).sort(function(a, b){
+    const x = doneTime(a), y = doneTime(b);
+    return (y ? y.getTime() : 0) - (x ? x.getTime() : 0);
+  });
+  const kept = list.filter(function(i){ const g = roadSpan(i).guide; return g != null && g <= GUIDE_MIN; }).length;
+  const guided = list.filter(function(i){ return roadSpan(i).guide != null; }).length;
+  const head =
+    '<div class="rd-head">' +
+    '<h2>✅ 기동단 완료민원</h2>' +
+    '<button class="rd-what" data-no="B-11a" onclick="roadViewSet(' + String.fromCharCode(39) + 'work' + String.fromCharCode(39) + ')">← 작업판으로</button>' +
+    '<button class="cs-mini" style="margin-left:auto" onclick="renderRoad()">↻ 새로고침</button></div>' +
+    '<div class="rd-clocks" data-no="B-11b">' +
+    '<div class="rd-c1 ok"><div class="k">완료</div><div class="v">' + list.length + '<small>건</small></div>' +
+      '<div class="s">전체 ' + all.length + '건 중</div></div>' +
+    '<div class="rd-c2"><div class="k">평균 안내 <small>접수→안내</small></div><div class="v">' + spanText(avgOf(list, function(i){ return roadSpan(i).guide; })) + '</div></div>' +
+    '<div class="rd-c2"><div class="k">평균 종결 <small>접수→종결</small></div><div class="v">' + spanText(avgOf(list, function(i){ return roadSpan(i).close; })) + '</div></div>' +
+    '<div class="rd-c2"><div class="k">1시간 준수 <small>' + GUIDE_MIN + '분</small></div><div class="v">' +
+      (guided ? Math.round(kept / guided * 100) + '%' : '—') + '</div></div>' +
+    '</div>';
+  /* 처리유형 · 민원유형 두 축으로 나눠 본다 */
+  const stat = function(no, ttl, keys, keyOf, label){
+    return '<section class="rdd-stat" data-no="' + no + '"><h3>' + ttl + '</h3><table><thead><tr>' +
+      '<th>' + label + '</th><th>건수</th><th>평균 안내</th><th>평균 종결</th></tr></thead><tbody>' +
+      keys.map(function(k){
+        const rows = list.filter(function(i){ return keyOf(i) === k.k; });
+        return '<tr' + (rows.length ? '' : ' class="z"') + '><td>' + k.nm + '</td><td class="n">' + rows.length + '</td>' +
+          '<td class="n">' + spanText(avgOf(rows, function(i){ return roadSpan(i).guide; })) + '</td>' +
+          '<td class="n">' + spanText(avgOf(rows, function(i){ return roadSpan(i).close; })) + '</td></tr>';
+      }).join('') + '</tbody></table></section>';
+  };
+  const stats = '<div class="rdd-stats">' +
+    stat('B-11d', '📊 처리유형별', ['즉시','단기','중장기'].map(function(x){ return {k:x, nm:TRIAGE_META[x].ico + ' ' + x}; }),
+      function(i){ return i.roadSla || triage(i); }, '처리유형') +
+    stat('B-11e', '📊 민원유형별', ROAD_CATS.map(function(c){ return {k:c.k, nm:c.ico + ' ' + c.nm}; }),
+      function(i){ return roadCat(i).k; }, '민원유형') + '</div>';
+  const flt = '<div class="rd-cats" data-no="B-11f">' +
+    '<button class="cs-chip' + (rdDoneSla === 'all' ? ' on' : '') + '" onclick="roadDoneSla(&quot;all&quot;)">전체 처리유형</button>' +
+    ['즉시','단기','중장기'].map(function(x){
+      return '<button class="cs-chip' + (rdDoneSla === x ? ' on' : '') + '" onclick="roadDoneSla(&quot;' + x + '&quot;)">' +
+        TRIAGE_META[x].ico + ' ' + x + ' ' + all.filter(function(i){ return (i.roadSla || triage(i)) === x; }).length + '</button>';
+    }).join('') + '</div>' +
+    '<div class="rd-cats">' +
+    '<button class="cs-chip' + (rdDoneCat === 'all' ? ' on' : '') + '" onclick="roadDoneCat(&quot;all&quot;)">전체 민원유형</button>' +
+    ROAD_CATS.map(function(c){
+      return '<button class="cs-chip' + (rdDoneCat === c.k ? ' on' : '') + '" onclick="roadDoneCat(&quot;' + c.k + '&quot;)">' +
+        c.ico + ' ' + c.nm + ' ' + all.filter(function(i){ return roadCat(i).k === c.k; }).length + '</button>';
+    }).join('') + '</div>';
+  host.innerHTML = head + stats + flt +
+    '<div class="rdd-list">' + (list.length ? list.map(roadDoneCard).join('')
+      : '<p class="rd-empty">해당하는 완료 민원이 없습니다.</p>') + '</div>';
+}
 function renderRoad(){
   const host = document.getElementById('road');
   if(!host) return;
+  if(roadView === 'done'){ renderRoadDone(host); return; }
   const list = roadItems();
   const waits = list.filter(awaitingGuide);
   const minLeft = waits.length ? Math.min(...waits.map(guideLeft)) : null;
@@ -10901,6 +11059,9 @@ function renderRoad(){
     '<a class="rd-tel" href="tel:18334088" data-no="B-1" title="눌러서 바로 전화">📞 대표전화 <b>1833-4088</b></a>' +
     '<button class="rd-what" data-no="B-2" onclick="roadGuideToggle()" aria-expanded="false">' +
       '<span class="q">?</span> 기동단이란</button>' +
+    '<button class="rd-what rd-done-btn" data-no="B-11" onclick="roadViewSet(' + String.fromCharCode(39) + 'done' + String.fromCharCode(39) + ')" ' +
+      'title="기동단이 끝낸 민원 — 내용·처리이력·현장사진과 걸린 시간">' +
+      '<span class="q ok">✓</span> 완료민원 <b>' + roadDoneAll().length + '</b></button>' +
     '<button class="btn-p" style="margin-left:auto" data-no="B-3" onclick="roadToIntake()" ' +
       'title="접수 화면으로 이동합니다 — 지도에서 위치를 찍고 통화 내용을 적으면 됩니다">📞 전화 접수</button>' +
     '<button class="cs-mini" onclick="renderRoad()">↻ 새로고침</button></div>' +
