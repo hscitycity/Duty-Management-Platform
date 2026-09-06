@@ -1123,31 +1123,55 @@ body[data-mode="new"] footer, body[data-mode="log"] footer{display:none;}
   box-shadow:0 1px 4px rgba(16,32,64,.28);}
 .org-mk.br{border-color:var(--muted); border-style:dashed;}
 
+/* ══════════ 공통 헤더 ══════════ */
+#appHeader{position:sticky; top:0; z-index:800; flex:0 0 48px; height:48px;
+  display:flex; align-items:center; gap:8px; padding:0 14px; background:#fff;
+  border-bottom:2px solid var(--hs-blue); overflow-x:auto; overflow-y:hidden;}
+#appHeader > *{flex:0 0 auto;}
+#appHeader .cs-spacer{flex:1 1 auto;}
+#appHeader .cs-logo{height:22px;}
+#appHeader .cs-brand{font-size:15px; font-weight:800; color:var(--hs-blue-dark); white-space:nowrap;}
+/* 헤더가 화면 밖으로 나갔으므로 각 화면은 48px 를 뺀 높이를 쓴다 */
+body[data-mode="duty"] .cs, .pg{height:calc(100vh - 48px);}
+body.mapfs #appHeader{display:none;}
+body.mapfs .cs{height:100vh;}
+#duty .cs-cmd{display:none;}   /* 상황판 자체 헤더는 폐기 */
+.pg-head{display:none;}        /* 접수·일지 자체 헤더도 폐기 */
+body[data-mode="cit"] #appHeader, body[data-mode="track"] #appHeader{border-bottom-width:2px;}
+body[data-mode="cit"] #citWrap{height:calc(100vh - 48px - 40px);}
+body[data-mode="dash"], body[data-mode="road"], body[data-mode="cmd"], body[data-mode="track"]{overflow:hidden;}
+body[data-mode="dash"] .wrap, body[data-mode="road"] .wrap,
+body[data-mode="cmd"] .wrap, body[data-mode="track"] .wrap{max-width:none; margin:0; padding:0;}
+body[data-mode="dash"] footer, body[data-mode="road"] footer,
+body[data-mode="cmd"] footer, body[data-mode="track"] footer{display:none;}
+#dash, #road, #cmd{height:calc(100vh - 48px); overflow-y:auto;}
+#track{height:calc(100vh - 48px); overflow-y:auto; max-width:560px; margin:0 auto;}
+@media(max-width:700px){
+  #appHeader{gap:6px; padding:0 10px;}
+  #appHeader .cs-flabel, #appHeader .cs-clock, #appHeader #csSearchBtn,
+  #appHeader #fltUrg, #appHeader #fltNor, #appHeader #fltRoad, #appHeader .cs-sep{display:none;}
+  #appHeader .cs-modes .cs-chip{padding:0 8px; font-size:12px;}
+  #appHeader .hb-cit{font-size:11px; padding:0 8px;}
+  #appHeader .hb-cmd{font-size:11px; padding:0 8px;}
+}
+
+/* ── 탐지 규칙 설명 ── */
+.rule-row{align-items:flex-start;}
+.rule-row label{display:flex; flex-direction:column; gap:2px; line-height:1.4;}
+.rule-desc{font-size:11.5px; font-weight:400; color:var(--muted); line-height:1.5;}
+.rule-unit{font-size:12px; color:var(--muted); width:34px; padding-top:9px; flex:0 0 auto;}
+.rule-rel{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:10px 0 4px;
+  padding:9px 12px; border-radius:8px; background:var(--hs-blue-bg);
+  border:1px solid var(--hs-blue-line); font-size:13px; color:var(--hs-blue-dark);}
+.rule-rel b{font-weight:800;} .rule-rel span{color:var(--muted);}
+.rule-cur{margin-top:12px; font-size:13px; line-height:1.7; padding:10px 12px;
+  border-radius:8px; background:#F7FAFD; border:1px solid var(--line);}
+
 </style>
 </head>
 <body>
-<header>
-  <img class="logo" src="data/icons/logo.png" alt="화성특례시">
-  <div class="title">
-    <h1>당직 업무 플랫폼</h1>
-    <p>재난안전상황실(5층) · 시청 당직실(1층) 통합 상황판 — 공모전 프로토타입</p>
-  </div>
-  <div class="mode" role="tablist">
-    <button id="tabDuty" class="on" onclick="setMode('duty')">당직자 상황판</button>
-    <button id="tabDash" onclick="setMode('dash')">종합현황 대시보드</button>
-    <button id="tabCit" onclick="setMode('cit')">화성시 24시간 민원접수창구</button>
-    <button id="tabRoad" onclick="setMode('road')">교통·도로 기동단</button>
-    <button id="tabCmd" onclick="setMode('cmd')">조치지시</button>
-  </div>
-  <a class="btn-g" href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener"
-     title="화성시 스마트행정지원시스템 — 내부망(행정망) 전용이라 외부에서는 열리지 않습니다"
-     style="display:flex;align-items:center;gap:7px;text-decoration:none;">🏢 행정조직도
-     <span style="font-size:11px;background:#EEF2F7;color:#64748B;padding:2px 7px;border-radius:999px;">내부망</span></a>
-  <button id="meChip" onclick="openMe()" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">👤 <span id="meChipTxt">소속 확인</span></button>
-  <div class="duty">
-    <b>당직자 김주무관</b> · 시청 당직실<br><span id="clock"></span>
-  </div>
-</header>
+<!-- 헤더는 renderHeader() 한 곳에서만 그린다. 화면별 개별 헤더를 두지 않는다. -->
+<header id="appHeader"></header>
 <!-- D-03 로딩 스플래시 -->
 <div id="splash" role="status" aria-live="polite" aria-label="화면을 준비하고 있습니다">
   <img class="sp-logo" id="spLogo" alt="">
@@ -1157,7 +1181,7 @@ body[data-mode="new"] footer, body[data-mode="log"] footer{display:none;}
   <div class="sp-step" id="spStep">자원 불러오는 중…</div>
   <div class="sp-ver" id="spVer"></div>
 </div>
-<script>document.getElementById("spLogo").src=document.querySelector("header img.logo").src;
+<script>document.getElementById("spLogo").src="data/icons/logo.png";
 /* 메인 스크립트가 오류로 멈춰도 8초 뒤에는 화면을 넘긴다 */
 setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElementById("splash"); if(e){ e.classList.add("off"); setTimeout(function(){e.remove();},500);} }, 8000);</script>
 
@@ -1172,33 +1196,6 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   <div class="cs">
 
     <!-- ── 2장 헤더 (1줄 48px) ── -->
-    <!-- §3 헤더 48px 1줄 — 탭 5개 + 우측 별도 버튼 2개 -->
-    <div class="cs-cmd">
-      <img class="cs-logo" src="data/icons/logo.png" alt="화성특례시">
-      <div class="cs-modes" role="tablist">
-        <button class="cs-chip on" id="csmDuty" onclick="setMode('duty')">민원현황</button>
-        <button class="cs-chip"    id="csmNew"  onclick="setMode('new')">접수</button>
-        <button class="cs-chip"    id="csmLog"  onclick="setMode('log')">일지</button>
-        <button class="cs-chip"    id="csmDash" onclick="setMode('dash')">처리결과</button>
-        <button class="cs-chip"    id="csmRoad" onclick="setMode('road')">교통·도로 기동단</button>
-      </div>
-      <span class="cs-sep"></span>
-      <button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="민원 검색 — 단축키 Ctrl+K">🔍 민원검색</button>
-      <span class="cs-sep"></span>
-      <span class="cs-flabel" title="지도와 목록에 표시할 민원 분류입니다. 좌측 분류 카드와 함께 움직입니다.">표시 상태:</span>
-      <button class="cs-chip on" id="fltUrg"  onclick="csFilter('긴급')">긴급</button>
-      <button class="cs-chip"    id="fltNor"  onclick="csFilter('일반')">일반</button>
-      <button class="cs-chip"    id="fltRoad" onclick="csFilter('교통도로')">교통·도로 기동단</button>
-      <span class="cs-sep"></span>
-      <button class="cs-live on" id="csLive" onclick="csLiveToggle()" aria-pressed="true" title="실시간 수신 상태 — 끄면 화면이 갱신되지 않습니다"><i></i>LIVE</button>
-      <span class="cs-spacer"></span>
-      <span class="cs-clock" id="csClock" title="현재 시각"></span>
-      <button class="cs-chip" onclick="openMe()" id="csMe" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">👤 <span id="csMeTxt">소속</span></button>
-      <span class="cs-sep"></span>
-      <!-- §3.3 성격이 다른 두 버튼은 탭과 분리한다 -->
-      <button class="hb-cmd" id="btnCmd" onclick="goCmd()" title="동일 지역 유사 민원 급증 시 시장 조치지시를 상신합니다">조치지시<span class="n" id="btnCmdN" hidden></span></button>
-      <button class="hb-cit" id="btnCit" onclick="openCitWindow()" title="시민이 보는 화면입니다. 새 창으로 열립니다.">24시간 민원접수창구</button>
-    </div>
     <div class="cs-body">
       <!-- ── 3장 좌측: 세 구획이 세로로 쌓인다(탭 아님) ── -->
       <aside class="cs-left" id="csLeft">
@@ -1346,8 +1343,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <!-- ══════════ §9 민원 접수 (#new) — 전화를 받으며 넓게 입력한다 ══════════ -->
 <div id="new">
   <div class="pg">
-    <div class="pg-head"><h2>민원 접수</h2><span class="pg-sub">통화 중 입력 — AI가 정리해 채웁니다</span>
-      <button class="cs-mini" style="margin-left:auto" onclick="setMode('duty')">← 민원현황</button></div>
+    <!-- 화면 전환은 헤더 탭만으로 한다 -->
     <div class="pg-2col">
       <div class="pg-col">
       <div class="card ai-box">
@@ -1392,8 +1388,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <!-- ══════════ §10 재난상황일지 (#log) ══════════ -->
 <div id="log">
   <div class="pg">
-    <div class="pg-head"><h2>재난상황일지</h2><span class="pg-sub">자유 서술 → AI 정리 → 문서 생성</span>
-      <button class="cs-mini" style="margin-left:auto" onclick="setMode('duty')">← 민원현황</button></div>
+    <!-- 화면 전환은 헤더 탭만으로 한다 -->
     <div class="pg-2col">
       <div class="pg-col">
             <div class="card" style="margin-bottom:14px" id="journalCard">
@@ -1495,7 +1490,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1047';
+const BUILD_VER = 'v0906-1103';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2646,6 +2641,85 @@ function cmdBadgeSync(){
 }
 setInterval(cmdBadgeSync, 20000);
 
+/* ══════════════════════════════════════════════════════════
+   헤더 — 한 곳에서만 그린다(상황판_사양서 §3).
+   화면별 차이는 인자로만 처리한다. 개별 헤더 마크업을 만들지 않는다.
+   ══════════════════════════════════════════════════════════ */
+const HDR_TABS = [
+  {k:'duty', nm:'민원현황'},
+  {k:'new',  nm:'접수'},
+  {k:'log',  nm:'일지'},
+  {k:'dash', nm:'처리결과'},
+  {k:'road', nm:'교통·도로 기동단'}
+];
+const SCR_TITLE = {duty:'민원현황', new:'민원 접수', log:'재난상황일지', dash:'처리결과',
+                   road:'교통·도로 기동단', cmd:'조치지시', cit:'24시간 민원접수창구', track:'처리 현황'};
+/* 화면별 표시 규칙 */
+function hdrOpts(m){
+  if(m === 'cit' || m === 'track') return {tabs:false, filter:false, me:false, live:false, search:false, actions:false};
+  if(m === 'new' || m === 'log')   return {tabs:true,  filter:false, me:true,  live:true,  search:true,  actions:true};
+  return {tabs:true, filter:true, me:true, live:true, search:true, actions:true};
+}
+function renderHeader(m){
+  const h = document.getElementById('appHeader');
+  if(!h) return;
+  const o = hdrOpts(m);
+  const live = (typeof csLive === 'undefined') ? true : csLive;
+  let html = '<img class="cs-logo" src="data/icons/logo.png" alt="화성특례시">';
+
+  if(o.tabs){
+    html += '<div class="cs-modes" role="tablist">' + HDR_TABS.map(t=>
+      '<button class="cs-chip' + (m === t.k ? ' on' : '') + '" id="csm' + t.k + '" role="tab" ' +
+      'aria-selected="' + (m === t.k) + '" onclick="setMode(\'' + t.k + '\')">' + t.nm + '</button>').join('') + '</div>';
+  } else {
+    /* 시민 화면 — 로고와 화면명만 */
+    html += '<span class="cs-brand">' + (SCR_TITLE[m] || '') + '</span>';
+  }
+
+  if(o.search){
+    html += '<span class="cs-sep"></span>' +
+      '<button class="cs-chip" id="csSearchBtn" onclick="csSearch()" title="민원 검색 — 단축키 Ctrl+K">🔍 민원검색</button>';
+  }
+  if(o.filter){
+    html += '<span class="cs-sep"></span>' +
+      '<span class="cs-flabel" title="지도와 목록에 표시할 민원 분류입니다. 좌측 분류 카드와 함께 움직입니다.">표시 상태:</span>' +
+      '<button class="cs-chip" id="fltUrg"  onclick="csFilter(\'긴급\')">긴급</button>' +
+      '<button class="cs-chip" id="fltNor"  onclick="csFilter(\'일반\')">일반</button>' +
+      '<button class="cs-chip" id="fltRoad" onclick="csFilter(\'교통도로\')">교통·도로 기동단</button>';
+  }
+  if(o.live){
+    html += '<span class="cs-sep"></span>' +
+      '<button class="cs-live' + (live ? ' on' : '') + '" id="csLive" onclick="csLiveToggle()" ' +
+      'aria-pressed="' + live + '" title="실시간 수신 상태 — 끄면 화면이 갱신되지 않습니다"><i></i>LIVE</button>';
+  }
+  html += '<span class="cs-spacer"></span>' +
+          '<span class="cs-clock" id="csClock" title="현재 시각"></span>';
+  if(o.me){
+    html += '<button class="cs-chip" onclick="openMe()" id="csMe" title="소속을 바꾸면 화면에 걸리는 범위가 바뀝니다">' +
+            '👤 <span id="csMeTxt">소속</span></button>';
+  }
+  if(o.actions){
+    html += '<span class="cs-sep"></span>' +
+      '<button class="hb-cmd" id="btnCmd" onclick="goCmd()" title="동일 지역 유사 민원 급증 시 시장 조치지시를 상신합니다">' +
+        '조치지시<span class="n" id="btnCmdN" hidden></span></button>' +
+      '<button class="hb-cit" id="btnCit" onclick="openCitWindow()" title="시민이 보는 화면입니다. 새 창으로 열립니다.">' +
+        '24시간 민원접수창구</button>';
+  } else if(m === 'cit' || m === 'track'){
+    /* 시민 화면에서 당직 화면으로 돌아가는 길만 남긴다 */
+    html += '<button class="cs-chip" onclick="setMode(\'duty\')" title="당직 업무 화면으로">업무 화면</button>';
+  }
+  h.innerHTML = html;
+  /* 그린 뒤 상태를 다시 입힌다 */
+  if(o.filter && typeof clsSel !== 'undefined'){
+    const id = clsSel === '긴급' ? 'fltUrg' : (clsSel === '일반' ? 'fltNor' : 'fltRoad');
+    const b = document.getElementById(id);
+    if(b) b.classList.add('on');
+  }
+  if(typeof meChipSync === 'function') meChipSync();
+  if(typeof csClockTick === 'function') csClockTick();
+  if(typeof cmdBadgeSync === 'function') cmdBadgeSync();
+}
+
 /* ══════════ D-M1 지도 전체화면 ══════════
    카드를 화면 전체로 펼친다. 레이어 바·배경 바는 이미 지도 위 오버레이라 그대로 따라 커지고,
    범례만 오버레이로 내려붙는다. Windy 기상 오버레이(#map 안 inset:0)도 부모를 따라 확대된다. */
@@ -3141,7 +3215,7 @@ function setStatus(id, st, force){
   it.st = st;
   it.log.push(nowHM()+" 상태 변경: "+st+((st==="완료"&&!(it.dispN))?" (인력 미투입 종결 확인)":""));
   sbPush(it);
-  if(st==="완료"){ if((it.crews||[]).length) returnAllCrews(it, "처리 완료"); toast("처리 완료 — 종합현황 대시보드로 이관되었습니다"); }
+  if(st==="완료"){ if((it.crews||[]).length) returnAllCrews(it, "처리 완료"); toast("처리 완료 — 처리결과로 이관되었습니다"); }
   renderMap(); renderList(); selectItem(id);
   trackSync(id);   // S-03: 시민 추적 화면 단계 동기화
 }
@@ -4918,7 +4992,7 @@ function renderDashMap(){
   });
 }
 
-/* ── 종합현황 대시보드: 누적 데이터 관리 ── */
+/* ── 처리결과: 누적 데이터 관리 ── */
 const HIST = [
  {dt:"7/17", time:"20:15", gu:"동탄구", field:"교통·도로", sub:"불법주정차", sum:"소화전 앞 불법주정차", st:"완료", src:"전화", urg:"일반", dur:35, act:"현장계도 완료"},
  {dt:"7/17", time:"22:40", gu:"만세구", field:"환경", sub:"불법소각", sum:"농자재 야간 소각 연기", st:"완료", src:"전화", urg:"긴급", dur:50, act:"119 공동대응·소화 확인", dis:1},
@@ -5690,7 +5764,7 @@ function sbMerge(r){
     const wasDone = ex.st === "완료";
     Object.assign(ex, {st:r.st, sms:r.sms, dispN:r.disp_n||0, urg:r.urg, log:(r.log&&r.log.length>=(ex.log||[]).length)?r.log:ex.log});
     if(!wasDone && ex.st === "완료" && selId === ex.id){
-      document.getElementById('detail').innerHTML = '<p class="hint">이 민원은 완료 처리되어 <b>종합현황 대시보드</b>로 이관되었습니다.</p>';
+      document.getElementById('detail').innerHTML = '<p class="hint">이 민원은 완료 처리되어 <b>처리결과</b>로 이관되었습니다.</p>';
       document.getElementById('dHint').textContent = '목록/지도에서 선택';
     }
     return false;
@@ -5890,19 +5964,23 @@ function detectSurges(R, list){
   return out.sort((a,b)=>b.cnt - a.cnt);
 }
 /* 개정 전 과거 데이터 검증 — 바꾼 값을 누적 민원에 적용해 최근 30일이면 몇 회 발동인지 */
+/* 개정 전 검증 — 발동 횟수와 그중 시장 상신 횟수를 함께 센다 */
 function ruleBacktest(R){
   const pool = realItems().concat(HIST.map((h,i)=>({
     id: -1000 - i, time: h.time, gu: h.gu, loc: (h.gu || '') + ' ' + (h.sub || ''), field: h.field, sub: h.sub,
     sum: h.sum, urg: h.urg, st: '완료', log: [],
     pin: (GEO.cent && GEO.cent[h.gu]) ? GEO.cent[h.gu] : null
   })).filter(x=>x.pin));
-  const n = detectSurges(R, pool).length;
-  const per30 = Math.round(n * (30 / 7));   /* 누적 이력은 약 7일치 */
+  const hit = detectSurges(R, pool);
+  const n = hit.length;
+  const rep = hit.filter(x=>x.report).length;
+  const per30 = Math.round(n * (30 / 7));           /* 누적 이력은 약 7일치 */
+  const rep30 = Math.round(rep * (30 / 7));
   let verdict;
   if(per30 > 60) verdict = '너무 잦습니다 — 경보에 무뎌질 우려가 있습니다.';
   else if(per30 < 2) verdict = '너무 드뭅니다 — 실제 급증을 놓칠 위험이 있습니다.';
   else verdict = '적정 범위로 보입니다.';
-  return {count: n, per30: per30, verdict: verdict};
+  return {count: n, per30: per30, rep30: rep30, verdict: verdict};
 }
 
 /* ══════════ D-05 레이어 지연 로딩 ══════════
@@ -6471,10 +6549,14 @@ function cmdOrderList(){
 }
 
 /* ══════════ S-08 규칙 설정 화면 ══════════ */
-function ruleField(k, label, unit, step){
-  return '<div class="rule-row"><label>' + label + '</label>' +
-    '<input id="rf_' + k + '" type="number" step="' + (step || 1) + '" value="' + RULES_DRAFT[k] + '">' +
-    '<span style="font-size:12px;color:var(--muted);width:44px">' + (unit || '') + '</span></div>';
+/* 라벨만으로는 무엇을 뜻하는지 알 수 없다 — 항목마다 한 줄 설명을 붙인다 */
+function ruleField(k, label, unit, step, desc){
+  return '<div class="rule-row">' +
+    '<label>' + label +
+      (desc ? '<span class="rule-desc">' + desc + '</span>' : '') + '</label>' +
+    '<input id="rf_' + k + '" type="number" step="' + (step || 1) + '" value="' + RULES_DRAFT[k] + '" ' +
+      'aria-label="' + label + (desc ? ' — ' + desc : '') + '">' +
+    '<span class="rule-unit">' + (unit || '') + '</span></div>';
 }
 function openRules(){
   const bt = ruleBacktest(RULES_DRAFT);
@@ -6482,23 +6564,32 @@ function openRules(){
   showModal('<h2>⚙️ 급증 탐지 규칙</h2>' +
     '<p style="font-size:13px;color:var(--muted);line-height:1.7">규칙은 코드가 아니라 데이터입니다. 여기서 조정하고 정책협의체 심의를 거쳐 시행합니다. ' +
     '<b>초안은 실제 동작에 영향을 주지 않습니다.</b></p>' +
-    '<div style="margin-top:12px;font-size:13px">시행 중 규칙 <span class="rule-state live">시행 중</span> — ' +
-    '탐지 ' + RULES_CUR.최소_건수 + '건 / 상신 ' + RULES_CUR.상신_건수 + '건 · 반경 ' + RULES_CUR.반경_m + 'm · ' + RULES_CUR.시간창_시간 + '시간' +
-    (RULES_CUR.심의번호 ? ' · 심의 ' + RULES_CUR.심의번호 : '') + '</div>' +
+    '<div class="rule-cur">시행 중 규칙 <span class="rule-state live">시행 중</span><br>' +
+    '반경 ' + RULES_CUR.반경_m.toLocaleString() + 'm 안에서 ' + RULES_CUR.시간창_시간 + '시간 동안 ' +
+    '<b>' + RULES_CUR.최소_건수 + '건</b> 이상이면 부서 알림, <b>' + RULES_CUR.상신_건수 + '건</b> 이상이면 시장 상신' +
+    (RULES_CUR.심의번호 ? '<br><span style="font-size:12px">심의 ' + RULES_CUR.심의번호 + '</span>' : '') + '</div>' +
     '<h3 style="font-size:15px;font-weight:800;margin-top:16px;color:var(--hs-blue-dark)">개정안 <span class="rule-state ' + RULES_DRAFT.상태 + '">' + stLabel[RULES_DRAFT.상태] + '</span></h3>' +
-    ruleField('반경_m', '반경', 'm', 100) +
-    ruleField('시간창_시간', '시간창', '시간', 1) +
-    ruleField('최소_건수', '탐지 최소 건수 (부서 알림)', '건', 1) +
-    ruleField('상신_건수', '시장 상신 건수', '건', 1) +
-    ruleField('평소대비_배수', '평소 대비 배수', '배', 0.1) +
-    ruleField('특보_가중', '특보 가중 (임계치 배율)', '', 0.1) +
-    ruleField('재발동_억제_시간', '재발동 억제', '시간', 1) +
-    '<div class="rule-row"><label>행사 예외 (인파 행사 반경 제외)</label>' +
+    /* ② 두 임계치의 관계를 한 줄로 명시한다 */
+    '<div class="rule-rel">' +
+      '<b>' + RULES_DRAFT.최소_건수 + '건 이상 → 부서 알림</b>' +
+      '<span>·</span>' +
+      '<b>' + RULES_DRAFT.상신_건수 + '건 이상 → 시장 상신</b></div>' +
+    ruleField('반경_m', '반경', 'm', 100, '이 거리 안의 신고를 한 사안으로 본다') +
+    ruleField('시간창_시간', '시간창', '시간', 1, '이 시간 안에 들어온 신고만 센다') +
+    ruleField('최소_건수', '최소 건수', '건', 1, '이 건수를 넘으면 담당 부서에 탐지 알림') +
+    ruleField('평소대비_배수', '평소 대비 배수', '배', 0.1, '같은 시간대 평균의 몇 배일 때 발동') +
+    ruleField('상신_건수', '시장 상신 건수', '건', 1, '이 건수부터는 시장 조치지시로 올린다') +
+    ruleField('특보_가중', '특보 가중', '배', 0.1, '기상 특보가 뜨면 위 기준에 이 값을 곱해 낮춘다') +
+    ruleField('재발동_억제_시간', '재발동 억제', '시간', 1, '같은 지역이 다시 발동하기까지 기다리는 시간') +
+    '<div class="rule-row"><label>행사 예외' +
+      '<span class="rule-desc">인파 행사 반경 안의 신고는 급증으로 세지 않는다</span></label>' +
     '<input type="checkbox" id="rf_행사_예외" style="width:auto"' + (RULES_DRAFT.행사_예외 ? ' checked' : '') + '></div>' +
     (FALSE_POSITIVES.length ? '<div class="cmd-warn under">🔎 <b>오탐 기록 ' + FALSE_POSITIVES.length + '건</b>이 개정 자료로 쌓여 있습니다 — ' +
       '평균 ' + (FALSE_POSITIVES.reduce((a,b)=>a+b.cnt,0)/FALSE_POSITIVES.length).toFixed(1) + '건 규모에서 오탐이 났습니다. 최소 건수 상향을 검토해 보세요.</div>' : '') +
     '<div id="rbt" class="cmd-warn ' + (bt.per30 > 60 ? 'over' : (bt.per30 < 2 ? 'under' : 'ok')) + '">' +
-    '📊 <b>개정 전 검증</b> — 이 값으로 누적 민원을 다시 보면 <b>최근 30일 기준 약 ' + bt.per30 + '회</b> 발동합니다.<br>' + bt.verdict + '</div>' +
+    '📊 <b>개정 전 검증</b><br>' +
+    '최근 30일 데이터에 이 규칙을 적용하면 <b>발동 ' + bt.per30 + '회</b> · 그중 <b>시장 상신 ' + bt.rep30 + '회</b><br>' +
+    '<span style="font-size:12px">' + bt.verdict + '</span></div>' +
     '<div class="row"><button class="btn-g" onclick="ruleApplyDraft(\'recalc\')">다시 계산</button>' +
     '<button class="btn-g" onclick="ruleApplyDraft(\'review\')">심의 상정</button>' +
     '<button class="btn-o" onclick="ruleApplyDraft(\'live\')">의결·시행</button></div>' +
@@ -7990,15 +8081,7 @@ function setMode(m, fromHash){
   document.getElementById("duty").style.display = m==="duty"?"block":"none";
   document.getElementById("dash").style.display = m==="dash"?"block":"none";
   document.getElementById("citizen").style.display = m==="cit"?"block":"none";
-  document.getElementById("tabDuty").className = m==="duty"?"on":"";
-  document.getElementById("tabDash").className = m==="dash"?"on":"";
-  document.getElementById("tabCit").className = m==="cit"?"on":"";
-  const tr=document.getElementById("tabRoad"); if(tr) tr.className = m==="road"?"on":"";
-  const tc=document.getElementById("tabCmd"); if(tc) tc.className = m==="cmd"?"on":"";
-  /* A: 명령 바로 합친 모드 칩도 같은 상태를 쓴다 */
-  for(const mk of [["duty","csmDuty"],["dash","csmDash"],["road","csmRoad"],["cmd","csmCmd"],["cit","csmCit"]]){
-    const b=document.getElementById(mk[1]); if(b) b.classList.toggle("on", m===mk[0]);
-  }
+  renderHeader(m);   /* 헤더는 한 곳에서만 그린다 */
   if(m==="road") renderRoad();
   if(m==="track") renderTrack();
   if(m==="cmd") renderCmd();
@@ -8115,7 +8198,7 @@ function bootFor(m){
 
 /* 초기 렌더 — 주소로 모드를 먼저 정한다 */
 const bootRestored = loadState();
-meChipSync();                                 /* 소속 배지는 모든 모드에서 보인다 */
+renderHeader('duty');                         /* 헤더를 먼저 그린다 */
 applyHash();                                  /* setMode → bootFor 로 필요한 것만 준비 */
 spStep("db");
 sbInit().finally(()=>spStep("done"));         /* 민원 원천은 어느 모드에서나 필요하다 */
