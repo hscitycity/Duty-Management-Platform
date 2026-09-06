@@ -1167,6 +1167,16 @@ body[data-mode="cmd"] footer, body[data-mode="track"] footer{display:none;}
 .rule-cur{margin-top:12px; font-size:13px; line-height:1.7; padding:10px 12px;
   border-radius:8px; background:#F7FAFD; border:1px solid var(--line);}
 
+/* 제목 옆 배지 버튼 */
+.h2-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+.h2-badge{height:26px; padding:0 12px; border-radius:999px; font-size:12px; font-weight:700;
+  background:var(--hs-blue-bg); color:var(--hs-blue-dark); border:1px solid var(--hs-blue-line);
+  white-space:nowrap; cursor:pointer;}
+.h2-badge:hover{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.rule-flow{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:14px 0;}
+.rule-flow i{font-style:normal; color:var(--muted);}
+.rule-ul{font-size:13.5px; line-height:1.9; padding-left:18px; margin:0 0 10px;}
+
 </style>
 </head>
 <body>
@@ -1490,7 +1500,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1103';
+const BUILD_VER = 'v0906-1139';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -6558,10 +6568,33 @@ function ruleField(k, label, unit, step, desc){
       'aria-label="' + label + (desc ? ' — ' + desc : '') + '">' +
     '<span class="rule-unit">' + (unit || '') + '</span></div>';
 }
+/* 규칙 개정 절차 안내 — 제목 옆 배지에서 연다 */
+function ruleCouncilInfo(){
+  showModal('<h2>🏛️ 정책협의체 심의·조정</h2>' +
+    '<p style="font-size:14px;line-height:1.8">급증 탐지 규칙은 담당자가 임의로 바꾸지 않습니다. ' +
+    '값을 고쳐 <b>초안</b>으로 두고, <b>정책협의체 심의</b>를 거쳐 의결된 뒤에야 시행됩니다.</p>' +
+    '<div class="rule-flow">' +
+      '<span class="rule-state draft">초안</span><i>→</i>' +
+      '<span class="rule-state review">심의 상정</span><i>→</i>' +
+      '<span class="rule-state passed">의결</span><i>→</i>' +
+      '<span class="rule-state live">시행</span></div>' +
+    '<ul class="rule-ul">' +
+      '<li><b>초안</b> — 값만 바꿔 둔 상태. 실제 탐지에는 영향이 없습니다.</li>' +
+      '<li><b>심의 상정</b> — 협의체에 올립니다. 이때도 동작은 그대로입니다.</li>' +
+      '<li><b>의결·시행</b> — 심의번호와 시행일을 남기고 그때부터 새 값으로 탐지합니다.</li>' +
+    '</ul>' +
+    '<p class="hint">바꾸기 전에 <b>개정 전 검증</b>으로 “최근 30일이면 몇 회 발동하는지”를 확인하고 올리세요. ' +
+    '누가·언제·무엇을 바꿨는지는 개정 이력에 남습니다.</p>' +
+    '<div class="row"><button class="btn-p" onclick="closeModal();openRules()">← 규칙 화면으로</button>' +
+    '<button class="btn-g" onclick="closeModal()">닫기</button></div>');
+}
+
 function openRules(){
   const bt = ruleBacktest(RULES_DRAFT);
   const stLabel = {draft:'초안', review:'심의 상정', passed:'의결', live:'시행 중'};
-  showModal('<h2>⚙️ 급증 탐지 규칙</h2>' +
+  showModal('<h2 class="h2-row">⚙️ 급증 탐지 규칙' +
+    '<button type="button" class="h2-badge" onclick="ruleCouncilInfo()" ' +
+    'title="이 규칙은 정책협의체 심의를 거쳐 시행됩니다 — 누르면 절차 안내">정책협의체 심의·조정</button></h2>' +
     '<p style="font-size:13px;color:var(--muted);line-height:1.7">규칙은 코드가 아니라 데이터입니다. 여기서 조정하고 정책협의체 심의를 거쳐 시행합니다. ' +
     '<b>초안은 실제 동작에 영향을 주지 않습니다.</b></p>' +
     '<div class="rule-cur">시행 중 규칙 <span class="rule-state live">시행 중</span><br>' +
