@@ -2176,6 +2176,18 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .mn-tbl tr:nth-child(even) td{background:#FAFCFE;}
 .mn-deptline{font-size:13.5px; margin:0 0 10px; color:var(--muted);}
 .mn-deptline b{color:var(--hs-blue-dark);}
+/* C-17a 민원검색 — 무엇으로 좁혔는지, 어떻게 푸는지 */
+.cs-srch{margin:0 12px 6px; padding:6px 10px; border-radius:8px; font-size:12.5px;
+  background:#FFF4E5; border:1px solid #F0D6A8; color:#8A3E0C;}
+.cs-srch b{color:#6B2E06;}
+.cs-srch a{margin-left:6px; color:var(--hs-blue); font-weight:700;}
+.cs-chip.on{background:var(--hs-orange); color:#fff; border-color:var(--hs-orange);}
+/* C-4b 문자발송 — 매뉴얼에 적힌 번호를 그대로 보여 준다 */
+.hd-src{margin-left:6px; padding:2px 8px; border-radius:9px; font-size:11.5px; font-weight:700;
+  background:var(--hs-blue-bg,#EAF1FB); color:var(--hs-blue-dark);}
+.hd-tels{margin:0 0 10px; padding:8px 10px; border-radius:8px; font-size:13px;
+  background:#EAF6EE; border:1px solid #BFE3CB; color:#0F5F3F;}
+.hd-tels b{font-family:var(--mono,ui-monospace);}
 </style>
 </head>
 <body>
@@ -2227,6 +2239,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
             <button type="button" class="btn-csv ico" onclick="scopeExport()" aria-label="현재 범위를 CSV 파일로 내려받기" title="현재 범위를 CSV 파일로 내려받기">
               <img class="ico-csv" src="data/icons/csv.png" alt=""></button>
           </div>
+          <div class="cs-srch" id="csSrchNote" data-no="C-17a" hidden></div>
           <div class="flt-note" id="fltNote" hidden></div>
           <div class="sc-tabs" id="scTabs" style="display:none">
             <button id="scTabAll" onclick="scopeTab('all')">우리 관내 전체</button>
@@ -2589,7 +2602,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0907-0047';
+const BUILD_VER = 'v0907-0100';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3513,16 +3526,35 @@ function csCapture(){
   }
 }
 /* ── 9.1 검색 (Ctrl+K) ── */
+/* C-17 민원검색 — 한 건만 집어 주는 것이 아니라 좌측 목록을 그 말로 좁힌다.
+   찾는 사람은 대개 '그 근처 것들'을 함께 보고 싶어 한다. */
+let csQuery = '';
+function csMatch(it, q){
+  if(!q) return true;
+  const num = q.replace(/[^0-9]/g, '');
+  if(num && String(it.id) === num) return true;
+  if(num && String(it.id).padStart(3, '0') === num.padStart(3, '0')) return true;
+  return [it.loc, it.sub, it.sum, it.field, it.gu, it.req, guEmd(it)]
+    .filter(Boolean).join(' ').indexOf(q) >= 0;
+}
+function csSearchApply(q){
+  csQuery = String(q || '').trim();
+  renderList(); renderMap();
+  const box = document.getElementById('list');
+  if(box) box.scrollTop = 0;
+}
+function csSearchClear(){ csSearchApply(''); toast('민원검색을 해제했습니다'); }
 function csSearch(){
-  const q = prompt('접수번호·위치·유형으로 찾기 (예: 1042, 향남, 포트홀)');
-  if(!q) return;
-  const k = q.trim();
-  const num = k.replace(/[^0-9]/g, '');
-  let hit = null;
-  if(num) hit = items.find(i=>i.id === Number(num));
-  if(!hit) hit = items.find(i=>[i.loc, i.sub, i.sum, i.field].join(' ').indexOf(k) >= 0);
-  if(!hit){ toast('"' + k + '" 에 해당하는 민원을 찾지 못했습니다'); return; }
-  csRightTab('sel'); csLeftTab('list'); selectItem(hit.id);
+  const q = prompt('접수번호·위치·유형으로 찾기 (예: 1042, 향남, 포트홀)', csQuery);
+  if(q === null) return;
+  const k = String(q).trim();
+  if(!k){ csSearchApply(''); return; }
+  const hits = scopeItems().filter(function(i){ return csMatch(i, k); });
+  if(!hits.length){ toast('"' + k + '" 에 해당하는 민원을 찾지 못했습니다'); return; }
+  csSearchApply(k);
+  /* 딱 한 건이면 바로 열어 준다 — 더 누를 일을 남기지 않는다 */
+  if(hits.length === 1){ csRightTab('sel'); selectItem(hits[0].id); }
+  else toast('"' + k + '" ' + hits.length + '건 — 좌측 목록을 좁혔습니다');
 }
 document.addEventListener('keydown', e=>{
   if((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')){ e.preventDefault(); csSearch(); }
@@ -4404,12 +4436,13 @@ function renderList(){
   renderCredBar();
   /* 재지정 요청은 배부 부서의 주 업무다 — 분류에 갇히지 않고 들어온 것을 모두 보여 준다 */
   const rows = (credSel === 'req' ? open.filter(credPass) : open.filter(c.test).filter(credPass))
+    .filter(function(i){ return csMatch(i, csQuery); })
     .sort((a,b)=>b.id - a.id);
   l.innerHTML = rows.length
     ? rows.map(listRow).join('') +
       (clsSel === '교통도로'
         ? '<button class="cs-mini" style="width:100%;margin-top:6px" onclick="setMode(\'road\')">기동단 작업판 열기 →</button>' : '')
-    : '<p class="cs-empty">' + (credSel === 'req' ? '들어온 부서 재지정 요청이 없습니다' : credSel === 'ready'
+    : '<p class="cs-empty">' + (csQuery ? '"' + esc(csQuery) + '" 에 해당하는 민원이 없습니다 — 검색을 해제해 보세요' : credSel === 'req' ? '들어온 부서 재지정 요청이 없습니다' : credSel === 'ready'
         ? '유사제보 ' + credRule().need + '건 이상인 민원이 없습니다'
         : (credSel === 'check' ? '확인중인 제보가 없습니다' : '해당 분류에 열린 민원이 없습니다')) + '</p>';
 
@@ -4420,6 +4453,15 @@ function renderList(){
     '<i>미처리 <b>' + open.length + '</b></i>' +
     '<i>출동중 <b class="p">' + outN + '</b></i>' +
     '<i>오늘완료 <b class="d">' + sc.filter(i=>i.st === "완료").length + '</b></i>';
+  /* 검색 중이면 그 사실과 푸는 길을 함께 둔다 */
+  const sn = document.getElementById('csSrchNote');
+  if(sn){
+    sn.hidden = !csQuery;
+    if(csQuery) sn.innerHTML = '🔍 <b>' + esc(csQuery) + '</b> ' + rows.length + '건' +
+      ' <a href="#" onclick="csSearchClear();return false">✕ 검색 해제</a>';
+  }
+  const sb = document.getElementById('csSearchBtn');
+  if(sb) sb.classList.toggle('on', !!csQuery);
   /* 필터로 흐려진 건수 안내 */
   const fn = document.getElementById('fltNote');
   if(fn){
@@ -5108,9 +5150,20 @@ function telRows(it, a){
       (t ? '<a class="no" href="tel:' + t.replace(/[^0-9]/g, '') + '">☎ ' + esc(t) + '</a>' : '') + '</div>');
   };
   const dept = a.actor.org;
-  put('담당 부서', dept, num(dept) || deptTel(dept));
-  const h = handoffTarget(it);
-  if(h && h !== dept) put('처리 업체', h, num(h));
+  const m = manualOf(it);
+  /* 매뉴얼에 내선이 적혀 있으면 그것이 가장 확실하다 */
+  const dTel = (m && m.tel) ? telFull(m.tel) : (num(dept) || deptTel(dept));
+  put('담당 부서', dept + (m && m.team ? ' ' + m.team : ''), dTel);
+  const v = handoffVendor(it);
+  if(v && v.nm !== dept){
+    put('용역업체', v.nm, telFirst(v.tel));
+    /* 사무실 번호까지 적혀 있으면 함께 — 야간에 한 곳이 안 받으면 다른 곳으로 */
+    const all = String(v.tel || '').match(/0[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}/g) || [];
+    for(const t of all.slice(1)) put('', v.nm, t.replace(/\s/g, ''));
+  } else {
+    const h = handoffTarget(it);
+    if(h && h !== dept) put('처리 업체', h, num(h));
+  }
   return rows.join('') || '<p class="hint">연락처가 등록되지 않았습니다.</p>';
 }
 function deptTel(nm){
@@ -5448,21 +5501,62 @@ function registerItem(){
 /* 🧭 신규 당직자 조치 안내 — 민원접수현황 카드 클릭 시 팝업 */
 /* 5장: 조치 안내는 우측 확장 패널이 맡는다. 모달로 띄우지 않는다. */
 function guideNew(id){ selectItem(id); }
+/* ══════════ 매뉴얼에 적힌 번호를 그대로 쓴다 ══════════
+   당직매뉴얼에 용역업체와 내선이 버젓이 적혀 있는데 화면이 빈칸이면
+   당직자는 결국 종이 매뉴얼을 다시 뒤진다. 적힌 것은 적힌 대로 보여 준다. */
+/* 시청 내선 네 자리 → 거는 번호 */
+function telFull(t){
+  const v = String(t || '').trim();
+  if(/^[0-9]{4}$/.test(v)) return '031-5189-' + v;
+  return v;
+}
+/* 여러 번호가 적힌 줄에서 먼저 걸 번호 — 휴대폰이 있으면 그것부터 */
+function telFirst(s2){
+  const t = String(s2 || '');
+  const mob = t.match(/01[0-9][-\s]?[0-9]{3,4}[-\s]?[0-9]{4}/);
+  if(mob) return mob[0].replace(/\s/g, '');
+  const any = t.match(/0[0-9]{1,2}[-\s]?[0-9]{3,4}[-\s]?[0-9]{4}/);
+  return any ? any[0].replace(/\s/g, '') : '';
+}
+/* 이 민원의 매뉴얼 근거 — 소관 부서·내선·용역업체 */
+function manualOf(it){
+  try{
+    const a = deptOf(it);
+    if(a && a.manual) return a.manual;
+  }catch(e){}
+  try{ const h = manualDeptOf(it); return h ? h.row : null; }catch(e){ return null; }
+}
+/* 문자로 넘길 곳 — 매뉴얼의 용역업체가 있으면 그곳이 먼저다 */
+function handoffVendor(it){
+  const m = manualOf(it);
+  if(m && m.vendor && m.vendor.nm)
+    return {nm:m.vendor.nm, tel:m.vendor.tel || '', from:'당직매뉴얼 「' + m.sec + '」'};
+  if(needVendor(it)){
+    const v = SEWER_VENDOR[it.gu] || '';
+    return v ? {nm:String(v).replace(/[0-9()\-\s]+$/, '').trim() || v, tel:telFirst(v), from:'우수관로 유지보수 업체'} : null;
+  }
+  return null;
+}
 function handoffTarget(it){
-  if(needVendor(it)) return SEWER_VENDOR[it.gu];
+  const v = handoffVendor(it);
+  if(v) return v.nm + (v.tel ? ' ' + v.tel : '');
   return (RULES[it.field]||RULES["기타"]).dept.split("/")[0].trim();
 }
 function openHandoff(id){
   const it = items.find(i=>i.id===id);
-  const tgt = handoffTarget(it);
+  const v = handoffVendor(it);
+  const tgt = v ? v.nm : handoffTarget(it);
+  const pre = v ? telFirst(v.tel) : ((handoffTarget(it).match(/0[0-9]{1,2}-[0-9*]{3,4}-[0-9*]{4}/)||[''])[0]);
   /* C-2 조치결과 보고 링크는 문자 본문에 함께 넣는다.
      따로 복사하게 하면 일이 하나 더 늘 뿐이다. */
   const rptLink = (typeof doneLink === 'function') ? doneLink(id) : '';
   const msg = "[화성시 당직실] "+it.field+"("+it.sub+") 처리요청\n위치: "+it.loc+" (지도: hs.go/"+String(it.id).padStart(3,"0")+")\n내용: "+it.sum+"\n요청: "+it.req+"\n처리 후 회신 링크로 결과·사진 등록 바랍니다." + (rptLink ? "\n조치 후 사진 등록: " + rptLink : "");
   showModal('<h2 data-no="C-4b">📨 담당용역업체 처리요청 문자발송</h2>'+
-    '<p style="font-size:15px;margin-bottom:8px">수신: <b>'+tgt+'</b></p>'+
+    '<p style="font-size:15px;margin-bottom:8px">수신: <b>'+esc(tgt)+'</b>'+
+      (v && v.from ? ' <span class="hd-src">'+esc(v.from)+'</span>' : '')+'</p>'+
+    (v && v.tel ? '<p class="hd-tels">📞 매뉴얼에 적힌 번호: <b>'+esc(v.tel)+'</b></p>' : '')+
     '<label style="font-size:13px;font-weight:600;color:var(--muted)">수신번호</label>'+
-    '<input id="hNum" placeholder="010-0000-0000" value="'+((tgt.match(/0[0-9]{1,2}-[0-9*]{3,4}-[0-9*]{4}/)||[""])[0])+'" style="margin:5px 0 10px">'+
+    '<input id="hNum" placeholder="010-0000-0000" value="'+esc(pre)+'" style="margin:5px 0 10px">'+
     '<div class="msgprev" id="hMsg">'+msg+'</div>'+
     '<div class="row"><button class="btn-o" onclick="smsSend('+id+')">📱 문자 보내기</button>'+
     '<button class="btn-g" onclick="closeModal()">닫기</button></div>'+
