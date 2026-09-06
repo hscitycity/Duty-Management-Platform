@@ -1194,18 +1194,24 @@ body[data-mode="new"] footer, body[data-mode="log"] footer{display:none;}
 .cls-card{height:64px; border-radius:10px; border:none; cursor:pointer;
   color:#fff; background:linear-gradient(160deg, var(--g1) 0%, var(--g2) 60%, var(--g3) 100%);
   box-shadow:0 3px 0 rgba(0,0,0,.18), 0 4px 12px rgba(16,32,64,.20);
-  transition:transform .1s ease, box-shadow .1s ease, filter .1s ease;
-  filter:saturate(.55) brightness(1.06);
+  transition:transform .12s ease, box-shadow .12s ease, filter .12s ease, opacity .12s ease;
+  /* 고르지 않은 카드는 색을 크게 죽인다 — 셋 다 진하면 무엇을 보고 있는지 알 수 없다 */
+  filter:saturate(.22) brightness(1.28) contrast(.92); opacity:.62;
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; cursor:pointer;}
-.cls-card .l{font-size:12px; font-weight:700; color:#fff; white-space:nowrap; opacity:.92;}
+.cls-card .l{font-size:12px; font-weight:700; color:#fff; white-space:nowrap; opacity:.9;}
 .cls-card .n{font-family:var(--mono,ui-monospace); font-size:22px; font-weight:800; color:#fff; line-height:1;}
 /* 고른 카드만 제 색을 낸다 — 나머지는 색을 죽여 어느 것을 보고 있는지 한눈에 */
-.cls-card.on{filter:none; box-shadow:0 3px 0 rgba(0,0,0,.24), 0 6px 16px rgba(16,32,64,.30);}
+.cls-card.on{filter:none; opacity:1; transform:translateY(-1px);
+  box-shadow:0 3px 0 rgba(0,0,0,.26), 0 8px 18px rgba(16,32,64,.34), 0 0 0 2px #fff, 0 0 0 4px var(--c, var(--g2));}
+.cls-card.on .l{opacity:1; font-weight:800;}
+.cls-card.on .n{text-shadow:0 1px 2px rgba(0,0,0,.25);}
 .cls-card.on:after{content:""; position:absolute; left:50%; bottom:-6px; transform:translateX(-50%);
   border:5px solid transparent; border-top-color:var(--g2);}
 .cls-card{position:relative;}
-.cls-card:hover{filter:none; transform:translateY(-1px);
+/* 손을 올린 것과 고른 것은 다르다 — 올렸을 때 색을 다 살리면 고른 것처럼 보인다 */
+.cls-card:hover{filter:saturate(.6) brightness(1.1); opacity:.85; transform:translateY(-1px);
   box-shadow:0 4px 0 rgba(0,0,0,.18), 0 7px 18px rgba(16,32,64,.26);}
+.cls-card.on:hover{filter:none; opacity:1;}
 .cls-card:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18);}
 .flt-note{font-size:12px; color:var(--smuted); padding:0 12px 6px;}
 .flt-note b{color:var(--hs-orange);} .flt-note a{color:var(--hs-blue); font-weight:700;}
@@ -2409,7 +2415,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1833';
+const BUILD_VER = 'v0906-1918';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
