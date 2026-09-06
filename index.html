@@ -1981,6 +1981,21 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .me-grid button{height:30px; padding:0 12px; border-radius:6px; font-size:12.5px;
   background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
 
+/* C-4c 종결처리 — 고른 갈래에 따라 다음에 벌어질 일을 그 자리에서 알린다 */
+#rsNote:empty{display:none;}
+.rs-nt{margin-top:8px; padding:8px 10px; border-radius:8px; font-size:12.5px; line-height:1.6;
+  background:#EEF3F9; color:var(--ink); border:1px solid var(--line);}
+.rs-nt.done{background:#EAF6EE; border-color:#BFE3CB;}
+.rs-nt.warn{background:#FFF4E5; border-color:#F0D6A8;}
+.rs-nt button{height:28px; padding:0 10px; margin-left:6px; font-size:12px;}
+/* C-4c5 같은 자리 유사제보 묶음 — 한 번에 회신 */
+.rs-grp{margin-top:10px; padding:8px 10px; border-radius:8px; font-size:12.5px;
+  background:#F3F0FA; border:1px solid #DDD3F0; color:var(--ink);}
+.rs-all{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px;
+  padding:9px 11px; border-radius:8px; font-size:13px; cursor:pointer;
+  background:#F3F0FA; border:1px solid #DDD3F0;}
+.rs-all input{width:auto;}
+.rs-all span{color:var(--muted); font-size:12px;}
 </style>
 </head>
 <body>
@@ -2394,7 +2409,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1823';
+const BUILD_VER = 'v0906-1833';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3948,6 +3963,25 @@ function credOf(it){
   }
   return {n:n2, need:R.need, ok:n2 >= R.need, r:R.r, h:R.h};
 }
+/* 같은 자리·같은 종류로 모인 제보 묶음. 회신도 한 번에 하려면 목록이 먼저 있어야 한다 */
+function credGroup(it){
+  const R = credRule();
+  const ll = it.ll || it.pin;
+  const t0 = itemStart(it).getTime();
+  const out = [it];
+  if(!ll) return out;
+  for(const x of realItems()){
+    if(x.id === it.id) continue;
+    if(x.sub !== it.sub) continue;
+    if(x.st === '완료') continue;
+    const l2 = x.ll || x.pin;
+    if(!l2) continue;
+    if(distM(ll[0], ll[1], l2[0], l2[1]) > R.r) continue;
+    if(Math.abs(itemStart(x).getTime() - t0) > R.h * 3600 * 1000) continue;
+    out.push(x);
+  }
+  return out.sort(function(a, b){ return a.id - b.id; });
+}
 /* 확인중 / 처리대상 — 좌측에서 갈라 본다.
    기본은 '처리대상' 이다. 유사 제보가 모여 신빙성이 선 건부터 손대는 것이 순서다.
    확인중은 눌러야 보인다 — 아직 오신고일 수 있는 건이다. */
@@ -4180,11 +4214,11 @@ function renderSel(it){
   const actRow = (it.urg === '긴급'
       ? '<div class="sel-urg">⚡ 인명·안전 위험 시 <b>119/112 즉시 공동대응</b> → 재난안전상황실 ☎5189-2119</div>' : '') +
     '<div class="act3s" data-no="C-4">' +
-      act('C-4a', 'a-fld', '🚨', '현장확인 · 인력배치',
-          crewCnt ? crewCnt + '명 출동 중' : '출동 기록을 남깁니다', stField, 'fieldGo(' + it.id + ')') +
+      act('C-4a', 'a-fld', '🚨', '초동조치 · 현장사진 등록',
+          crewCnt ? crewCnt + '명 출동 중' : '출동·현장사진을 남깁니다', stField, 'fieldGo(' + it.id + ')') +
       act('C-4b', 'a-sms', '📨', '용역업체 문자발송',
           it.sms ? '발송함 · ' + esc(tel) : '보고 링크가 함께 갑니다', stSms, 'openHandoff(' + it.id + ')') +
-      act('C-4c', 'a-rep', '✅', '조치결과 입력',
+      act('C-4c', 'a-rep', '✅', '종결처리 · 결과입력',
           it.replyAt ? '회신 ' + hm(it.replyAt) : (it.actAt ? '기록됨 · 회신 전' : '현장 없이 답변도 여기서'), stReply, 'resultOpen(' + it.id + ')') +
     '</div>' +
     stageBar(it);
@@ -4197,16 +4231,30 @@ function renderSel(it){
     '<div class="sel-h">' + nm + '</div>' + inner + '</section>';
 
   const colB =
-    /* 1 민원내용 — 위치 · 문제상황 · 조치필요사항 */
-    sec('C-5', '1. 민원내용',
+    /* 1 처리이력 — 대응 이력을 맨 위에 둔다. 지금 무엇을 하고 있는지가 먼저다 */
+    sec('C-10', '1. 처리이력',
+    '<div class="sel-box">' +
+      '<div class="lg-in"><textarea id="lgIn" rows="2" ' +
+        'placeholder="예) 14:35 화성소방서 3대·소방관 10명 출동&#10;현장 도착 — 시각을 안 적으면 지금 시각으로 남습니다" ' +
+        'onkeydown="logKey(event,' + it.id + ')"></textarea>' +
+        '<button class="btn-p" onclick="logAdd(' + it.id + ')">기록</button></div>' +
+      '<p class="lg-tip">한 줄에 하나씩. 여러 줄을 붙여 넣어도 됩니다 · Ctrl+Enter</p>' +
+      '<ol class="sel-log">' + (it.log || []).map(function(x){
+        const t2 = String(x).slice(0, 5);
+        return /^[0-9]{2}:[0-9]{2}$/.test(t2)
+          ? '<li><span class="lt">' + t2 + '</span>' + esc(String(x).slice(6)) + '</li>'
+          : '<li>' + esc(x) + '</li>';
+      }).join('') + '</ol></div>') +
+    /* 2 민원내용 — 위치 · 문제상황 · 조치필요사항 */
+    sec('C-5', '2. 민원내용',
     '<div class="sel-box">' +
       '<div class="sel-kv"><span>위치</span><b>' + it.loc + ' (' + it.gu + ')</b></div>' +
       '<div class="sel-kv"><span>문제상황</span><b>' + it.sum + '</b></div>' +
       '<div class="sel-kv"><span>조치필요</span><b>' + (it.req || '—') + '</b></div>' +
       '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + it.urg + '</b></div></div>') +
 
-    /* 2 담당부서 — AI 분석 결과 · 배정 근거 · 확신도. 변경은 부서 목록에서 고른다 */
-    sec('C-6', '2. 담당부서',
+    /* 3 담당부서 — AI 분석 결과 · 배정 근거 · 확신도. 변경은 부서 목록에서 고른다 */
+    sec('C-6', '3. 담당부서',
     '<div class="sel-box">' +
       '<div class="sel-kv"><span>배정 부서</span><b>' + a.actor.org + '</b></div>' +
       ((it.deptList && it.deptList.length > 1)
@@ -4219,33 +4267,19 @@ function renderSel(it){
       '<button class="cs-mini" onclick="deptPick(' + it.id + ')">부서 변경</button>' +
       '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">주체 변경</button></div></div>') +
 
-    /* 3 담당연락처 — 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다(§10 #5) */
-    sec('C-7', '3. 담당연락처',
+    /* 4 담당연락처 — 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다(§10 #5) */
+    sec('C-7', '4. 담당연락처',
     '<div class="sel-box tel-box">' + telRows(it, a) + vendor + '</div>') +
 
-    /* 4 현장사진 — 신고 / 조치 전 / 조치 후 */
-    sec('C-8', '4. 현장사진',
+    /* 5 현장사진 — 신고 / 조치 전 / 조치 후 */
+    sec('C-8', '5. 현장사진',
     '<div class="sel-box">' + photoBlock(it) + '</div>') +
 
-    /* 5 대응매뉴얼 */
-    sec('C-9', '5. 대응매뉴얼',
+    /* 6 대응매뉴얼 */
+    sec('C-9', '6. 대응매뉴얼',
     '<div class="sel-box"><ol class="sel-ol">' + r.steps.map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
-      '<div class="act-r"><button class="cs-mini" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">매뉴얼 전문 검색</button></div></div>') +
+      '<div class="act-r"><button class="cs-mini" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">매뉴얼 전문 검색</button></div></div>');
 
-    /* 6 처리이력 */
-    sec('C-10', '6. 처리이력',
-    '<div class="sel-box">' +
-      '<div class="lg-in"><textarea id="lgIn" rows="2" ' +
-        'placeholder="예) 14:35 화성소방서 3대·소방관 10명 출동&#10;현장 도착 — 시각을 안 적으면 지금 시각으로 남습니다" ' +
-        'onkeydown="logKey(event,' + it.id + ')"></textarea>' +
-        '<button class="btn-p" onclick="logAdd(' + it.id + ')">기록</button></div>' +
-      '<p class="lg-tip">한 줄에 하나씩. 여러 줄을 붙여 넣어도 됩니다 · Ctrl+Enter</p>' +
-      '<ol class="sel-log">' + (it.log || []).map(function(x){
-        const t2 = String(x).slice(0, 5);
-        return /^[0-9]{2}:[0-9]{2}$/.test(t2)
-          ? '<li><span class="lt">' + t2 + '</span>' + esc(String(x).slice(6)) + '</li>'
-          : '<li>' + esc(x) + '</li>';
-      }).join('') + '</ol></div>');
 
   /* 640px 에서 2열: 좌열 조치 4구획, 우열 세부 6구획. 한 덩어리로 스크롤한다 */
   /* 조치 3버튼은 맨 위 가로 3열, 그 아래 세부 6구획. 한 덩어리로 스크롤한다 */
@@ -4341,7 +4375,7 @@ function fieldGo(id){
   const rec = (typeof REPORTS !== 'undefined' && REPORTS) ? REPORTS[id] : null;
   const ph = photosOf(it);
   const shots = ph.report.length + (ph.before?1:0) + (ph.after?1:0) + (ph.vbefore?1:0) + (ph.vafter?1:0);
-  showModal('<h2 data-no="C-4a">🚨 현장확인 · 인력배치</h2>' +
+  showModal('<h2 data-no="C-4a">🚨 초동조치 · 현장사진 등록</h2>' +
     '<div class="sel-box" style="margin-bottom:12px">' +
       '<div class="sel-kv"><span>현재 투입</span><b>' + (crew ? crew + '명 출동 중' : '없음') + '</b></div>' +
       '<div class="sel-kv"><span>현장 확인</span><b>' +
@@ -4423,21 +4457,84 @@ function actMemoDraft(it){
   return rows.map(r=>'· ' + r.k + ': ' + r.v + (r.t ? ' (' + r.t + ')' : '')).join('\n');
 }
 /* 조치결과 — 현장 결과보고와 같은 네 갈래로 고른다 */
-const ACT_RESULTS = ['조치 완료', '추가 작업 필요', '현장 이상 없음', '타 기관 이관'];
+/* 처리 결과는 네 갈래. 현장 결과보고(RESULTS)와 글자까지 같게 둔다 — 같은 말이 화면마다 다르면 통계가 갈린다 */
+const ACT_RESULTS = ['조치 완료', '처리 중', '타 기관 이관 필요', '현장 이상 없음'];
+let rsId = 0;
 function rsPick(i){
   const el = document.getElementById('rsRes');
-  if(el) el.value = ACT_RESULTS[i];
+  const res = ACT_RESULTS[i];
+  if(el) el.value = res;
   ACT_RESULTS.forEach(function(r, j){
     const b = document.getElementById('rsR' + j);
     if(b) b.classList.toggle('on', i === j);
   });
+  /* 고른 갈래에 따라 다음에 벌어질 일을 미리 알린다 — 누르고 나서 놀라지 않게 */
+  const nt = document.getElementById('rsNote');
+  if(!nt) return;
+  if(res === '타 기관 이관 필요')
+    nt.innerHTML = '<div class="rs-nt warn">📄 저장하면 <b>이관 인계서</b>가 파일로 내려받아집니다 — 민원 내용과 지금까지 조치한 내용이 모두 담깁니다.' +
+      ' <button type="button" class="btn-g" data-no="C-4c4" onclick="transferDl(' + rsId + ')">📄 미리 내려받기</button></div>';
+  else if(res === '현장 이상 없음')
+    nt.innerHTML = '<div class="rs-nt done">✅ 저장하면 <b>곧바로 종결</b>됩니다 — 회신은 하지 않아도 됩니다.</div>';
+  else if(res === '처리 중')
+    nt.innerHTML = '<div class="rs-nt">⏳ 아직 열린 민원으로 남습니다 — 조치가 끝나면 다시 여기서 마무리합니다.</div>';
+  else
+    nt.innerHTML = '<div class="rs-nt done">✅ 저장하면 종결됩니다 — 이어서 민원인 회신까지 하시면 됩니다.</div>';
+}
+/* C-4c4 타 기관 이관 — 받는 기관이 그대로 쓸 수 있게 민원 내용과 조치 경과를 한 장으로 묶어 준다 */
+function transferDl(id){
+  const it = items.find(function(i){ return i.id === id; });
+  if(!it){ toast('민원을 찾지 못했습니다'); return; }
+  const a = deptOf(it);
+  const rows = actLog(it);
+  const memo = ((document.getElementById('rsAct') || {}).value || it.actMemo || '').trim();
+  const no = '#' + String(it.id).padStart(3, '0');
+  const L = [];
+  L.push('화성특례시 당직 민원 이관 인계서');
+  L.push('=====================================');
+  L.push('작성 ' + new Date().toLocaleString('ko-KR') + ' · ' + meLabel());
+  L.push('');
+  L.push('[민원 개요]');
+  L.push('접수번호  ' + no);
+  L.push('접수시각  ' + it.time);
+  L.push('위치      ' + it.gu + ' ' + it.loc);
+  L.push('분류      ' + it.field + ' · ' + it.sub + (it.urg === '긴급' ? ' (긴급)' : ''));
+  L.push('법적 소관  ' + a.legal.dept);
+  L.push('처리 주체  ' + a.actor.org);
+  L.push('');
+  L.push('[민원 내용]');
+  L.push(it.sum || '(내용 없음)');
+  L.push('');
+  L.push('[지금까지 조치한 내용]');
+  if(rows.length) rows.forEach(function(r){ L.push('- ' + r.k + ': ' + r.v + (r.t ? ' (' + r.t + ')' : '')); });
+  else L.push('- 기록된 조치 없음');
+  if(memo){ L.push(''); L.push('[조치 기록]'); L.push(memo); }
+  L.push('');
+  L.push('[처리 이력]');
+  (it.log || []).forEach(function(x){ L.push('- ' + x); });
+  const ph = photosOf(it);
+  const shots = ph.report.length + (ph.before?1:0) + (ph.after?1:0) + (ph.vbefore?1:0) + (ph.vafter?1:0);
+  L.push('');
+  L.push('[현장 사진] ' + shots + '장 — 필요 시 상황판에서 따로 내려받아 붙이십시오.');
+  L.push('');
+  L.push('이관 사유: 시 소관을 벗어나는 사항으로 해당 기관 처리가 필요합니다.');
+  const blob = new Blob(['﻿' + L.join(String.fromCharCode(13, 10))], {type:'text/plain;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const el = document.createElement('a');
+  el.href = url;
+  el.download = '이관인계서_' + String(it.id).padStart(3,'0') + '_' + it.sub.replace(/[^가-힣0-9]/g,'') + '.txt';
+  document.body.appendChild(el); el.click(); el.remove();
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  toast('이관 인계서를 내려받았습니다 — 해당 기관에 그대로 보내시면 됩니다');
 }
 
 function resultOpen(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const rows = actLog(it);
   const auto = actMemoDraft(it);
-  showModal('<h2 data-no="C-4c">✅ 조치결과 입력</h2>' +
+  const grp = credGroup(it);
+  rsId = id;
+  showModal('<h2 data-no="C-4c">✅ 종결처리 · 결과입력</h2>' +
     '<p class="hint">앞 단계에서 처리된 내용은 자동으로 담겼습니다. ' +
     '현장에 나가지 않고 답변만으로 끝나는 민원도 여기서 마무리합니다.</p>' +
     '<div class="ar-auto" data-no="C-4c1"><div class="ar-h">지금까지 조치한 내용 ' +
@@ -4452,7 +4549,13 @@ function resultOpen(id){
     '<div class="rp-res" id="rsResWrap">' + ACT_RESULTS.map(function(r, i){
       return '<button type="button" id="rsR' + i + '" onclick="rsPick(' + i + ')">' + r + '</button>';
     }).join('') + '</div>' +
+    '<div id="rsNote"></div>' +
     '<input type="hidden" id="rsRes" value="">' +
+    (grp.length > 1
+      ? '<div class="rs-grp" data-no="C-4c5">📍 같은 자리 유사제보 <b>' + grp.length + '건</b>' +
+        ' — 회신 단계에서 <b>한 번에</b> 처리할 수 있습니다 (' +
+        grp.map(function(x){ return '#' + String(x.id).padStart(3,'0'); }).join(' ') + ')</div>'
+      : '') +
     '<label class="rd-lb">조치 내용 <span class="rd-sub">자동으로 담긴 내용에 덧붙이면 됩니다</span></label>' +
     '<textarea id="rsAct" style="min-height:88px">' + esc(it.actMemo || auto) + '</textarea>' +
     '<div class="row"><button class="btn-o" data-no="C-4c2" onclick="actSave(' + id + ')">📋 조치기록 입력</button>' +
@@ -4469,12 +4572,18 @@ function actSave(id){
   if(!memo){ toast('조치 내용을 적어 주세요'); return; }
   it.actResult = res; it.actMemo = memo; it.actAt = new Date().toISOString();
   it.log.push(nowHM() + ' 조치기록: ' + res + ' — ' + memo.replace(/\n/g, ' / '));
-  if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '조치결과 ' + res);
-  else stageAuto(it.id, '조치결과 입력');
+  /* 현장 이상 없음은 회신할 것이 없다 — 그 자리에서 종결한다 */
+  if(res === '현장 이상 없음') stageDone(it.id, '현장 이상 없음 — 즉시 종결');
+  else if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '조치결과 ' + res);
+  else stageAuto(it.id, '종결처리 · 결과입력');
   try{ sbPush(it); }catch(e){}
+  /* 타 기관 이관은 받는 쪽이 그대로 쓸 인계서를 함께 내보낸다 */
+  if(res === '타 기관 이관 필요') transferDl(it.id);
   closeModal();
   renderSel(it); renderList(); renderMap();
-  toast('조치기록을 남겼습니다 — 회신은 따로 하시면 됩니다');
+  toast(res === '현장 이상 없음' ? '현장 이상 없음 — 곧바로 종결했습니다'
+      : (res === '타 기관 이관 필요' ? '이관 인계서를 내려받았습니다 — 해당 기관에 보내십시오'
+      : '조치기록을 남겼습니다 — 회신은 따로 하시면 됩니다'));
 }
 /* C-4c3 민원인 회신 — 기록과 다른 일이므로 화면을 나눈다 */
 function replyOpen2(id){
@@ -4483,10 +4592,17 @@ function replyOpen2(id){
   const res = (document.getElementById('rsRes') || {}).value || it.actResult || '조치 완료';
   const memo = ((document.getElementById('rsAct') || {}).value || '').trim() || it.actMemo || '';
   it.actResult = res; if(memo) it.actMemo = memo;
-  showModal('<h2 data-no="C-4c3">📞 민원인 회신</h2>' +
+  const grp = credGroup(it);
+  showModal('<h2 data-no="C-4c3">📞 민원인 회신' +
+    (grp.length > 1 ? ' <span class="sub">유사제보 ' + grp.length + '건</span>' : '') + '</h2>' +
     '<p class="hint">신고인에게 알린 내용을 남깁니다. 처리 결과 통보 여부가 이 기록으로 확인됩니다.</p>' +
     '<div class="sel-kv"><span>처리 결과</span><b>' + esc(res) + '</b></div>' +
     (memo ? '<div class="sel-kv"><span>조치 내용</span><b>' + esc(memo.replace(/\n/g, ' / ')) + '</b></div>' : '') +
+    (grp.length > 1
+      ? '<label class="rs-all" data-no="C-4c5"><input type="checkbox" id="rsAll" checked> ' +
+        '같은 자리 유사제보 <b>' + grp.length + '건</b>에 <b>한 번에</b> 회신 ' +
+        '<span>(' + grp.map(function(x){ return '#' + String(x.id).padStart(3,'0'); }).join(' ') + ')</span></label>'
+      : '') +
     '<label class="rd-lb">회신 방법</label>' +
     '<select id="rsVia"><option>문자</option><option>전화</option><option>방문</option></select>' +
     '<label class="rd-lb">회신 내용</label>' +
@@ -4502,16 +4618,24 @@ function replySave2(id){
   const via = (document.getElementById('rsVia') || {}).value || '문자';
   if(!memo){ toast('회신 내용을 적어 주세요 — AI 초안을 쓰셔도 됩니다'); return; }
   const res = it.actResult || '조치 완료';
-  it.vendorResult = it.vendorResult || null;
-  it.replyMemo = memo; it.replyVia = via; it.replyAt = new Date().toISOString();
-  it.log.push(nowHM() + ' 민원인 회신(' + via + '): ' + memo.replace(/\n/g, ' / '));
-  if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '회신 완료');
-  else stageAuto(it.id, '민원인 회신');
-  try{ sbPush(it); }catch(e){}
+  /* 같은 자리 같은 종류로 모인 제보는 답이 하나다 — 골랐으면 묶어서 함께 끝낸다 */
+  const all = ((document.getElementById('rsAll') || {}).checked) ? credGroup(it) : [it];
+  for(const x of all){
+    x.actResult = x.actResult || res;
+    if(!x.actMemo && it.actMemo) x.actMemo = it.actMemo;
+    x.vendorResult = x.vendorResult || null;
+    x.replyMemo = memo; x.replyVia = via; x.replyAt = new Date().toISOString();
+    x.log.push(nowHM() + ' 민원인 회신(' + via + ')' +
+      (all.length > 1 ? ' · 유사제보 ' + all.length + '건 일괄 (#' + String(it.id).padStart(3,'0') + ' 대표)' : '') +
+      ': ' + memo.split(String.fromCharCode(10)).join(' / '));
+    if(DONE_RESULTS.indexOf(x.actResult) >= 0) stageDone(x.id, '회신 완료');
+    else stageAuto(x.id, '민원인 회신');
+    try{ sbPush(x); }catch(e){}
+    if(via === '문자') replySms(x, memo);
+  }
   closeModal();
-  if(via === '문자') replySms(it, memo);
   renderSel(it); renderList(); renderMap();
-  toast('민원인 회신을 기록했습니다');
+  toast(all.length > 1 ? '유사제보 ' + all.length + '건을 한 번에 회신했습니다' : '민원인 회신을 기록했습니다');
 }
 /* 민원 답변 초안은 AI 가 쓴다 — 직원은 고치기만 하면 된다 */
 function replyDraft(id){
@@ -8059,10 +8183,10 @@ function d10Html(){
    직원이 넣는 것은 사진과 조치 결과뿐이다. 나머지는 자동으로 채운다.
    제출하면 시민 화면 완료 전환 + 일일보고 반영 + 처리시간 집계가 한 번에 이뤄진다. */
 const RESULTS = [
-  {k:'조치 완료',      need:'after'},
-  {k:'임시 조치',      need:'after'},
-  {k:'타 부서 이관',   need:null},
-  {k:'현장 이상 없음', need:null}
+  {k:'조치 완료',          need:'after'},
+  {k:'처리 중',            need:null},
+  {k:'타 기관 이관 필요',  need:null},
+  {k:'현장 이상 없음',     need:null}
 ];
 let REPORTS = {};
 try{ const v = localStorage.getItem('hs_reports'); if(v) REPORTS = JSON.parse(v); }catch(e){}
