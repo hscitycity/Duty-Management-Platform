@@ -27,3 +27,7 @@ CLAUDE.md
 # === 검증용 임시 스크립트 (커밋 대상 아님) ===
 _smoke.mjs
 _*.mjs
+
+# 원본 shp 묶음 — 변환 결과(data/adm_dong.geojson)만 저장소에 둔다
+HWASEONG_ADM_DONG.zip
+_shp/

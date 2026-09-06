@@ -1912,6 +1912,16 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 /* 기상 중에는 지도 위 배지·안내를 내려 Windy 도구 줄과 겹치지 않게 */
 #mapBox.wx-on #mapPickBar{top:62px;}
 
+/* G-8 행정동 경계 — 이름표는 작고 옅게, 확대해야 읽히게 */
+.adm-label{background:transparent !important; border:none !important; box-shadow:none !important;
+  color:#1D4994 !important; font-size:11.5px; font-weight:800; padding:0 !important;
+  text-shadow:0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff, 0 0 3px #fff;}
+.adm-label:before{display:none !important;}
+.zlo .adm-label{font-size:10.5px; opacity:.75;}
+/* 야간·항공 배경에서는 밝게 */
+body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
+  text-shadow:0 0 3px #08203a, 0 0 3px #08203a, 0 0 4px #08203a;}
+
 </style>
 </head>
 <body>
@@ -1998,6 +2008,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div id="mapLayerBar" data-no="G-1">
             <div class="mlb-quick">
               <button class="lb on" id="cplBtn" onclick="toggleCpl()">🚨 민원</button>
+              <button class="lb on" id="admBtn" data-no="G-8" onclick="toggleAdm()">🗺️ 행정동</button>
               <button class="lb on" id="festBtn" onclick="toggleFest()">🎪 행사·인파</button>
               <button class="lb" id="cctvBtn" onclick="toggleCctv()">📹 CCTV</button>
               <button class="lb" id="incBtn" onclick="toggleInc()">⚠️ 돌발상황</button>
@@ -2319,7 +2330,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1736';
+const BUILD_VER = 'v0906-1749';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2846,6 +2857,7 @@ function csRightTab(k){
    z-order 를 코드에 고정하지 않고 배열 순서로 두고, 목록에서 위에 있는 레이어가 위에 렌더된다. */
 const LAYER_DEFS = [
   {id:'cplBtn',   nm:'민원 핀',        grp:'상황',      fn:'toggleCpl'},
+  {id:'admBtn',   nm:'행정동 경계',     grp:'상황',      fn:'toggleAdm'},
   {id:'festBtn',  nm:'행사·인파',      grp:'상황',      fn:'toggleFest'},
   {id:'stnBtn',   nm:'소방서·경찰서',   grp:'상황',      fn:'toggleStn'},
   {id:'wxBtn',    nm:'기상 관제(Windy)', grp:'기상·환경', fn:'toggleWx'},
@@ -5808,6 +5820,47 @@ function toggleFest(){
   renderFestivals();
 }
 // 🚨 민원 마커 레이어 토글
+/* ══════════ G-8 행정동 경계 ══════════
+   통계청 행정동 경계(BND_ADM_DONG_PG, 2025-06-30 기준) 29개.
+   민원 위치가 어느 동인지 지도에서 바로 읽히도록 기본으로 켜 둔다.
+   원본 shp → data/adm_dong.geojson 변환은 scripts/shp2geojson.mjs 가 한다. */
+let admOn = true, admLayer = null, admData = null, admLoading = false;
+function admLoad(){
+  if(admData || admLoading) return Promise.resolve(admData);
+  admLoading = true;
+  return fetch('data/adm_dong.geojson')
+    .then(function(r){ return r.json(); })
+    .then(function(j){ admData = j; admLoading = false; return j; })
+    .catch(function(e){ admLoading = false; console.error('행정동 경계를 불러오지 못했습니다', e); return null; });
+}
+function admDraw(){
+  if(typeof map === 'undefined' || !map || !window.L || !admData) return;
+  if(admLayer){ try{ map.removeLayer(admLayer); }catch(e){} admLayer = null; }
+  if(!admOn) return;
+  admLayer = L.geoJSON(admData, {
+    /* 배경 위의 얇은 실선 — 민원 마커를 가리지 않는다 */
+    style: function(){ return {color:'#1D4994', weight:1.2, opacity:.55, fill:true,
+                               fillColor:'#1D4994', fillOpacity:.03, interactive:false}; },
+    onEachFeature: function(f, l){
+      const nm = (f.properties && f.properties.name) || '';
+      if(!nm) return;
+      l.bindTooltip(nm, {permanent:true, direction:'center', className:'adm-label'});
+    }
+  }).addTo(map);
+  try{ admLayer.bringToBack(); }catch(e){}
+}
+function toggleAdm(){
+  admOn = !admOn;
+  const b = document.getElementById('admBtn');
+  if(b) b.classList.toggle('on', admOn);
+  if(admOn){
+    admLoad().then(function(){ admDraw(); });
+    toast('행정동 경계 표시 — 29개 동');
+  } else { admDraw(); toast('행정동 경계 숨김'); }
+}
+/* 지도가 준비되면 바로 그린다 — 필수 레이어다 */
+function admInit(){ admLoad().then(function(){ admDraw(); }); }
+
 let cplOn = true;
 /* §5.1 민원 레이어를 꺼도 선택한 민원 하나는 지도에 남긴다.
    목록에서 고른 건이 지도에서 사라지면 위치를 확인할 수 없다. */
@@ -10877,6 +10930,7 @@ function setMode(m, fromHash){
   if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
   if((m==="duty"||m==="info") && map){
     dutyLayersInit();
+    admInit();
     if(typeof renderLayerPanel === 'function') renderLayerPanel();
     if(typeof csApply === 'function') csApply();
     setTimeout(()=>map.invalidateSize(),50);
@@ -10915,7 +10969,9 @@ function closeModal(){
 document.getElementById("ovl").addEventListener("click",e=>{ if(e.target.id==="ovl") closeModal(); });
 document.querySelector('header .duty') && (document.querySelector('header .duty').title = '빌드 ' + BUILD_VER);
 try{ const bv=document.createElement('span'); bv.style.cssText='font-size:10.5px;color:#98A8C0;margin-left:8px'; bv.textContent=BUILD_VER; document.querySelector('header .duty b') && document.querySelector('header .duty b').after(bv); }catch(e){}
-setInterval(()=>{ const d=new Date(); document.getElementById("clock").textContent = d.getFullYear()+". "+(d.getMonth()+1)+". "+d.getDate()+". "+nowHM(); },1000);
+/* 옛 헤더의 #clock 을 매초 찾다가 오류를 내고 있었다 — 헤더를 공통 부품으로 바꿀 때 사라진 요소다.
+   시계는 csClockTick() 이 맡는다(#csClock · 근무대 · 소속을 함께 갱신). */
+setInterval(csClockTick, 1000);
 
 /* ── D-03 스플래시 제어: 지도 초기화 · DB 연결이 끝나면 사라진다 ── */
 const SP_STEPS={res:[20,'지도 자원 준비 중…'], map:[55,'지도 초기화 중…'], db:[85,'클라우드 DB 연결 중…'], done:[100,'준비 완료']};
