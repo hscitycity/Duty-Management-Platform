@@ -1454,19 +1454,25 @@ body.modal-on #mapPickBar, body.modal-on #layerPanel, body.modal-on .leaflet-con
 .rg-foot .btn-o{min-height:44px; padding:0 22px;}
 
 /* C-4 조치 3버튼 — 직사각형 · 입체감 · 각기 다른 그라데이션 */
-.act3s{display:grid; grid-template-columns:1fr; gap:9px; margin-bottom:12px;}
-.act3{position:relative; display:grid; grid-template-columns:38px 1fr auto;
-  grid-template-rows:auto auto; align-items:center; gap:0 11px;
-  padding:12px 13px; border-radius:10px; border:none; cursor:pointer; text-align:left;
+/* C-4 가로 3열. 좁아지면 세로로 떨어진다 */
+.act3s{display:grid; grid-template-columns:repeat(3,1fr); gap:9px; margin-bottom:10px;}
+@media(max-width:900px){.act3s{grid-template-columns:1fr;}}
+/* 가로로 서므로 아이콘을 위에 두고 가운데 정렬한다 */
+.act3{position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; min-height:88px; padding:11px 9px; border-radius:10px; border:none; cursor:pointer; text-align:center;
   color:#fff; box-shadow:0 3px 0 rgba(0,0,0,.18), 0 4px 12px rgba(16,32,64,.20);
   transition:transform .1s ease, box-shadow .1s ease;}
 .act3:hover{transform:translateY(-1px); box-shadow:0 4px 0 rgba(0,0,0,.18), 0 7px 18px rgba(16,32,64,.26);}
 .act3:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18), 0 2px 6px rgba(16,32,64,.20);}
-.act3 .a-i{grid-row:1/3; font-size:21px; text-align:center;}
-.act3 .a-t{font-size:14.5px; font-weight:800; letter-spacing:-.2px;}
-.act3 .a-s{font-size:11.5px; opacity:.88; line-height:1.4;}
-.act3 .a-b{grid-row:1/3; font-size:11px; font-weight:800; padding:3px 9px; border-radius:999px;
-  background:rgba(255,255,255,.24); white-space:nowrap;}
+.act3 .a-i{font-size:20px; line-height:1;}
+.act3 .a-t{font-size:13.5px; font-weight:800; letter-spacing:-.3px; line-height:1.3;}
+.act3 .a-s{font-size:11px; opacity:.86; line-height:1.35;}
+.act3 .a-b{position:absolute; right:7px; top:7px; font-size:10px; font-weight:800;
+  padding:1px 7px; border-radius:999px; background:rgba(255,255,255,.24); white-space:nowrap;}
+/* 세부 구획은 넓을 때만 2열로 */
+.sel-detail{display:grid; grid-template-columns:1fr; gap:0 18px;}
+body.sel-open .sel-detail{grid-template-columns:1fr 1fr;}
+body.sel-open .sel-detail > .sel-h:first-child{margin-top:0;}
 /* 색은 하는 일로 나눈다 — 현장(적) · 인계(청) · 종결(녹) */
 .act3.a-fld{background:linear-gradient(160deg,#F0654A 0%,#D63B1F 60%,#B32E14 100%);}
 .act3.a-sms{background:linear-gradient(160deg,#4A7FD1 0%,#1D4994 60%,#143567 100%);}
@@ -1619,6 +1625,14 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 .cw-more{font-size:12px; color:#8FB2E0; margin:8px 0 0;}
 @media(max-width:900px){.cw-row{grid-template-columns:44px auto 1fr; }
   .cw-row .m, .cw-row .st{display:none;}}
+
+/* 결과보고 — 빠진 칸을 짚어 준다 */
+.rp-must{font-size:11px; font-weight:800; color:#fff; background:var(--urgent);
+  padding:1px 7px; border-radius:999px; margin-left:6px;}
+.rp-need{position:relative; outline:2px solid var(--urgent); outline-offset:3px; border-radius:8px;}
+.rp-need:after{content:attr(data-need); position:absolute; left:0; top:-22px;
+  font-size:11.5px; font-weight:700; color:#fff; background:var(--urgent);
+  padding:2px 8px; border-radius:5px; white-space:nowrap;}
 
 </style>
 </head>
@@ -1959,9 +1973,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 </div>
 
 <div id="dash">
-  <div class="kpis" id="dKpis"></div>
+  <div class="kpis" id="dKpis" data-no="H-1"></div>
   <!-- F: 지도는 상단 전폭, 그 아래 지표·차트를 3열 균등 배치 -->
-  <div class="card dash-map">
+  <div class="card dash-map" data-no="H-2">
     <h2>🗺️ 누적 현황 지도 <span class="sub">재난이력 + 완료민원</span>
       <button class="btn-g" style="min-height:36px;padding:6px 14px;font-size:13.5px;margin-left:auto" onclick="exportData()">💾 백업</button></h2>
     <div id="dashMap"></div>
@@ -1972,16 +1986,16 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
     </div>
   </div>
   <div class="dash-top">
-    <div class="card"><h2>⏱️ 처리시간·상습지점 <span class="sub">결과보고 기반</span></h2><div id="dOps"></div></div>
-    <div class="card"><h2>📊 최근 7일 접수 추이</h2><div class="cols" id="dTrend"></div></div>
-    <div class="card"><h2>🕐 시간대별 접수 분포 <span class="sub">당직시간 피크</span></h2><div id="dHour"></div></div>
-    <div class="card"><h2>🗂️ 분야별 누적</h2><div id="dField"></div></div>
-    <div class="card"><h2>🗺️ 관할구별 누적</h2><div id="dGu"></div></div>
-    <div class="card"><h2>🚨 긴급도 비율</h2><div id="dUrg"></div></div>
+    <div class="card" data-no="H-3"><h2>⏱️ 처리시간·상습지점 <span class="sub">결과보고 기반</span></h2><div id="dOps"></div></div>
+    <div class="card" data-no="H-4"><h2>📊 최근 7일 접수 추이</h2><div class="cols" id="dTrend"></div></div>
+    <div class="card" data-no="H-5"><h2>🕐 시간대별 접수 분포 <span class="sub">당직시간 피크</span></h2><div id="dHour"></div></div>
+    <div class="card" data-no="H-6"><h2>🗂️ 분야별 누적</h2><div id="dField"></div></div>
+    <div class="card" data-no="H-7"><h2>🗺️ 관할구별 누적</h2><div id="dGu"></div></div>
+    <div class="card" data-no="H-8"><h2>🚨 긴급도 비율</h2><div id="dUrg"></div></div>
   </div>
   <div class="dgrid2">
-    <div class="card"><h2>🚨 재난상황 이력 <span class="sub">안전·재난 + 긴급 분류</span></h2><div class="tbl-scroll" id="dDisaster"></div></div>
-    <div class="card"><h2>✅ 민원처리 이력 <span class="sub">완료 건 자동 이관·누적</span></h2><div class="tbl-scroll" id="dDone"></div></div>
+    <div class="card" data-no="H-9"><h2>🚨 재난상황 이력 <span class="sub">안전·재난 + 긴급 분류</span></h2><div class="tbl-scroll" id="dDisaster"></div></div>
+    <div class="card" data-no="H-10"><h2>✅ 민원처리 이력 <span class="sub">완료 건 자동 이관·누적</span></h2><div class="tbl-scroll" id="dDone"></div></div>
   </div>
 </div>
 <div id="citizen">
@@ -2013,7 +2027,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1554';
+const BUILD_VER = 'v0906-1602';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3679,7 +3693,8 @@ function renderSel(it){
       '<span class="a-s">' + sub + '</span>' +
       '<span class="a-b">' + stTx[state] + '</span></button>';
 
-  const colA = (it.urg === '긴급'
+  /* 조치는 맨 위에, 가로로 나란히. 무엇부터 할지가 먼저 보여야 한다 */
+  const actRow = (it.urg === '긴급'
       ? '<div class="sel-urg">⚡ 인명·안전 위험 시 <b>119/112 즉시 공동대응</b> → 재난안전상황실 ☎5189-2119</div>' : '') +
     '<div class="act3s" data-no="C-4">' +
       act('C-4a', 'a-fld', '🚨', '현장확인 · 인력배치',
@@ -3689,12 +3704,12 @@ function renderSel(it){
       act('C-4c', 'a-rep', '✅', '조치결과 입력',
           it.replyAt ? '회신 ' + hm(it.replyAt) : '현장 없이 답변도 여기서', stReply, 'resultOpen(' + it.id + ')') +
     '</div>' +
-    '<div class="act-st-row">처리 단계 ' +
+    '<div class="act-st-row" data-no="C-22">처리 단계 ' +
       '<select class="act-st" onchange="setStatus(' + it.id + ', this.value)" aria-label="처리 단계">' +
       ['신규접수','처리중','완료'].map(x=>'<option' + (x === it.st ? ' selected' : '') + '>' + x + '</option>').join('') +
       '</select></div>';
 
-  /* ── 우열: 세부 6구획. 이 순서 고정. 모든 구획은 펼침이 기본이다 ── */
+  /* ── 세부 6구획. 이 순서 고정. 모든 구획은 펼침이 기본이다 ── */
   const colB =
     /* 1 민원내용 — 위치 · 문제상황 · 조치필요사항 */
     '<div class="sel-h" data-no="C-5">1. 민원내용</div>' +
@@ -3733,7 +3748,8 @@ function renderSel(it){
     '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div>';
 
   /* 640px 에서 2열: 좌열 조치 4구획, 우열 세부 6구획. 한 덩어리로 스크롤한다 */
-  body.innerHTML = '<div class="sel-2col"><div class="sel-col">' + colA + '</div><div class="sel-col">' + colB + '</div></div>';
+  /* 조치 3버튼은 맨 위 가로 3열, 그 아래 세부 6구획. 한 덩어리로 스크롤한다 */
+  body.innerHTML = actRow + '<div class="sel-detail" data-no="C-13b">' + colB + '</div>';
   const dh = document.getElementById('dHint');
   if(dh) dh.textContent = '#' + String(it.id).padStart(3,'0');
 }
@@ -3755,7 +3771,7 @@ function deptPick(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   deptPickFor = id;
   deptPickSel = deptOf(it).actor.org;
-  showModal('<h2>🏢 처리주체 변경</h2>' +
+  showModal('<h2 data-no="C-6b">🏢 처리주체 변경</h2>' +
     '<p class="hint">행정조직도에서 고릅니다. 직접 입력할 수 없습니다.</p>' +
     '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
     '<div class="oc-wrap oc-pick" id="orgPop"></div>' +
@@ -3813,7 +3829,7 @@ function replySave(id){
 function fieldGo(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const crew = (it.crews || []).length;
-  showModal('<h2>🚨 현장확인 · 인력배치</h2>' +
+  showModal('<h2 data-no="C-4a">🚨 현장확인 · 인력배치</h2>' +
     '<p class="hint">현장에 나가는 경우입니다. 인력을 배치하고 확인 결과를 남깁니다.</p>' +
     '<div class="sel-kv"><span>현재 투입</span><b>' + (crew ? crew + '명' : '없음') + '</b></div>' +
     '<div class="sel-kv"><span>현장 확인</span><b>' + (it.fieldCheckAt ? hm(it.fieldCheckAt) + ' · ' + (it.fieldCheckBy || '') : '미확인') + '</b></div>' +
@@ -3824,7 +3840,7 @@ function fieldGo(id){
 /* C-4c 조치결과 입력 — 나가지 않고 끝내는 경우까지 여기서 */
 function resultOpen(id){
   const it = items.find(i=>i.id === id); if(!it) return;
-  showModal('<h2>✅ 조치결과 입력</h2>' +
+  showModal('<h2 data-no="C-4c">✅ 조치결과 입력</h2>' +
     '<p class="hint">현장에 나가지 않고 답변만으로 끝나는 민원도 여기서 처리합니다.</p>' +
     '<label class="rd-lb">처리 결과</label>' +
     '<select id="rsRes"><option>조치 완료</option><option>추가 작업 필요</option><option>현장 이상 없음</option>' +
@@ -3885,7 +3901,7 @@ function replySms(it, memo){
 function deptWhy(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const a = deptOf(it);
-  showModal('<h2>📋 배정 근거</h2>' +
+  showModal('<h2 data-no="C-6a">📋 배정 근거</h2>' +
     '<div class="sel-kv"><span>민원</span><b>' + esc(it.field) + ' · ' + esc(it.sub) + '</b></div>' +
     '<div class="sel-kv"><span>배정 부서</span><b>' + esc(a.actor.org) + '</b></div>' +
     '<div class="sel-kv"><span>확신도</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
@@ -4097,7 +4113,7 @@ function openHandoff(id){
      따로 복사하게 하면 일이 하나 더 늘 뿐이다. */
   const rptLink = (typeof doneLink === 'function') ? doneLink(id) : '';
   const msg = "[화성시 당직실] "+it.field+"("+it.sub+") 처리요청\n위치: "+it.loc+" (지도: hs.go/"+String(it.id).padStart(3,"0")+")\n내용: "+it.sum+"\n요청: "+it.req+"\n처리 후 회신 링크로 결과·사진 등록 바랍니다." + (rptLink ? "\n조치 후 사진 등록: " + rptLink : "");
-  showModal('<h2>📨 담당용역업체 처리요청 문자발송</h2>'+
+  showModal('<h2 data-no="C-4b">📨 담당용역업체 처리요청 문자발송</h2>'+
     '<p style="font-size:15px;margin-bottom:8px">수신: <b>'+tgt+'</b></p>'+
     '<label style="font-size:13px;font-weight:600;color:var(--muted)">수신번호</label>'+
     '<input id="hNum" placeholder="010-0000-0000" value="'+((tgt.match(/0[0-9]{1,2}-[0-9*]{3,4}-[0-9*]{4}/)||[""])[0])+'" style="margin:5px 0 10px">'+
@@ -4716,7 +4732,7 @@ function renderFeed(){
   const rows = FEED_ALL.slice(from, from + FEED_PER)
     .map(x=>feedRow(x.ico, x.t, x.l, x.when + ' · ' + x.src)).join('');
   el.innerHTML = rows +
-    '<div class="fd-pg">' +
+    '<div class="fd-pg" data-no="F-4a">' +
       '<button class="fd-b" onclick="feedGo(-1)"' + (feedPage === 0 ? ' disabled' : '') + '>◀ 최근</button>' +
       '<span class="fd-n"><b>' + (feedPage + 1) + '</b> / ' + pages + '쪽' +
         '<span>' + (from + 1) + '–' + Math.min(from + FEED_PER, FEED_ALL.length) + ' / ' + FEED_ALL.length + '건</span></span>' +
@@ -7027,7 +7043,7 @@ function reportOpen(id){
   const arrive = (it.log.find(l=>l.indexOf('현장 도착') >= 0) || '').slice(0, 5) || nowHM();
   const mins = Math.max(1, minsBetween(it.time, arrive));
   rpDraft = {id:id, before:null, after:null, result:null, memo:'', pubPhoto:true, gps:null};
-  showModal('<h2>📝 현장 결과보고 <span style="font-size:13px;font-weight:400;color:var(--muted)">#' + String(id).padStart(3,'0') + '</span></h2>' +
+  showModal('<h2 data-no="C-4d">📝 현장 결과보고 <span style="font-size:13px;font-weight:400;color:var(--muted)">#' + String(id).padStart(3,'0') + '</span></h2>' +
     '<div class="rp-auto">자동 입력 — 직원이 넣는 것은 사진과 조치 결과뿐입니다.<br>' +
     '민원번호 <b>#' + String(id).padStart(3,'0') + '</b> · 위치 <b>' + it.loc + '</b><br>' +
     '도착시각 <b>' + arrive + '</b> · 담당 <b>' + a.actor.org + '</b> · 소요시간 <b>' + mins + '분</b></div>' +
@@ -7037,15 +7053,16 @@ function reportOpen(id){
     '<label class="rp-slot" id="rpSlotA">조치 <b>후</b> 사진<br><span style="font-size:12px">누르면 촬영·선택</span>' +
     '<input type="file" accept="image/*" capture="environment" style="display:none" onchange="rpPhoto(this,\'after\')"></label></div>' +
     '<div id="rpGpsWarn"></div>' +
-    '<label style="font-size:13px;font-weight:700;display:block;margin-top:16px">조치 결과</label>' +
-    '<div class="rp-res">' + RESULTS.map((r,i)=>'<button id="rpRes' + i + '" onclick="rpPickResult(' + i + ')">' + r.k + '</button>').join('') + '</div>' +
+    '<label style="font-size:13px;font-weight:700;display:block;margin-top:16px">조치 결과 <b class="rp-must">필수</b></label>' +
+    '<div class="rp-res" id="rpResWrap">' + RESULTS.map((r,i)=>'<button id="rpRes' + i + '" onclick="rpPickResult(' + i + ')">' + r.k + '</button>').join('') + '</div>' +
     '<label style="font-size:13px;font-weight:700;display:block;margin-top:12px">조치 내용 (선택)</label>' +
     '<input id="rpMemo" placeholder="예) 임시 포장 후 재방문 예정" style="margin-top:6px">' +
     '<label style="display:flex;gap:8px;align-items:center;margin-top:12px;font-size:13px">' +
     '<input type="checkbox" id="rpPub" checked style="width:auto"> 사진을 시민 화면에 공개</label>' +
     '<div id="rpPubNote" style="font-size:12px;color:var(--muted);margin-top:4px">사람 얼굴·차량번호가 담긴 사진은 공개하지 말아 주세요.</div>' +
-    '<div class="row"><button class="btn-o" onclick="reportSubmit()">제출</button>' +
-    '<button class="btn-g" onclick="closeModal()">취소</button></div>', true);
+    '<div class="row"><button class="btn-o" id="rpSubmit" onclick="reportSubmit()">제출</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>' +
+    '<p class="hint" id="rpHint">조치 결과를 고르면 제출할 수 있습니다.</p>', true);
   /* 촬영 위치가 신고 지점과 먼지 확인 */
   if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(pos=>{
@@ -7089,14 +7106,28 @@ function rpPickResult(i){
   if(!rpDraft) return;
   rpDraft.result = RESULTS[i].k;
   RESULTS.forEach((r,j)=>{ const b = document.getElementById('rpRes' + j); if(b) b.classList.toggle('on', i === j); });
+  const need = RESULTS[i].need;
+  const h = document.getElementById('rpHint');
+  if(h) h.textContent = (need === 'after' && !rpDraft.after)
+    ? '조치 후 사진을 넣으면 제출할 수 있습니다.'
+    : '제출하면 시민 화면·일일보고·처리시간 집계에 함께 반영됩니다.';
 }
 function reportSubmit(){
-  if(!rpDraft){ return; }
+  if(!rpDraft){ closeModal(); return; }
   const it = items.find(i=>i.id === rpDraft.id);
-  if(!it) return;
-  if(!rpDraft.result){ toast('조치 결과를 골라 주세요'); return; }
+  if(!it){ closeModal(); return; }
+  /* 무엇이 빠졌는지 화면에서 바로 보이게 한다 — 토스트만 띄우면 왜 안 닫히는지 알 수 없다 */
+  if(!rpDraft.result){
+    rpNeed('조치 결과를 골라 주세요', 'rpResWrap');
+    toast('조치 결과를 골라 주세요');
+    return;
+  }
   const need = (RESULTS.find(r=>r.k === rpDraft.result) || {}).need;
-  if(need === 'after' && !rpDraft.after){ toast('조치 후 사진이 필요합니다'); return; }
+  if(need === 'after' && !rpDraft.after){
+    rpNeed('조치 후 사진이 필요합니다', 'rpSlotA');
+    toast('조치 후 사진이 필요합니다');
+    return;
+  }
   rpDraft.memo = (document.getElementById('rpMemo') || {}).value || '';
   rpDraft.pubPhoto = !!(document.getElementById('rpPub') || {}).checked;
   const a = deptOf(it);
@@ -7117,8 +7148,26 @@ function reportSubmit(){
     toast('통신이 끊겨 기기에 저장했습니다 — 연결되면 자동으로 보냅니다');
     return;
   }
-  reportCommit(rec);
+  /* 창을 먼저 닫는다. 저장 중 오류가 나도 창이 남아 "왜 안 닫히지"가 되지 않게. */
   closeModal();
+  try{
+    reportCommit(rec);
+  }catch(e){
+    /* 저장에 실패하면 기기에 담아 두고 다시 보낸다 — 입력을 날리지 않는다 */
+    RP_QUEUE.push(rec);
+    try{ localStorage.setItem('hs_rp_queue', JSON.stringify(RP_QUEUE)); }catch(e2){}
+    toast('저장 중 문제가 있어 기기에 담아 두었습니다 — 다시 보냅니다');
+    console.error('결과보고 저장 실패', e);
+  }
+}
+/* 빠진 칸을 짚어 준다 */
+function rpNeed(msg, id){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.classList.add('rp-need');
+  el.setAttribute('data-need', msg);
+  try{ el.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
+  setTimeout(()=>el.classList.remove('rp-need'), 2200);
 }
 function reportCommit(rec){
   const it = items.find(i=>i.id === rec.id);
@@ -7370,7 +7419,7 @@ function cmdWhyList(su){
   const urg = list.filter(i=>i.urg === '긴급').length;
   const open = list.filter(i=>i.st !== '완료').length;
 
-  return '<div class="hud cmd-why" data-no="C-20a">' +
+  return '<div class="hud cmd-why" data-no="I-3">' +
     '<h3>🧾 이 민원들 때문입니다 <span class="cw-n">' + list.length + '건</span></h3>' +
     '<div class="cw-sum">' +
       '<span><b>' + esc(su.emd) + '</b> 반경 ' + su.radius.toLocaleString() + 'm · 최근 ' + su.hours + '시간</span>' +
@@ -7407,14 +7456,14 @@ function renderCmd(){
   if(!cmdDepts) cmdDepts = Object.assign({}, ACT_TYPES[cmdType].depts);
 
   const head =
-    '<div class="rd-head"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🧭 조치지시</h2>' +
+    '<div class="rd-head" data-no="I-1"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🧭 조치지시</h2>' +
     '<span style="font-size:13px;color:var(--muted)">동일 지역 유사 민원 급증이 상신 기준(' + th.report + '건)을 넘은 건만 올라옵니다</span>' +
     '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="openRules()">⚙️ 탐지 규칙</button>' +
     '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:13px" onclick="renderCmd()">↻ 새로고침</button></div>';
 
   if(!upto.length){
     host.innerHTML = head +
-      '<div class="hud"><h3>📡 급증 탐지 대기</h3>' +
+      '<div class="hud" data-no="I-2"><h3>📡 급증 탐지 대기</h3>' +
       '<p style="font-size:14px;line-height:1.8;color:#A9C4E8">지금은 상신 기준을 넘은 급증이 없습니다. ' +
       '탐지 ' + th.detect + '건(부서 알림) · 상신 ' + th.report + '건(시장 조치지시) 기준으로 계속 보고 있습니다.' +
       (surges.length ? '<br>현재 탐지된 지역 <b style="color:#38bdf8">' + surges.length + '곳</b> — 부서 알림 단계입니다.' : '') +
@@ -7432,7 +7481,7 @@ function renderCmd(){
 
   host.innerHTML = head +
     /* 탐지 근거 — HUD */
-    '<div class="hud"><h3>📡 탐지 근거</h3><div class="kv">' +
+    '<div class="hud" data-no="I-2"><h3>📡 탐지 근거</h3><div class="kv">' +
     '<div><div class="k">지역</div><div class="v" style="font-size:17px">' + su.emd + '</div></div>' +
     '<div><div class="k">접수 건수</div><div class="v">' + su.cnt + '<em> 건</em></div></div>' +
     '<div><div class="k">시간창</div><div class="v">' + su.hours + '<em> 시간</em></div></div>' +
@@ -7446,7 +7495,7 @@ function renderCmd(){
     '</div>' +
 
     /* 조치 유형 3분류 — 각 카드에 총원이 미리 계산돼 있다 */
-    '<div class="cmd-grid">' + ACT_TYPES.map((a,i)=>{
+    '<div class="cmd-grid" data-no="I-4">' + ACT_TYPES.map((a,i)=>{
       const sum = Object.values(i === cmdType ? cmdDepts : a.depts).reduce((x,y)=>x + y, 0);
       return '<div class="cmd-card" style="' + (i === cmdType ? 'border:2px solid var(--hs-orange)' : '') + '">' +
         '<h4>' + a.ico + ' ' + a.k + '</h4>' +
@@ -7755,7 +7804,7 @@ function meRender(){
   }
   if(meStep === 'room'){
     body = meBack('상황실') +
-      '<div class="me-grid">' + ORG_ROOMS.map(r=>
+      '<div class="me-grid" data-no="D-3">' + ORG_ROOMS.map(r=>
         '<button onclick="meSet(\'' + r.role + '\',\'' + r.nm + '\',\'\',\'\')">' + r.nm + '</button>').join('') + '</div>';
     showModal('<h2>👤 내 소속</h2>' + body, true);
     return;
@@ -7990,7 +8039,7 @@ function citFlow(stage){
   /* 옛 'etc'(8분야 2계층) 단계는 A-5 세부분류 · A-6 직접 작성이 대신한다 */
   if(stage === 'loc'){
     citTop('📍 어디에서 보셨나요?<span class="sub">지도를 움직여 가운데 핀을 맞춰 주세요</span>');
-    body.innerHTML = '<h3 id="citLocNm">위치를 확인하고 있습니다…</h3>' +
+    body.innerHTML = '<h3 id="citLocNm" data-no="A-2">위치를 확인하고 있습니다…</h3>' +
       '<p class="desc" id="citLocSub">지도를 움직이면 이 자리에 주소가 나옵니다.</p>' +
       '<div style="display:flex;gap:8px"><button class="btn-g" style="flex:1;min-height:48px" onclick="citMyLoc()">📍 현재 위치</button>' +
       '<input id="citAdrKw" placeholder="주소로 찾기" style="flex:1.4" onkeydown="if(event.key===\'Enter\')jusoCit()"></div>' +
@@ -8005,7 +8054,7 @@ function citFlow(stage){
   }
   if(stage === 'confirm'){
     citTop('');
-    body.innerHTML = '<h3>이 내용으로 접수할까요?</h3>' +
+    body.innerHTML = '<h3 data-no="A-7">이 내용으로 접수할까요?</h3>' +
       '<div class="confirm" style="font-size:15px;line-height:1.8">📍 <b>' + (cit.gu !== '미상' ? cit.gu + ' ' : '') + cit.near + ' 인근</b><br>' +
       '📋 <b>' + citTypeLabel() + '</b>' + (cit.etc ? '<br>✏️ ' + cit.etc : '') + '</div>' +
       '<label style="font-size:13px;font-weight:700;color:var(--muted);display:block;margin-top:12px">추가 설명 (선택)</label>' +
@@ -9194,7 +9243,7 @@ function renderRoad(){
     (bundles.length ? bundles.map(b=>
       '<div class="rd-bundle">📦 <b>작업 묶음 제안</b> — ' + b.org + ' · ' + b.sub + ' <b>' + b.list.length + '건</b>이 모였습니다.' +
       '<button class="cs-mini" style="margin-left:12px" onclick="bundleAssign(\'' + b.key + '\')">한 번에 배정</button></div>').join('') : '') +
-    '<div class="rd-cols">' + cols + '</div>';
+    '<div class="rd-cols" data-no="B-5">' + cols + '</div>';
 }
 /* 1분마다 카운트다운 갱신 */
 setInterval(()=>{ if(curMode === 'road') renderRoad(); }, 30000);
@@ -9398,7 +9447,7 @@ function openOrg(){
   showModal('<h2 data-no="F-3">🏢 부서현황 <span class="sub">행정조직도</span></h2>' +
     '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" ' +
       'oninput="orgPopSync()">' +
-    '<div class="oc-wrap" id="orgPop"></div>' +
+    '<div class="oc-wrap" id="orgPop" data-no="F-3a"></div>' +
     '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
   renderOrgPane('orgPop');
 }
