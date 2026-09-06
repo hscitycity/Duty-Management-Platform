@@ -907,6 +907,99 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
 .me-count{font-size:12px; color:var(--muted); margin-bottom:8px;}
 .me-grid button{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
 
+/* ══════════ 교통·도로민원 신속처리 기동단 ══════════ */
+#road{padding:14px 16px 32px; background:#F7F9FC; height:calc(100vh - var(--hdr,48px)); overflow-y:auto;}
+.rd-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:12px;}
+.rd-head h2{font-size:22px; font-weight:800; color:var(--hs-blue-dark);}
+.rd-tel{font-family:var(--mono,ui-monospace); font-size:13px; color:#fff; background:var(--hs-blue);
+  border-radius:999px; padding:3px 12px; font-weight:700;}
+/* 4.1 세 개의 시계 — 안내 대기가 가장 왼쪽·가장 크게 */
+.rd-clocks{display:grid; grid-template-columns:1.6fr repeat(3,.8fr) 1.6fr; gap:12px; margin-bottom:12px;}
+@media(max-width:1100px){.rd-clocks{grid-template-columns:1fr 1fr;}}
+.rd-c1{background:#fff; border:2px solid var(--hs-blue-line); border-radius:14px; padding:12px 16px;}
+.rd-c1 .k{font-size:13px; font-weight:800; color:var(--hs-blue-dark);}
+.rd-c1 .v{font-family:var(--mono,ui-monospace); font-size:38px; font-weight:800; line-height:1.1; color:var(--hs-blue-dark);}
+.rd-c1 .v small{font-size:14px; font-weight:600; color:var(--muted); margin-left:3px;}
+.rd-c1 .s{font-size:13px; font-weight:700; color:var(--muted);}
+.rd-c1.warn{border-color:#F0C36B; background:#FFF8E8;} .rd-c1.warn .v, .rd-c1.warn .s{color:#9A6700;}
+.rd-c1.red{border-color:#E5A79E; background:#FDF0EE;} .rd-c1.red .v, .rd-c1.red .s{color:#C1352B;}
+.rd-c1.over{border-color:#D63B1F; background:#D63B1F;}
+.rd-c1.over .k, .rd-c1.over .v, .rd-c1.over .s{color:#fff;}
+.rd-c2{background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px 12px;}
+.rd-c2 .k{font-size:12px; color:var(--muted); font-weight:700;}
+.rd-c2 .k small{font-weight:400; color:#8D9299;}
+.rd-c2 .v{font-family:var(--mono,ui-monospace); font-size:26px; font-weight:800; color:var(--hs-blue-dark);}
+.rd-c3{background:#fff; border:1px solid var(--line); border-radius:12px; padding:8px 12px;
+  display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; align-content:center;}
+.rd-c3 > div{display:flex; align-items:baseline; gap:6px; font-size:12px;}
+.rd-c3 .k{color:var(--muted); flex:1 1 auto;}
+.rd-c3 b{font-family:var(--mono,ui-monospace); font-size:15px; color:var(--hs-blue-dark);}
+.rd-c3 b.warn{color:#9A6700;} .rd-c3 b.over{color:#D63B1F;} .rd-c3 b.ok{color:#127A50;}
+/* 3장 5유형 필터 */
+.rd-cats{display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px;}
+.rd-cats .cs-chip{height:34px; font-size:13px;}
+/* 4.2 본문 4열 */
+.rd-cols{display:grid; grid-template-columns:1.15fr 1fr 1fr 1fr; gap:14px; align-items:start;}
+@media(max-width:1200px){.rd-cols{grid-template-columns:1fr 1fr;}}
+@media(max-width:700px){.rd-cols{grid-template-columns:1fr;}}
+.rd-col{background:#fff; border:1px solid var(--line); border-radius:14px; padding:12px;}
+.rd-col.col-wait{border:2px solid var(--hs-blue-line); background:#FBFDFF;}
+.rd-col > h3{font-size:15px; font-weight:800; color:var(--hs-blue-dark); display:flex; align-items:center; gap:6px;}
+.rd-col > h3 .cnt{margin-left:auto; font-family:var(--mono,ui-monospace); font-size:13px; color:var(--muted);}
+.rd-rule{font-size:11.5px; color:var(--muted); margin:2px 0 10px;}
+.rd-ok{font-size:12.5px; color:#127A50; background:#E8F6ED; border:1px solid #A9D9BC;
+  border-radius:8px; padding:10px; text-align:center;}
+.rd-empty{font-size:12.5px; color:var(--muted); text-align:center; padding:10px;}
+/* 4.3 민원 카드 */
+.rd-card{position:relative; border:1px solid var(--line); border-left:4px solid var(--cat,#1D4994);
+  border-radius:10px; padding:10px 12px; margin-bottom:8px; cursor:pointer; background:#fff; transition:.15s ease;}
+.rd-card:hover{background:#F7FAFD; box-shadow:0 2px 8px rgba(16,32,64,.10);}
+.rd-card.warn{background:#FFFCF3;} .rd-card.red{background:#FEF6F4;}
+.rd-card.over{border-color:#D63B1F; box-shadow:0 0 0 1px #D63B1F inset;}
+.rd-r1{display:flex; align-items:center; gap:6px; font-size:13px;}
+.rd-r1 .rd-t{font-family:var(--mono,ui-monospace); font-size:12px; color:var(--muted); flex:0 0 auto;}
+.rd-r1 .rd-n{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700;}
+.rd-b{flex:0 0 auto; font-size:11px; font-weight:800; border-radius:4px; padding:1px 6px; background:#EEF2F7; color:var(--muted);}
+.rd-b.sla{background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+.rd-r2{font-size:12px; color:var(--muted); margin-top:3px; display:flex; gap:6px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rd-r2 .id{margin-left:auto; font-family:var(--mono,ui-monospace); color:#8D9299; flex:0 0 auto;}
+.rd-r3{display:flex; align-items:center; gap:8px; margin-top:5px; font-size:12px;}
+.rd-clock{font-weight:800; color:var(--hs-blue-dark);}
+.rd-clock.warn{color:#9A6700;} .rd-clock.red, .rd-clock.over{color:#D63B1F;} .rd-clock.plan{color:#5F758F;}
+.rd-r3 .ch{margin-left:auto; color:#8D9299;}
+.rd-r4{font-size:11.5px; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.rd-steps{display:flex; gap:3px; margin-top:6px; flex-wrap:wrap;}
+.rd-steps span{font-size:10.5px; padding:1px 6px; border-radius:999px; background:#EEF1F4; color:var(--muted);}
+.rd-steps span.on{background:var(--hs-blue); color:#fff;}
+.rd-steps span.done{background:#DFF0E3; color:#127A50;}
+.rd-steps.big span{font-size:12px; padding:3px 10px;}
+.rd-bundle{background:var(--hs-blue-bg); border:1.5px dashed var(--hs-blue-line); border-radius:12px;
+  padding:10px 14px; margin-bottom:12px; font-size:13px;}
+/* 상세·접수 모달 */
+.rd-mno{font-family:var(--mono,ui-monospace); font-size:13px; color:var(--muted); font-weight:400;}
+.rd-mbar{border-radius:8px; padding:9px 12px; font-size:13.5px; font-weight:700; margin:8px 0 12px;
+  background:var(--hs-blue-bg); color:var(--hs-blue-dark);}
+.rd-mbar.warn{background:#FFF8E8; color:#9A6700;} .rd-mbar.red, .rd-mbar.over{background:#FDECEA; color:#C1352B;}
+.rd-mbar.plan{background:#EEF2F7; color:#5F758F;}
+.rd-lb{display:block; font-size:12px; font-weight:700; color:var(--muted); margin:10px 0 4px;}
+.acc summary b.ok{color:#127A50; font-size:11px; margin-left:auto;}
+.acc summary b.warn{color:#9A6700; font-size:11px; margin-left:auto;}
+.acc summary b.over{color:#D63B1F; font-size:11px; margin-left:auto;}
+.rd-catbtns{display:grid; grid-template-columns:repeat(5,1fr); gap:8px;}
+@media(max-width:700px){.rd-catbtns{grid-template-columns:repeat(2,1fr);}}
+.rd-catbtns button{display:flex; flex-direction:column; align-items:center; gap:6px; padding:12px 6px;
+  border-radius:12px; background:#F1F5FA; border:2px solid var(--line); font-size:12px; font-weight:700; color:var(--ink);}
+.rd-catbtns button .ic{font-size:26px;}
+.rd-catbtns button .nm{line-height:1.3; text-align:center;}
+.rd-catbtns button.on{background:var(--cat); border-color:var(--cat); color:#fff;}
+.rd-due-big{background:var(--hs-blue-bg); border:2px solid var(--hs-blue); border-radius:14px;
+  padding:16px; text-align:center; font-size:14px; color:var(--hs-blue-dark); margin:10px 0;}
+.rd-due-big b{display:block; font-family:var(--mono,ui-monospace); font-size:38px; font-weight:800; line-height:1.2;}
+.rd-due-big span{display:block; font-size:12.5px; color:var(--muted); margin-top:4px;}
+/* 상황판 목록의 기동단 이관 표시 */
+.it-b.road{background:#E8F1FF; color:#1D4994;}
+
 </style>
 </head>
 <body>
@@ -920,7 +1013,7 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
     <button id="tabDuty" class="on" onclick="setMode('duty')">당직자 상황판</button>
     <button id="tabDash" onclick="setMode('dash')">종합현황 대시보드</button>
     <button id="tabCit" onclick="setMode('cit')">화성시 24시간 민원접수창구</button>
-    <button id="tabRoad" onclick="setMode('road')">신속기동단 작업판</button>
+    <button id="tabRoad" onclick="setMode('road')">교통·도로 기동단</button>
     <button id="tabCmd" onclick="setMode('cmd')">조치지시</button>
   </div>
   <a class="btn-g" href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener"
@@ -963,7 +1056,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
       <div class="cs-modes" role="tablist">
         <button class="cs-chip on" id="csmDuty" onclick="setMode('duty')">상황판</button>
         <button class="cs-chip"    id="csmDash" onclick="setMode('dash')">대시보드</button>
-        <button class="cs-chip"    id="csmRoad" onclick="setMode('road')">기동단</button>
+        <button class="cs-chip"    id="csmRoad" onclick="setMode('road')">교통·도로 기동단</button>
         <button class="cs-chip"    id="csmCmd"  onclick="setMode('cmd')">조치지시</button>
         <button class="cs-chip"    id="csmCit"  onclick="setMode('cit')">민원창구</button>
       </div>
@@ -1265,7 +1358,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1009';
+const BUILD_VER = 'v0906-1021';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2560,6 +2653,8 @@ function listRow(it){
     '</div>' +
     '<div class="it-r2">' +
       '<span>' + it.loc + '</span>' +
+      /* 7장: 도로교통 민원은 기동단이 맡는다. 상황판에는 표시만 남긴다 */
+      (isRoadItem(it) ? '<span class="it-b road" title="교통·도로 기동단 이관">기동단</span>' : '') +
       (scopeOther(it) ? '<span class="it-b dept">' + deptOf(it).actor.org + '</span>' : '') +
       '<span class="id">#' + String(it.id).padStart(3, '0') + '</span>' +
     '</div></div>';
@@ -5378,7 +5473,15 @@ function itRow(it){
     photo_after:it.photoAfter||null, photo_public:it.photoPublic !== false,
     result_type:it.resultType||null, result_memo:it.resultMemo||null,
     reported_by:it.reportedBy||null, reported_at:it.reportedAt||null,
-    report_lat:it.reportLL?it.reportLL[0]:null, report_lng:it.reportLL?it.reportLL[1]:null};
+    report_lat:it.reportLL?it.reportLL[0]:null, report_lng:it.reportLL?it.reportLL[1]:null,
+    /* 교통·도로 기동단 */
+    road_category:it.roadCategory||null, road_sla:it.roadSla||null,
+    guide_due:it.guideDue||null, guide_at:it.guideAt||null,
+    guide_method:it.guideMethod||null, guide_memo:it.guideMemo||null,
+    field_check_at:it.fieldCheckAt||null, field_check_by:it.fieldCheckBy||null,
+    partner_org:it.partnerOrg||null, partner_sent_at:it.partnerSentAt||null,
+    partner_reply_at:it.partnerReplyAt||null, partner_reply:it.partnerReply||null,
+    intake_channel:it.intakeChannel||null};
 }
 function rowIt(r){
   const it = {id:r.id, time:r.time, gu:r.gu, loc:r.loc, field:r.field, sub:r.sub, sum:r.sum, req:r.req,
@@ -5388,7 +5491,14 @@ function rowIt(r){
     photoAfter:r.photo_after||null, photoPublic:r.photo_public !== false,
     resultType:r.result_type||null, resultMemo:r.result_memo||null,
     reportedBy:r.reported_by||null, reportedAt:r.reported_at||null,
-    reportLL:(r.report_lat!=null)?[r.report_lat, r.report_lng]:null};
+    reportLL:(r.report_lat!=null)?[r.report_lat, r.report_lng]:null,
+    roadCategory:r.road_category||null, roadSla:r.road_sla||null,
+    guideDue:r.guide_due||null, guideAt:r.guide_at||null,
+    guideMethod:r.guide_method||null, guideMemo:r.guide_memo||null,
+    fieldCheckAt:r.field_check_at||null, fieldCheckBy:r.field_check_by||null,
+    partnerOrg:r.partner_org||null, partnerSentAt:r.partner_sent_at||null,
+    partnerReplyAt:r.partner_reply_at||null, partnerReply:r.partner_reply||null,
+    intakeChannel:r.intake_channel||null};
   if(r.lat != null) it.pin = [r.lat, r.lng];
   assignXY(it);
   return it;
@@ -5949,9 +6059,9 @@ const ACT_TYPES = [
   {k:'일반민원',  ico:'📋', desc:'평시 절차로 처리. 담당부서 순차 대응',
    depts:{'도로과':2, '자원순환과':2, '환경지도과':1, '읍면동':2}},
   {k:'긴급민원',  ico:'🚨', desc:'즉시 현장 대응. 당직·기동단 우선 투입',
-   depts:{'도로과':4, '재난대응과':3, '안전정책과':2, '읍면동':4, '신속기동단':4}},
+   depts:{'도로과':4, '재난대응과':3, '안전정책과':2, '읍면동':4, '교통·도로 기동단':4}},
   {k:'선제조치',  ico:'🛡️', desc:'추가 피해 예방. 순찰·통제·사전 조치',
-   depts:{'재난대응과':4, '안전정책과':3, '도로과':3, '읍면동':6, '신속기동단':3}}
+   depts:{'재난대응과':4, '안전정책과':3, '도로과':3, '읍면동':6, '교통·도로 기동단':3}}
 ];
 /* 가용 총원 기준 — 과다(비번 소집·초과근무)·과소(대응 지연) 양방향 경고 */
 const CREW_BAND = {min:6, max:24};
@@ -6183,7 +6293,7 @@ const ROLES = {
   '담당자':        {scope:'own',   desc:'본인이 처리한 건'},
   '읍면동장':      {scope:'emd',   desc:'관내 전체(타 부서 건 포함)'},
   '부서장':        {scope:'dept',  desc:'부서 소관 전건'},
-  '신속기동단':    {scope:'road',  desc:'도로교통 전체'},
+  '교통·도로 기동단': {scope:'road',  desc:'교통·도로민원 전체'},
   '시장·부시장·상황실': {scope:'all', desc:'전체'}
 };
 let ME = {role:'시장·부시장·상황실', org:'재난안전상황실', emd:'', dept:''};
@@ -6235,7 +6345,7 @@ const ORG_ROOMS = [
   {nm:'제1부시장',       role:'시장·부시장·상황실'},
   {nm:'제2부시장',       role:'시장·부시장·상황실'},
   {nm:'재난안전상황실',   role:'시장·부시장·상황실'},
-  {nm:'신속기동단',      role:'신속기동단'}
+  {nm:'교통·도로민원 신속처리 기동단', role:'교통·도로 기동단'}
 ];
 /* 소속 목록의 출처는 행정조직도.md → data/org_units.json 하나뿐이다.
    분장사무(부서배정_근거데이터.json)는 '배정 근거' 표시에만 쓰고 목록 생성에는 쓰지 않는다.
@@ -6922,6 +7032,13 @@ function trackNow(it, pub){
   else if(pub.arrived) eta = '<div class="tk-eta">🛠️ <b>현장 조치 중</b><br>담당 인력이 현장에 도착해 조치하고 있습니다.</div>';
   else if(pub.moving) eta = '<div class="tk-eta">' + (pub.stale ? '📡 <b>위치 확인 중</b><br>잠시 후 다시 표시됩니다.' :
       '🚚 <b>' + etaText(pub.etaAt) + '</b><br>' + pub.org + ' · ' + distText(pub.restM) + (pub.near ? ' · <b style="color:var(--hs-orange)">도착 임박</b>' : '')) + '</div>';
+  else if(isRoadItem(it) && !guided(it))
+    eta = '<div class="tk-eta">📋 <b>접수되었습니다</b><br>1시간 이내에 처리 방향을 알려드립니다.<br>' +
+          '<span style="font-size:13px;color:var(--muted)">교통·도로민원 신속처리 기동단 · 1833-4088</span></div>';
+  else if(isRoadItem(it) && guided(it))
+    eta = '<div class="tk-eta">📢 <b>처리 방향을 알려드렸습니다</b><br>' + (it.guideMemo || '') + '<br>' +
+          '<span style="font-size:13px;color:var(--muted)">' + triage(it) + '처리 · ' +
+          (TRIAGE_MS[triage(it)] == null ? '관계기관 협의' : (triage(it) === '즉시' ? '24시간' : '48시간') + ' 이내') + '</span></div>';
   else eta = '<div class="tk-eta">📋 <b>접수 확인 중</b><br>당직 근무자가 확인하고 있습니다. 담당 ' + pub.org + '</div>';
   return '<div class="tk-card">' + trackBar(idx) + eta +
     '<div class="tk-mapwrap"><div id="tkMap"></div>' +
@@ -7011,24 +7128,97 @@ function trackTick(){
   if(trkFollow) trkMap.panTo(pub.pos, {animate:true, duration:0.6});
 }
 
-/* ══════════ S-12 신속기동단 작업판 ══════════
+/* ══════════ S-12 교통·도로민원 신속처리 기동단 작업판 ══════════
    도로교통 민원만 자동으로 걸린다. 열마다 관리 기준이 다르다 —
    즉시=남은 시간(4시간) / 단기=작업 일정(7일) / 중장기=진행 단계(6개월+).
    ※ 사용자 제공 분류표 입수 전이므로 아래 표가 잠정 기준이며, 유형만으로 애매하면 사진·문구로 보정한다. */
+/* ══════════ 기동단 3장 — 민원 유형 5분류 ══════════
+   접수·분류·통계의 기준 축이다. 처리기한(즉시·단기·중장기)과는 다른 축이며 섞지 않는다. */
+const ROAD_CATS = [
+  {k:'도로파손',   nm:'도로 파손·침하',        ico:'🕳️', color:'#D63B1F',
+   subs:['포트홀(도로파손)','도로 침하','보도 파손','맨홀 파손','옹벽·축대 균열'],
+   re:/(포트홀|도로파손|도로 파손|침하|함몰|보도|맨홀|옹벽|축대)/,
+   org:'도로과 / 구청 안전건설과'},
+  {k:'교통시설',   nm:'교통시설 고장·파손',     ico:'🚦', color:'#F5A623',
+   subs:['신호등 고장','차선·표지판 훼손','가로등·보안등 고장','안전펜스 파손'],
+   re:/(신호기|신호등|표지판|반사경|BIS|버스정보|가로등|보안등|차선|안전펜스|방호울타리)/,
+   org:'교통정책과 · 대중교통과(BIS)'},
+  {k:'불법주정차', nm:'불법주정차·통행 불편',   ico:'🚗', color:'#7A3EAF',
+   subs:['불법주정차'],
+   re:/(불법주정차|주정차|방치.*PM|킥보드|무단방치|견인)/,
+   org:'주차물류과 / 구청'},
+  {k:'버스불편',   nm:'버스 이용 불편',        ico:'🚌', color:'#127A50',
+   subs:[],
+   re:/(버스|무정차|난폭|배차|정류장|승강장|노선)/,
+   org:'대중교통과 + 운수업체'},
+  {k:'교통체계',   nm:'교통체계 개선',         ico:'🛣️', color:'#1D4994',
+   subs:[],
+   re:/(혼잡|정체|신호체계|신호 주기|노선 개선|일방통행|우회전|보행신호|횡단보도 설치)/,
+   org:'교통정책과 (+경찰 협의)'}
+];
+function roadCat(it){
+  if(it.roadCategory) return ROAD_CATS.find(c=>c.k === it.roadCategory) || ROAD_CATS[0];
+  const t = [it.sub, it.sum, it.req].filter(Boolean).join(' ');
+  for(const c of ROAD_CATS){ if(c.subs.indexOf(it.sub) >= 0) return c; }
+  for(const c of ROAD_CATS){ if(c.re.test(t)) return c; }
+  return ROAD_CATS[0];
+}
+
+/* ══════════ 기동단 2장 — 처리구분 ══════════
+   즉시 24시간 · 단기 48시간 · 중장기 관계기관 협의(기한 미정).
+   중장기는 종료 기한이 없으므로 남은 시간 대신 경과일과 단계로 관리한다. */
 const TRIAGE_TABLE = {
-  즉시: ['포트홀(도로파손)','신호등 고장','도로 침하','낙하 위험물','맨홀 파손','안전펜스 파손','옹벽·축대 균열','제설 요청'],
-  단기: ['가로등·보안등 고장','차선·표지판 훼손','빗물받이 막힘','가로수 가지치기','공원시설물 파손','불법주정차'],
+  즉시: ['신호등 고장','차선·표지판 훼손','포트홀(도로파손)','도로 침하','맨홀 파손','낙하 위험물','안전펜스 파손'],
+  단기: ['가로등·보안등 고장','빗물받이 막힘','불법주정차','공원시설물 파손','가로수 가지치기'],
   중장기: []
 };
-/* 중장기로 보내는 문구 — 시설 '신설·설치' 요청은 예산·설계가 필요하다 */
-const LONG_RE = /(설치|신설|증설|이설|확장|개설|요청드립니다|만들어|놓아|세워)/;
-const URGENT_RE = /(침하|함몰|붕괴|누수 확산|통행 위험|차량 통행|2차 사고|추락|감전|전면 소등)/;
-const TRIAGE_MS = {즉시: 4*3600*1000, 단기: 7*24*3600*1000, 중장기: 180*24*3600*1000};
-const TRIAGE_META = {
-  즉시:   {ico:'🚨', rule:'남은 시간 기준 · 4시간 내 조치', unit:'시간'},
-  단기:   {ico:'🗓️', rule:'작업 일정 기준 · 7일 내 처리',  unit:'일'},
-  중장기: {ico:'🏗️', rule:'진행 단계 기준 · 6개월 이상',   unit:'단계'}
+/* 중장기로 보내는 문구 — 체계 개선·신설은 관계기관 협의가 필요하다 */
+const LONG_RE = /(설치|신설|증설|이설|확장|개설|노선|혼잡|정체|신호체계|주기 조정|체계 개선)/;
+const URGENT_RE = /(침하|함몰|붕괴|통행 위험|차량 통행|2차 사고|추락|감전|전면 소등|신호.*소등|신호기 고장)/;
+const TRIAGE_MS = {
+  즉시:   24 * 3600 * 1000,        /* 24시간 */
+  단기:   48 * 3600 * 1000,        /* 48시간 */
+  중장기: null                      /* 관계기관 협의 — 기한 없음 */
 };
+const TRIAGE_META = {
+  안내대기: {ico:'⏱', rule:'접수 후 1시간 이내 처리방안 안내', unit:'분'},
+  즉시:     {ico:'🚨', rule:'24시간 내 조치',                  unit:'시간'},
+  단기:     {ico:'🗓️', rule:'48시간 내 처리',                  unit:'시간'},
+  중장기:   {ico:'🏗️', rule:'관계기관 협의 · 경과일과 단계로 관리', unit:'단계'}
+};
+/* ══════════ 기동단 5.1 — 안내 마감(접수 + 60분) ══════════
+   기동단의 첫 약속이자 핵심 성과 지표다. 24·48시간보다 먼저 오는 마감이다. */
+const GUIDE_MIN = 60;
+function guideDue(it){ return itemStart(it).getTime() + GUIDE_MIN * 60 * 1000; }
+function guideLeft(it){ return guideDue(it) - Date.now(); }
+function guided(it){ return !!it.guideAt; }
+/* 안내 대기 — 접수됐으나 처리방안을 아직 알리지 않은 건 */
+function awaitingGuide(it){ return isRoadItem(it) && it.st !== '완료' && !guided(it); }
+function guideState(it){
+  const L = guideLeft(it);
+  if(L < 0) return 'over';
+  if(L <= 10 * 60 * 1000) return 'red';
+  if(L <= 20 * 60 * 1000) return 'warn';
+  return 'ok';
+}
+function guideText(it){
+  const L = guideLeft(it);
+  if(guided(it)) return '안내 완료 ' + hm(it.guideAt);
+  if(L < 0) return '안내 기한 초과 ' + Math.ceil(-L / 60000) + '분';
+  return '안내까지 ' + Math.ceil(L / 60000) + '분 남음';
+}
+function hm(iso){
+  try{ const d = new Date(iso); return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0'); }
+  catch(e){ return ''; }
+}
+/* 1시간 준수율 — 기동단의 핵심 성과 지표 */
+function guideKpi(){
+  const list = realItems().filter(isRoadItem);
+  const done = list.filter(guided);
+  const ok = done.filter(i=>new Date(i.guideAt).getTime() <= guideDue(i));
+  return {접수:list.length, 안내:done.length, 준수:ok.length,
+          율: done.length ? Math.round(ok.length / done.length * 100) : null};
+}
 /* 도로교통 소관 여부 — 작업판에 자동으로 걸리는 조건 */
 function isRoadItem(it){
   if(it.field === '교통·도로') return true;
@@ -7036,11 +7226,14 @@ function isRoadItem(it){
   return /도로|포트홀|노면|차선|표지판|신호등|가로등|보안등|맨홀|빗물받이|침하|낙하|안전펜스/.test(t);
 }
 function triage(it){
+  /* 현장 확인으로 확정된 값이 있으면 그것을 쓴다(5.3) */
+  if(it.roadSla) return it.roadSla;
   const t = [it.sub, it.sum, it.req].filter(Boolean).join(' ');
-  /* ① 유형표 우선 */
+  const cat = roadCat(it);
+  /* 교통체계 개선은 대부분 중장기 — 관계기관 협의가 필요하다 */
+  if(cat.k === '교통체계') return '중장기';
   let cls = null;
   for(const k of ['즉시','단기','중장기']) if(TRIAGE_TABLE[k].indexOf(it.sub) >= 0){ cls = k; break; }
-  /* ② 유형만으로 애매하면 문구로 보정 */
   if(LONG_RE.test(t) && !URGENT_RE.test(t)) cls = '중장기';
   else if(URGENT_RE.test(t) || it.urg === '긴급') cls = '즉시';
   if(!cls) cls = '단기';
@@ -7055,22 +7248,25 @@ function itemStart(it){
 }
 function dueOf(it){
   const cls = triage(it);
-  const due = new Date(itemStart(it).getTime() + TRIAGE_MS[cls]);
-  const left = due - new Date();
   const total = TRIAGE_MS[cls];
+  /* 중장기는 종료 기한이 없다 — 경과일과 단계로 관리한다 */
+  if(total == null){
+    const days = Math.max(0, Math.floor((Date.now() - itemStart(it).getTime()) / 86400000));
+    return {cls: cls, due: null, left: Infinity, days: days, state: 'plan'};
+  }
+  const due = new Date(itemStart(it).getTime() + total);
+  const left = due - new Date();
   return {cls: cls, due: due, left: left, state: left < 0 ? 'over' : (left < total * 0.25 ? 'warn' : 'ok')};
 }
 function leftText(d){
+  /* 중장기 — 남은 시간을 표시하지 않는다 */
+  if(d.state === 'plan') return '협의 진행 · 접수 후 ' + d.days + '일차';
   if(d.left < 0){
     const over = -d.left;
-    return '기한 초과 ' + (over > 86400000 ? Math.floor(over/86400000) + '일' : Math.floor(over/3600000) + '시간');
+    return '기한 초과 ' + (over >= 3600000 ? Math.floor(over/3600000) + '시간' : Math.ceil(over/60000) + '분');
   }
-  if(d.cls === '즉시'){
-    const h = Math.floor(d.left/3600000), m = Math.floor(d.left%3600000/60000);
-    return '남은 시간 ' + (h ? h + '시간 ' : '') + m + '분';
-  }
-  if(d.cls === '단기') return '작업 기한 ' + Math.ceil(d.left/86400000) + '일 남음 (' + fmtDate(d.due) + ')';
-  return '진행 단계 관리 · 목표 ' + fmtDate(d.due);
+  const h = Math.floor(d.left/3600000), m = Math.floor(d.left%3600000/60000);
+  return '남은 시간 ' + (h ? h + '시간 ' : '') + m + '분';
 }
 function fmtDate(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
 
@@ -7120,49 +7316,329 @@ function bundleAssign(key){
 }
 function roadItems(){ return realItems().filter(i=>i.st !== '완료' && isRoadItem(i)); }
 
+/* ══════════ 기동단 4.4 상세 ══════════
+   접수 → 현장 확인 → 처리방안 안내 → 협력 → 처리 → 결과 안내.
+   기동단은 처리 주체가 아니라 접수·분류·조율 주체다. */
+const PARTNER_ORGS = ['경찰서(교통안전시설 심의)', '운수업체', '한국도로공사', '한국전력', '한국가스공사', '통신사', '시설관리공단'];
+const BUS_COMPANIES = ['화성여객', '용남고속', '남양여객', '경진여객', '수원여객', '삼경운수'];
+
+function roadDetail(id){
+  const it = items.find(i=>i.id === id);
+  if(!it) return;
+  const cat = roadCat(it);
+  const d = dueOf(it);
+  const wait = awaitingGuide(it);
+  const a = deptOf(it);
+  const isBus = cat.k === '버스불편';
+
+  showModal(
+    '<h2>' + cat.ico + ' ' + it.sub + ' <span class="rd-mno">#' + String(it.id).padStart(3,'0') + '</span></h2>' +
+    '<div class="rd-mbar ' + (wait ? guideState(it) : d.state) + '">' +
+      (wait ? '⏱ ' + guideText(it) + ' — 처리방안을 안내해야 합니다'
+            : '⏱ ' + leftText(d) + ' · ' + cat.nm + ' · ' + (d.state === 'plan' ? '관계기관 협의' : triage(it) + '처리')) + '</div>' +
+
+    /* 접수 */
+    '<details class="acc" open><summary>📥 접수</summary><div class="acc-in">' +
+      '<div class="sel-kv"><span>접수시각</span><b>' + it.time + '</b></div>' +
+      '<div class="sel-kv"><span>경로</span><b>' + (it.intakeChannel || (it.src === '시민접수' ? '시민창구' : '당직이관')) + '</b></div>' +
+      '<div class="sel-kv"><span>위치</span><b>' + it.loc + '</b></div>' +
+      '<div class="sel-kv"><span>신고 내용</span><b>' + it.sum + '</b></div>' +
+      photoBlock(it) + '</div></details>' +
+
+    /* 현장 확인 — 이 단계에서 분류를 확정한다 */
+    '<details class="acc"' + (wait ? ' open' : '') + '><summary>🔎 현장 확인 ' +
+      (it.fieldCheckAt ? '<b class="ok">완료</b>' : '<b class="warn">미확인</b>') + '</summary><div class="acc-in">' +
+      (it.fieldCheckAt
+        ? '<div class="sel-kv"><span>확인</span><b>' + hm(it.fieldCheckAt) + ' · ' + (it.fieldCheckBy || '') + '</b></div>' +
+          '<div class="sel-kv"><span>판정</span><b>' + (it.roadCategory || cat.k) + ' · ' + (it.roadSla || triage(it)) + '처리</b></div>'
+        : '<p class="hint">기동단이 현장을 확인하고 유형·처리구분을 확정합니다. 확인 전에는 안내 대기 열에 머뭅니다.</p>') +
+      '<label class="rd-lb">민원 유형</label>' +
+      '<select id="rdCat">' + ROAD_CATS.map(c=>'<option value="' + c.k + '"' +
+        ((it.roadCategory || cat.k) === c.k ? ' selected' : '') + '>' + c.ico + ' ' + c.nm + '</option>').join('') + '</select>' +
+      '<label class="rd-lb">처리구분</label>' +
+      '<select id="rdSla">' + ['즉시','단기','중장기'].map(x=>'<option' +
+        ((it.roadSla || triage(it)) === x ? ' selected' : '') + '>' + x + '</option>').join('') + '</select>' +
+      '<div class="row"><button class="btn-p" onclick="roadFieldCheck(' + it.id + ')">현장 확인 기록 · 분류 확정</button></div>' +
+    '</div></details>' +
+
+    /* 처리방안 안내 — 1시간 준수 여부 */
+    '<details class="acc"' + (wait ? ' open' : '') + '><summary>📢 처리방안 안내 ' +
+      (guided(it)
+        ? (new Date(it.guideAt).getTime() <= guideDue(it) ? '<b class="ok">기한 내</b>' : '<b class="over">기한 초과</b>')
+        : '<b class="warn">대기</b>') + '</summary><div class="acc-in">' +
+      (guided(it)
+        ? '<div class="sel-kv"><span>안내 시각</span><b>' + hm(it.guideAt) + ' (' + (it.guideMethod || '전화') + ')</b></div>' +
+          '<div class="sel-kv"><span>안내 내용</span><b>' + (it.guideMemo || '—') + '</b></div>'
+        : '<p class="hint">접수 후 1시간 이내에 처리 방향을 알려드리는 것이 기동단의 첫 약속입니다. ' +
+          '마감 ' + hm(new Date(guideDue(it)).toISOString()) + ' — ' + guideText(it) + '</p>' +
+          '<label class="rd-lb">안내 방법</label>' +
+          '<select id="rdGm"><option>전화</option><option>문자</option></select>' +
+          '<label class="rd-lb">안내 내용</label>' +
+          '<input id="rdGmemo" placeholder="예) 현장 확인 후 24시간 내 신호기 정비 예정">' +
+          '<div class="row"><button class="btn-o" onclick="roadGuide(' + it.id + ')">📢 안내 완료 기록</button></div>') +
+    '</div></details>' +
+
+    /* 협력 — 버스 민원은 운수업체가 필수 */
+    '<details class="acc"' + (isBus ? ' open' : '') + '><summary>🤝 협력 기관' +
+      (isBus ? ' <b class="warn">운수업체 필수</b>' : '') + '</summary><div class="acc-in">' +
+      '<div class="sel-kv"><span>소관 부서</span><b>' + a.actor.org + '</b></div>' +
+      '<div class="sel-kv"><span>주 소관(유형)</span><b>' + cat.org + '</b></div>' +
+      (it.partnerOrg
+        ? '<div class="sel-kv"><span>협력 기관</span><b>' + it.partnerOrg + '</b></div>' +
+          '<div class="sel-kv"><span>통보</span><b>' + (it.partnerSentAt ? hm(it.partnerSentAt) : '—') + '</b></div>' +
+          '<div class="sel-kv"><span>회신</span><b>' + (it.partnerReplyAt ? hm(it.partnerReplyAt) : '<span class="warn">회신 대기</span>') + '</b></div>' +
+          (it.partnerReply ? '<div class="sel-kv"><span>회신 내용</span><b>' + it.partnerReply + '</b></div>' : '') +
+          (it.partnerSentAt && !it.partnerReplyAt
+            ? '<label class="rd-lb">회신 내용</label><input id="rdPreply" placeholder="업체 회신 내용">' +
+              '<div class="row"><button class="btn-o" onclick="roadPartnerReply(' + it.id + ')">회신 기록</button></div>' : '')
+        : '<label class="rd-lb">협력 기관</label>' +
+          '<select id="rdPorg">' + (isBus ? BUS_COMPANIES : PARTNER_ORGS).map(x=>'<option>' + x + '</option>').join('') + '</select>' +
+          '<div class="row"><button class="btn-g" onclick="roadPartnerSend(' + it.id + ')">📨 통보 기록</button></div>') +
+    '</div></details>' +
+
+    /* 처리 · 결과 안내 */
+    '<details class="acc"><summary>🛠️ 처리 · 결과 안내</summary><div class="acc-in">' +
+      '<div class="sel-kv"><span>상태</span><b>' + it.st + '</b></div>' +
+      (it.resultType ? '<div class="sel-kv"><span>조치 결과</span><b>' + it.resultType + '</b></div>' : '') +
+      '<div class="row"><button class="btn-g" onclick="closeModal();reportOpen(' + it.id + ')">📝 현장 결과보고</button>' +
+      '<button class="btn-g" onclick="closeModal();setMode(\'duty\');setTimeout(()=>selectItem(' + it.id + '),60)">상황판에서 보기</button></div>' +
+    '</div></details>' +
+
+    (roadColOf(it) === '중장기'
+      ? '<details class="acc" open><summary>🏗️ 협의 진행 (' + (dueOf(it).days || 0) + '일차)</summary><div class="acc-in">' +
+        '<div class="rd-steps big">' + longStepsOf(it).map((nm,i)=>'<span class="' +
+          (i < longStage(it) ? 'done' : (i === longStage(it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>' +
+        '<div class="row"><button class="cs-mini" onclick="longStageSet(' + it.id + ',' +
+          Math.min(longStepsOf(it).length - 1, longStage(it) + 1) + ')">다음 단계로</button></div></div></details>'
+      : '') +
+
+    '<ol class="sel-log">' + (it.log || []).slice(-6).map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
+}
+/* 5.3 현장 확인 — 분류 확정 */
+function roadFieldCheck(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const cat = (document.getElementById('rdCat') || {}).value;
+  const sla = (document.getElementById('rdSla') || {}).value;
+  it.roadCategory = cat; it.roadSla = sla;
+  it.fieldCheckAt = new Date().toISOString();
+  it.fieldCheckBy = meLabel();
+  it.log.push(nowHM() + ' 현장 확인 · 분류 확정: ' + cat + ' / ' + sla + '처리 (' + it.fieldCheckBy + ')');
+  sbPush(it); closeModal(); renderRoad(); renderList();
+  toast('현장 확인을 기록했습니다 — ' + cat + ' · ' + sla + '처리');
+}
+/* 5.1 처리방안 안내 — 1시간 준수 여부가 핵심 지표 */
+function roadGuide(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const memo = ((document.getElementById('rdGmemo') || {}).value || '').trim();
+  if(!memo){ toast('안내 내용을 적어 주세요'); return; }
+  const now = new Date();
+  it.guideAt = now.toISOString();
+  it.guideMethod = (document.getElementById('rdGm') || {}).value || '전화';
+  it.guideMemo = memo;
+  it.guideDue = new Date(guideDue(it)).toISOString();
+  const inTime = now.getTime() <= guideDue(it);
+  it.log.push(nowHM() + ' 처리방안 안내(' + it.guideMethod + '): ' + memo + (inTime ? ' [기한 내]' : ' [기한 초과]'));
+  if(it.st === '신규접수') it.st = '처리중';
+  sbPush(it); closeModal(); renderRoad(); renderList();
+  toast(inTime ? '기한 내 안내 완료' : '안내 완료 — 기한을 넘겼습니다');
+}
+/* 5.4 협력 기관 통보·회신 */
+function roadPartnerSend(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const org = (document.getElementById('rdPorg') || {}).value;
+  it.partnerOrg = org;
+  it.partnerSentAt = new Date().toISOString();
+  it.log.push(nowHM() + ' 협력 기관 통보: ' + org);
+  sbPush(it); closeModal(); roadDetail(id); renderRoad();
+  toast(org + ' 통보를 기록했습니다 — 회신을 기다립니다');
+}
+function roadPartnerReply(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const r = ((document.getElementById('rdPreply') || {}).value || '').trim();
+  if(!r){ toast('회신 내용을 적어 주세요'); return; }
+  it.partnerReplyAt = new Date().toISOString();
+  it.partnerReply = r;
+  it.log.push(nowHM() + ' 협력 기관 회신(' + (it.partnerOrg || '') + '): ' + r);
+  sbPush(it); closeModal(); roadDetail(id); renderRoad();
+  toast('회신을 기록했습니다');
+}
+
+/* ══════════ 기동단 5.2 전화 접수 (1833-4088) ══════════
+   통화 중 입력을 전제로 필드를 최소화한다: 유형 5개 버튼 → 위치 → 내용.
+   접수하면 안내 마감 시각을 즉시 보여 상담원이 약속을 인지하게 한다. */
+let rdIntakeCat = null;
+function roadIntake(){
+  rdIntakeCat = null;
+  showModal('<h2>📞 전화 접수 <span class="rd-mno">1833-4088</span></h2>' +
+    '<p class="hint">통화하면서 그대로 받아 적으세요. 접수 즉시 안내 마감 시각이 표시됩니다.</p>' +
+    '<label class="rd-lb">① 민원 유형</label>' +
+    '<div class="rd-catbtns">' + ROAD_CATS.map((c,i)=>
+      '<button type="button" id="ric' + i + '" onclick="roadIntakeCat(' + i + ')" style="--cat:' + c.color + '">' +
+      '<span class="ic">' + c.ico + '</span><span class="nm">' + c.nm + '</span></button>').join('') + '</div>' +
+    '<label class="rd-lb">② 위치</label>' +
+    '<input id="riLoc" placeholder="예) 매송면 원평리 312 / 삼성1로 교차로">' +
+    '<label class="rd-lb">③ 내용</label>' +
+    '<textarea id="riSum" style="min-height:64px" placeholder="들리는 대로 적으세요"></textarea>' +
+    '<div class="row"><button class="btn-o" onclick="roadIntakeSave()">접수 등록</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function roadIntakeCat(i){
+  rdIntakeCat = i;
+  ROAD_CATS.forEach((c,k)=>{ const b = document.getElementById('ric' + k); if(b) b.classList.toggle('on', k === i); });
+}
+function roadIntakeSave(){
+  const loc = ((document.getElementById('riLoc') || {}).value || '').trim();
+  const sum = ((document.getElementById('riSum') || {}).value || '').trim();
+  if(rdIntakeCat == null){ toast('민원 유형을 골라 주세요'); return; }
+  if(!loc){ toast('위치를 적어 주세요'); return; }
+  if(!sum){ toast('내용을 적어 주세요'); return; }
+  const cat = ROAD_CATS[rdIntakeCat];
+  const it = spawnItem({
+    field: '교통·도로', sub: cat.subs[0] || cat.nm, gu: pointInGuName(loc), emd: (loc.match(/([가-힣]{2,4}(?:읍|면|동))/) || [])[1] || '',
+    loc: loc, sum: sum, urg: '일반', src: '전화'
+  });
+  if(!it) return;
+  it.roadCategory = cat.k;
+  it.intakeChannel = '전화(1833-4088)';
+  it.guideDue = new Date(guideDue(it)).toISOString();
+  it.log.push(nowHM() + ' 교통·도로 기동단 전화 접수(1833-4088) · ' + cat.nm);
+  sbPush(it);
+  closeModal();
+  const due = new Date(guideDue(it));
+  showModal('<h2>✅ 접수 완료 <span class="rd-mno">#' + String(it.id).padStart(3,'0') + '</span></h2>' +
+    '<div class="rd-due-big">⏱ 처리방안 안내 마감<br><b>' +
+      String(due.getHours()).padStart(2,'0') + ':' + String(due.getMinutes()).padStart(2,'0') + '</b>' +
+      '<span>접수 후 60분 — 시민과의 첫 약속입니다</span></div>' +
+    '<p class="hint">' + cat.ico + ' ' + cat.nm + ' · ' + loc + '</p>' +
+    '<div class="row"><button class="btn-p" onclick="closeModal();roadDetail(' + it.id + ')">상세 열기</button>' +
+    '<button class="btn-g" onclick="closeModal();roadIntake()">계속 접수</button></div>');
+  renderRoad();
+}
+/* 위치 문자열에서 관할구 추정 — 접수 화면은 지도 없이 빠르게 받는다 */
+function pointInGuName(loc){
+  for(const g in GU_KEYS){ if(GU_KEYS[g].some(k=>String(loc).indexOf(k) >= 0)) return g; }
+  return '미상';
+}
+
+/* ══════════ 기동단 4장 — 작업판 ══════════
+   열은 안내대기 / 즉시(24h) / 단기(48h) / 중장기(협의).
+   「안내 대기」가 비어 있는 것이 정상이다. 쌓이면 약속을 어기고 있다는 뜻이다. */
+const ROAD_COLS = ['안내대기', '즉시', '단기', '중장기'];
+let roadCatFlt = 'all';
+function roadCatFilter(k){ roadCatFlt = k; renderRoad(); }
+function roadItems(){
+  let list = realItems().filter(i=>i.st !== '완료' && isRoadItem(i));
+  if(roadCatFlt !== 'all') list = list.filter(i=>roadCat(i).k === roadCatFlt);
+  return list;
+}
+function roadColOf(it){ return awaitingGuide(it) ? '안내대기' : triage(it); }
+
+function roadCard(it){
+  const cat = roadCat(it);
+  const d = dueOf(it);
+  const wait = awaitingGuide(it);
+  const gs = guideState(it);
+  const a = deptOf(it);
+  const badge = wait ? '1시간' : (d.state === 'plan' ? '협의' : (triage(it) === '즉시' ? '24시간' : '48시간'));
+  const clock = wait
+    ? '<span class="rd-clock ' + gs + '">⏱ ' + guideText(it) + '</span>'
+    : '<span class="rd-clock ' + d.state + '">⏱ ' + leftText(d) + '</span>';
+  const ch = it.intakeChannel || (it.src === '시민접수' ? '시민창구' : '당직이관');
+  return '<div class="rd-card ' + (wait ? gs : d.state) + '" style="--cat:' + cat.color + '" onclick="roadOpen(' + it.id + ')">' +
+    photoThumb(it) +
+    '<div class="rd-r1"><span class="rd-t">' + it.time + '</span>' +
+      '<span class="rd-n">' + it.sub + ' · ' + cat.nm + '</span>' +
+      (hasPhoto(it) ? '<span class="rd-b">📷</span>' : '') +
+      '<span class="rd-b sla">' + badge + '</span></div>' +
+    '<div class="rd-r2">' + it.loc + '<span class="id">#' + String(it.id).padStart(3,'0') + '</span></div>' +
+    '<div class="rd-r3">' + clock + '<span class="ch">' + ch + '</span></div>' +
+    (wait ? '' : '<div class="rd-r4">🛠️ ' + a.actor.org +
+      (it.partnerOrg ? ' · 협력 ' + it.partnerOrg + (it.partnerReplyAt ? ' (회신 완료)' : ' (회신 대기)') : '') + '</div>') +
+    (roadColOf(it) === '중장기'
+      ? '<div class="rd-steps">' + longStepsOf(it).map((nm,i)=>'<span class="' +
+          (i < longStage(it) ? 'done' : (i === longStage(it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>'
+      : '') + '</div>';
+}
+
 function renderRoad(){
   const host = document.getElementById('road');
   if(!host) return;
   const list = roadItems();
-  const bundles = bundleSuggest(list);
-  const cols = ['즉시','단기','중장기'].map(cls=>{
-    const rows = list.filter(i=>triage(i) === cls)
-      .map(i=>({it:i, d:dueOf(i)}))
-      .sort((a,b)=>a.d.left - b.d.left);   /* 기한 임박·초과가 맨 위 */
-    const cards = rows.map(r=>{
-      const a = deptOf(r.it);
-      const steps = cls === '중장기'
-        ? '<div class="rd-steps">' + longStepsOf(r.it).map((nm,i)=>'<span class="' + (i < longStage(r.it) ? 'done' : (i === longStage(r.it) ? 'on' : '')) + '">' + nm + '</span>').join('') + '</div>' +
-          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px" onclick="event.stopPropagation();longStageSet(' + r.it.id + ',' + Math.min(longStepsOf(r.it).length-1, longStage(r.it)+1) + ')">다음 단계로</button>' +
-          '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px;margin-left:4px" onclick="event.stopPropagation();longDrop(' + r.it.id + ')">타당성 미달 종결</button>'
-        : '';
-      return '<div class="rd-card ' + r.d.state + '" onclick="roadOpen(' + r.it.id + ')">' +
-        photoThumb(r.it) +
-        '<div class="rd-t">' + (r.it.urg === '긴급' ? '🚨 ' : '') + r.it.sub + '</div>' +
-        '<div class="rd-m">' + r.it.loc + '<br>' + r.it.sum + '<br>🛠️ ' + a.actor.org + ' · #' + String(r.it.id).padStart(3,'0') + '</div>' +
-        '<span class="rd-due ' + r.d.state + '">' + leftText(r.d) + '</span>' + steps + '</div>';
-    }).join('') || '<p style="font-size:13px;color:var(--muted)">해당 건이 없습니다.</p>';
-    const m = TRIAGE_META[cls];
-    const over = rows.filter(r=>r.d.state === 'over').length, warn = rows.filter(r=>r.d.state === 'warn').length;
-    return '<div class="rd-col"><h3>' + m.ico + ' ' + cls + '처리 <span style="margin-left:auto;font-size:13px;color:var(--muted)">' + rows.length + '건</span></h3>' +
-      '<div class="rd-rule">' + m.rule +
-      (over ? ' · <b style="color:var(--st-new)">초과 ' + over + '건</b>' : '') +
-      (warn ? ' · <b style="color:var(--hs-orange)">임박 ' + warn + '건</b>' : '') + '</div>' + cards + '</div>';
+  const waits = list.filter(awaitingGuide);
+  const minLeft = waits.length ? Math.min(...waits.map(guideLeft)) : null;
+  const over = waits.filter(i=>guideLeft(i) < 0).length;
+  const kpi = guideKpi();
+
+  /* 4.1 상단 — 안내 대기가 가장 왼쪽·가장 크게 */
+  const waitState = over ? 'over' : (minLeft == null ? 'ok'
+    : (minLeft <= 10*60*1000 ? 'red' : (minLeft <= 20*60*1000 ? 'warn' : 'ok')));
+  const waitMsg = over ? '기한 초과 ' + over + '건'
+    : (minLeft == null ? '대기 없음 — 정상'
+      : '최소 ' + Math.ceil(minLeft / 60000) + '분 남음');
+  const byCol = c => list.filter(i=>roadColOf(i) === c).length;
+  const dues = list.filter(i=>!awaitingGuide(i)).map(dueOf);
+  const near = dues.filter(d=>d.state === 'warn').length;
+  const late = dues.filter(d=>d.state === 'over').length;
+  const doneToday = realItems().filter(i=>isRoadItem(i) && i.st === '완료').length;
+
+  const head =
+    '<div class="rd-head">' +
+    '<h2>🚚 교통·도로민원 신속처리 기동단</h2>' +
+    '<span class="rd-tel">대표전화 1833-4088</span>' +
+    '<button class="btn-p" style="margin-left:auto" onclick="roadIntake()">📞 전화 접수</button>' +
+    '<button class="cs-mini" onclick="renderRoad()">↻ 새로고침</button></div>' +
+
+    '<div class="rd-clocks">' +
+    '<div class="rd-c1 ' + waitState + '">' +
+      '<div class="k">안내 대기</div>' +
+      '<div class="v">' + waits.length + '<small>건</small></div>' +
+      '<div class="s">⏱ ' + waitMsg + '</div></div>' +
+    '<div class="rd-c2"><div class="k">즉시 <small>24시간</small></div><div class="v">' + byCol('즉시') + '</div></div>' +
+    '<div class="rd-c2"><div class="k">단기 <small>48시간</small></div><div class="v">' + byCol('단기') + '</div></div>' +
+    '<div class="rd-c2"><div class="k">중장기 <small>협의</small></div><div class="v">' + byCol('중장기') + '</div></div>' +
+    '<div class="rd-c3">' +
+      '<div><span class="k">기한 임박</span><b class="warn">' + near + '</b></div>' +
+      '<div><span class="k">기한 초과</span><b class="over">' + late + '</b></div>' +
+      '<div><span class="k">오늘 완료</span><b>' + doneToday + '</b></div>' +
+      '<div><span class="k">1시간 준수율</span><b class="' + (kpi.율 != null && kpi.율 < 80 ? 'over' : 'ok') + '">' +
+        (kpi.율 == null ? '—' : kpi.율 + '%') + '</b></div>' +
+    '</div></div>' +
+
+    /* 3장 5유형 필터 */
+    '<div class="rd-cats">' +
+    '<button class="cs-chip' + (roadCatFlt === 'all' ? ' on' : '') + '" onclick="roadCatFilter(\'all\')">전체</button>' +
+    ROAD_CATS.map(c=>'<button class="cs-chip' + (roadCatFlt === c.k ? ' on' : '') + '" onclick="roadCatFilter(\'' + c.k + '\')">' +
+      c.ico + ' ' + c.nm + ' ' + realItems().filter(i=>i.st !== '완료' && isRoadItem(i) && roadCat(i).k === c.k).length + '</button>').join('') +
+    '</div>';
+
+  /* 4.2 본문 4열 */
+  const cols = ROAD_COLS.map(c=>{
+    const rows = list.filter(i=>roadColOf(i) === c);
+    /* 안내 대기는 남은 시간이 적은 순, 나머지는 기한 임박 순 */
+    rows.sort((x, y)=> c === '안내대기' ? guideLeft(x) - guideLeft(y) : dueOf(x).left - dueOf(y).left);
+    const m = TRIAGE_META[c];
+    const empty = c === '안내대기'
+      ? '<p class="rd-ok">✅ 안내 대기 없음 — 정상 상태입니다</p>'
+      : '<p class="rd-empty">해당 건이 없습니다.</p>';
+    return '<div class="rd-col' + (c === '안내대기' ? ' col-wait' : '') + '">' +
+      '<h3>' + m.ico + ' ' + (c === '안내대기' ? '안내 대기' : c) +
+        '<span class="cnt">' + rows.length + '건</span></h3>' +
+      '<div class="rd-rule">' + m.rule + '</div>' +
+      (rows.length ? rows.map(roadCard).join('') : empty) + '</div>';
   }).join('');
 
-  host.innerHTML =
-    '<div class="rd-head"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🚚 신속기동단 작업판</h2>' +
-    '<span style="font-size:13px;color:var(--muted)">도로교통 민원 ' + list.length + '건 · 처리구분별 관리</span>' +
-    '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="renderRoad()">↻ 새로고침</button></div>' +
+  /* 작업 묶음 제안 */
+  const bundles = bundleSuggest(list);
+  host.innerHTML = head +
     (bundles.length ? bundles.map(b=>
-      '<div class="rd-bundle">📦 <b>작업 묶음 제안</b> — ' + b.org + ' · ' + b.sub + ' <b>' + b.list.length + '건</b>이 모였습니다. 한 번에 배정하면 출동이 한 번으로 줄어듭니다.' +
-      '<button class="btn-o" style="min-height:32px;padding:4px 14px;font-size:13px;margin-left:12px" onclick="bundleAssign(\'' + b.key + '\')">한 번에 배정</button></div>').join('') : '') +
+      '<div class="rd-bundle">📦 <b>작업 묶음 제안</b> — ' + b.org + ' · ' + b.sub + ' <b>' + b.list.length + '건</b>이 모였습니다.' +
+      '<button class="cs-mini" style="margin-left:12px" onclick="bundleAssign(\'' + b.key + '\')">한 번에 배정</button></div>').join('') : '') +
     '<div class="rd-cols">' + cols + '</div>';
 }
-function roadOpen(id){
-  setMode('duty');
-  setTimeout(()=>selectItem(id), 60);
-}
+/* 1분마다 카운트다운 갱신 */
+setInterval(()=>{ if(curMode === 'road') renderRoad(); }, 30000);
+function roadOpen(id){ roadDetail(id); }
 /* ── D-02 주소 기반 화면 분기 — 주소는 하나(#cit #duty #dash #road). QR은 #cit ── */
 const MODES = ["duty","dash","cit","road","track","cmd"];
 let curMode = "duty";
@@ -7172,7 +7648,7 @@ function modeFromHash(){
 }
 function applyHash(){
   const m = modeFromHash();
-  /* S-11: 소속이 신속기동단이면 작업판이 기본 화면 */
+  /* S-11: 소속이 교통·도로 기동단이면 작업판이 기본 화면 */
   const dflt = isPhone() ? "cit" : (meScope() === 'road' ? "road" : "duty");
   setMode(m || dflt, true);
 }
