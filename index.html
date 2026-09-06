@@ -2153,6 +2153,19 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 .cr-b.b-req.on{background:var(--hs-orange); color:#fff; border-color:var(--hs-orange);}
 .cr-b.b-req .n{margin-left:auto; font-family:var(--mono,ui-monospace);}
 .it-b.req{background:#FFF4E5; color:#8A3E0C;}
+/* I-8 받은 조치지시 — 부서가 보는 화면 */
+.ord-card{background:#fff; border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-top:10px;}
+.ord-card.ok{background:#F7FCF9; border-color:#BFE3CB;}
+.ord-card .oc-h{display:flex; align-items:center; gap:8px; font-size:14px; margin-bottom:8px;}
+.ord-card .oc-h b{flex:1;}
+.ord-card .oc-h .t{font-size:12px; color:var(--muted); font-family:var(--mono,ui-monospace);}
+.ord-card .oc-h .stt{padding:2px 9px; border-radius:9px; font-size:11.5px; font-weight:700;}
+.ord-card .oc-h .stt.y{background:#EAF6EE; color:#127A50;}
+.ord-card .oc-h .stt.w{background:#FFF4E5; color:#8A3E0C;}
+.ord-card .oc-b{display:flex; flex-wrap:wrap; align-items:center; gap:6px 14px; font-size:12.5px; margin-bottom:8px;}
+.ord-card .oc-b .k{color:var(--muted);}
+.ord-card .ord-memo{margin:0 0 10px;}
+.ord-card .row{margin-top:2px;}
 </style>
 </head>
 <body>
@@ -2566,7 +2579,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2358';
+const BUILD_VER = 'v0907-0008';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3781,11 +3794,23 @@ function renderLogHist(){
 }
 
 /* ── §3.3 우측 별도 버튼 ── */
+/* 지시는 시장·부시장이 내리고, 부서는 받아서 본다.
+   부서에게도 같은 화면을 열어 주되, 무엇을 받았는지만 보이게 한다(I-8). */
+function myOrders(){
+  try{ return ORDERS.filter(function(o){ return !o.closedAt && myDeptOf(o); }); }catch(e){ return []; }
+}
 function goCmd(){
+  /* 지시받은 부서는 '조치지시 확인'으로 들어온다 */
   if(!meCanCommand()){
-    showModal('<h2>🔒 조치지시 권한</h2>' +
-      '<p style="font-size:14px;line-height:1.8">조치지시는 <b>상황실 소속</b>(시장·부시장·재난안전상황실)만 상신할 수 있습니다.<br>' +
-      '소속을 바꾸려면 헤더의 👤 버튼을 누르세요.</p>' +
+    if(myOrders().length || (typeof ORDERS !== 'undefined' && ORDERS.some(function(o){ return myDeptOf(o); }))){
+      setMode('cmd');
+      return;
+    }
+    showModal('<h2 data-no="I-8b">📣 받은 조치지시</h2>' +
+      '<p class="hint">지금 <b>' + esc(meLabel()) + '</b>에 내려온 조치지시가 없습니다.<br>' +
+      '시장·부시장이 지시를 내리면 이 자리에 <b>받은 지시</b>가 뜹니다.</p>' +
+      '<p class="hint">조치지시 상신은 시장·부시장·재난안전상황실이 합니다. ' +
+      '소속을 바꾸려면 헤더의 👤 버튼을 누르십시오.</p>' +
       '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>');
     return;
   }
@@ -3800,9 +3825,15 @@ function openCitWindow(){
 function cmdBadgeSync(){
   const b = document.getElementById('btnCmd'), n = document.getElementById('btnCmdN');
   if(!b || !n) return;
-  b.classList.toggle('off', !meCanCommand());
+  /* 부서에게는 '조치지시 확인' — 받은 지시 건수를 단다 */
+  const mine = !meCanCommand();
+  b.classList.toggle('off', false);
+  b.firstChild.nodeValue = mine ? '조치지시 확인' : '조치지시';
+  b.title = mine ? '시장·부시장이 우리 부서에 내린 조치지시를 봅니다'
+                 : '동일 지역 유사 민원 급증 시 시장 조치지시를 상신합니다';
   let cnt = 0;
-  try{ cnt = detectSurges().filter(x=>x.report).length; }catch(e){}
+  if(mine) cnt = myOrders().length;
+  else { try{ cnt = detectSurges().filter(x=>x.report).length; }catch(e){} }
   if(cnt){ n.hidden = false; n.textContent = cnt; b.classList.add('alert'); }
   else { n.hidden = true; b.classList.remove('alert'); }
 }
@@ -9242,9 +9273,64 @@ function cmdItemPop(id){
     '<button class="btn-p" onclick="closeModal();setMode(\'duty\');focusItem(' + id + ', 18)">상황판에서 크게 보기</button></div>', true);
 }
 
+/* ══════════ I-8 받은 조치지시 — 부서가 보는 화면 ══════════
+   부서에게 필요한 것은 탐지 근거도, 인원 편성도 아니다.
+   '무엇을 지시받았고, 무엇을 해야 하며, 어디에 답하는가' 셋뿐이다. */
+function cmdDeptView(){
+  const mine = ORDERS.filter(function(o){ return myDeptOf(o); });
+  const live = mine.filter(function(o){ return !o.closedAt; });
+  const done = mine.filter(function(o){ return !!o.closedAt; });
+  const wait = live.filter(function(o){ return !(o.reports || {})[myDeptOf(o)]; });
+  const head =
+    '<div class="rd-head" data-no="I-8"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">' +
+      '📣 받은 조치지시</h2>' +
+    '<span style="font-size:13px;color:var(--muted)">시장·부시장이 <b>' + esc(meLabel()) + '</b>에 내린 지시입니다</span>' +
+    '<button class="btn-g" style="margin-left:auto;min-height:32px;padding:4px 12px;font-size:13px" onclick="renderCmd()">↻ 새로고침</button></div>' +
+    '<div class="rd-clocks" data-no="I-8a">' +
+    '<div class="rd-c1 ' + (wait.length ? 'warn' : 'ok') + '"><div class="k">답변 대기</div>' +
+      '<div class="v">' + wait.length + '<small>건</small></div>' +
+      '<div class="s">' + (wait.length ? '처리완료 의견을 내야 합니다' : '모두 제출했습니다') + '</div></div>' +
+    '<div class="rd-c2"><div class="k">진행 중 <small>지시</small></div><div class="v">' + live.length + '</div></div>' +
+    '<div class="rd-c2"><div class="k">종결 <small>확인됨</small></div><div class="v">' + done.length + '</div></div>' +
+    '</div>';
+  const card = function(o){
+    const d = myDeptOf(o);
+    const r = (o.reports || {})[d];
+    const notes = ordNotes(o);
+    const list = ordItems(o);
+    return '<div class="ord-card' + (r ? ' ok' : '') + '" data-no="I-8c">' +
+      '<div class="oc-h"><b>' + esc(o.type) + ' · ' + esc(o.emd) + '</b>' +
+        '<span class="t">' + o.hm + ' 하달</span>' +
+        '<span class="stt ' + (o.closedAt ? 'y' : (r ? 'y' : 'w')) + '">' +
+          (o.closedAt ? '종결' : (r ? '의견 제출함' : '답변 대기')) + '</span></div>' +
+      '<div class="oc-b"><span class="k">우리 몫</span><b>' + (o.depts[d] || 0) + '명</b>' +
+        '<span class="k">관련 민원</span><b>' + list.length + '건</b>' +
+        '<span class="k">수신확인</span><b>' + (o.ack[d] || '미수신') + '</b></div>' +
+      (notes.length
+        ? '<div class="ord-memo"><b>🗣 시장 지시</b>' +
+          notes.map(function(x){ return esc(x.hm + ' ' + x.memo); }).join(String.fromCharCode(10)) + '</div>'
+        : '<p class="hint">적힌 지시 의견이 없습니다.</p>') +
+      '<div class="row">' +
+        '<button class="btn-g" onclick="cmdOrderPop(' + ORD_Q + o.id + ORD_Q + ')">📋 처리현황 보기</button>' +
+        '<button class="btn-g" onclick="ordSurge(' + ORD_Q + o.id + ORD_Q + ')">🗺 지도에서 보기</button>' +
+        (o.closedAt ? '' :
+          '<button class="btn-p" data-no="I-7" onclick="ordReplyAll(' + ORD_Q + o.id + ORD_Q + ')">📞 유사민원 일괄 답변</button>') +
+      '</div></div>';
+  };
+  return head +
+    '<div class="cmd-card"><h4>📥 진행 중 <span class="h4n">' + live.length + '건</span></h4>' +
+    (live.length ? live.map(card).join('')
+      : '<p class="hint">지금 내려온 조치지시가 없습니다. 지시가 오면 헤더의 <b>조치지시 확인</b>에 건수가 붙습니다.</p>') + '</div>' +
+    (done.length
+      ? '<div class="cmd-card"><h4>✅ 종결된 지시 <span class="h4n">' + done.length + '건</span></h4>' +
+        done.slice(0, 5).map(card).join('') + '</div>'
+      : '');
+}
 function renderCmd(){
   const host = document.getElementById('cmd');
   if(!host) return;
+  /* 지시받은 부서에게는 받은 지시만 보여 준다 — 탐지 근거·인원 편성은 시장의 몫이다 */
+  if(!meCanCommand()){ host.innerHTML = cmdDeptView(); return; }
   if(cmdView === 'done'){ host.innerHTML = cmdDoneView(); return; }
   const surges = detectSurges();
   const th = ruleThresholds(RULES_CUR);
