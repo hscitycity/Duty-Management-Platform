@@ -2053,7 +2053,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1606';
+const BUILD_VER = 'v0906-1611';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3040,9 +3040,10 @@ function crewTick(){
     if(t.pts && t.pts.length > 1 && !c.path)
       c.path = L.polyline(t.pts, {color:'#9AB3D4', weight:4, opacity:.45}).addTo(crewLayerDuty);
     /* 지나온 길은 점이 늘 때만 고친다 */
+    /* 마커와 같은 프레임에 갱신해야 선이 함께 움직인다 */
     if(pub.trail && pub.trail.length > 1){
       if(!c.trail) c.trail = L.polyline(pub.trail, {color:'#1D4994', weight:4, opacity:.9}).addTo(crewLayerDuty);
-      else if(c.trailN !== pub.trail.length){ c.trail.setLatLngs(pub.trail); c.trailN = pub.trail.length; }
+      else c.trail.setLatLngs(pub.trail);
     }
 
     /* 마커는 살려 두고 자리만 옮긴다 */
@@ -7204,8 +7205,9 @@ function reportCommit(rec){
   it.resultType = rec.result; it.resultMemo = rec.memo || null;
   it.reportedBy = rec.org; it.reportedAt = new Date().toISOString();
   if(rec.gps) it.reportLL = rec.gps;
-  if(rec.before) photoQueue(rec.id, 'before', rec.before);
-  if(rec.after)  photoQueue(rec.id, 'after',  rec.after);
+  /* 전송 전이라도 화면에 보이게 기기에 함께 담는다 */
+  if(rec.before){ it.photoBefore = it.photoBefore || rec.before; photoQueue(rec.id, 'before', rec.before); }
+  if(rec.after){  it.photoAfter  = it.photoAfter  || rec.after;  photoQueue(rec.id, 'after',  rec.after); }
   if(rec.before || rec.after) toast('조치 사진 전송 중…');
   it.log.push(nowHM() + ' 현장 결과보고: ' + rec.result + (rec.memo ? ' — ' + rec.memo : '') + ' (' + rec.org + ' · 소요 ' + rec.mins + '분)');
   if(rec.result === '조치 완료' || rec.result === '현장 이상 없음'){
@@ -8281,6 +8283,39 @@ function photoResize(file){
   });
 }
 /* 대기열 — 통신이 끊겨도 잃지 않는다. 미리보기는 기기에 남기고 전송만 미룬다. */
+/* ── 방금 올린 사진을 곧바로 보여 주기 위한 기기 보관함 ──
+   업로드가 끝나면 URL 로 바뀌지만, 그 전에도 화면에는 보여야 한다.
+   용량이 크므로 최근 것만 남긴다(오래된 것부터 버린다). */
+const PHOTO_LOCAL_MAX = 12;
+let PHOTO_LOCAL = {};
+try{ PHOTO_LOCAL = JSON.parse(localStorage.getItem('hs_photo_local') || '{}'); }catch(e){}
+function plKey(id, kind, n){ return String(id) + '|' + kind + '|' + (n || 1); }
+function photoLocalSave(){
+  try{
+    const ks = Object.keys(PHOTO_LOCAL);
+    /* 넣은 순서대로 앞에서부터 버린다 */
+    while(ks.length > PHOTO_LOCAL_MAX) delete PHOTO_LOCAL[ks.shift()];
+    localStorage.setItem('hs_photo_local', JSON.stringify(PHOTO_LOCAL));
+  }catch(e){
+    /* 저장 공간이 모자라면 절반을 버리고 한 번 더 시도한다 */
+    try{
+      const ks = Object.keys(PHOTO_LOCAL);
+      for(let i = 0; i < Math.ceil(ks.length / 2); i++) delete PHOTO_LOCAL[ks[i]];
+      localStorage.setItem('hs_photo_local', JSON.stringify(PHOTO_LOCAL));
+    }catch(e2){}
+  }
+}
+function photoLocalPut(id, kind, dataUrl, n){
+  if(!dataUrl) return;
+  PHOTO_LOCAL[plKey(id, kind, n)] = dataUrl;
+  photoLocalSave();
+}
+function photoLocalGet(id, kind, n){ return PHOTO_LOCAL[plKey(id, kind, n)] || null; }
+function photoLocalDrop(id, kind, n){
+  const k = plKey(id, kind, n);
+  if(PHOTO_LOCAL[k]){ delete PHOTO_LOCAL[k]; photoLocalSave(); }
+}
+
 let PHOTO_Q = [];
 try{ PHOTO_Q = JSON.parse(localStorage.getItem('hs_photo_q') || '[]'); }catch(e){}
 function photoQSave(){ try{ localStorage.setItem('hs_photo_q', JSON.stringify(PHOTO_Q.slice(-30))); }catch(e){} }
@@ -8322,6 +8357,7 @@ async function photoSend(job){
     patch.photo_after = url;  if(it) it.photoAfter = url;
   }
   try{ await sb.from('complaints').update(patch).eq('id', job.id); }catch(e){}
+  photoLocalDrop(job.id, job.kind, job.n);   /* 서버에 올랐으니 기기 사본은 버린다 */
   return url;
 }
 /* 대기열 비우기 — 연결이 돌아오면 자동으로 다시 보낸다 */
@@ -8339,7 +8375,8 @@ async function photoFlush(){
   photoFlushing = false;
   if(sent){
     toast('사진 ' + sent + '장을 전송했습니다');
-    renderList(); if(selId) selectItem(selId);
+    renderList();
+    if(selId){ const t = items.find(i=>i.id === selId); if(t && typeof renderSel === 'function') renderSel(t); }
     if(curMode === 'track') renderTrack();
     if(curMode === 'road') renderRoad();
   }
@@ -8350,16 +8387,39 @@ setInterval(photoFlush, 20000);
 function photoQueue(id, kind, dataUrl, n){
   PHOTO_Q.push({id:id, kind:kind, dataUrl:dataUrl, n:n || 1, at:Date.now(), try:0});
   photoQSave();
+  /* 전송을 기다리지 않고 바로 화면에 보이게 한다 */
+  photoLocalPut(id, kind, dataUrl, n);
+  const it = items.find(i=>i.id === id);
+  if(it){
+    if(kind === 'before' && !it.photoBefore) it.photoBefore = dataUrl;
+    else if(kind === 'after' && !it.photoAfter) it.photoAfter = dataUrl;
+    else if(kind === 'report'){
+      it.photoLocal = (it.photoLocal || []).slice();
+      it.photoLocal[(n || 1) - 1] = dataUrl;
+    }
+  }
   photoFlush();
+  if(typeof renderList === 'function') renderList();
+  if(typeof selId !== 'undefined' && selId === id && typeof renderSel === 'function'){
+    const t = items.find(i=>i.id === id); if(t) renderSel(t);
+  }
 }
 /* 표시용 — 없으면 null */
+/* URL 이 아직 없으면 기기에 담아 둔 사본을 쓴다 — 올린 사진은 언제나 보여야 한다 */
 function photosOf(it){
+  const id = it && it.id;
+  const rep0 = (it && it.photoReport) ? it.photoReport.filter(Boolean) : [];
+  const loc = (it && it.photoLocal) ? it.photoLocal.filter(Boolean) : [];
+  /* 서버에 오른 것 + 아직 안 오른 기기 사본을 자리 수만큼 합친다 */
+  const report = [];
+  const cnt = Math.max(rep0.length, loc.length);
+  for(let i = 0; i < cnt; i++) report.push(rep0[i] || loc[i] || photoLocalGet(id, 'report', i + 1));
   return {
-    report: (it && it.photoReport) ? it.photoReport.filter(Boolean) : [],
-    before: (it && it.photoBefore) || null,
-    after:  (it && it.photoAfter) || null,
+    report: report.filter(Boolean),
+    before: (it && it.photoBefore) || photoLocalGet(id, 'before') || null,
+    after:  (it && it.photoAfter)  || photoLocalGet(id, 'after')  || null,
     pub:    !(it && it.photoPublic === false),
-    pending: photoPending(it && it.id)
+    pending: photoPending(id)
   };
 }
 function hasPhoto(it){
@@ -8396,8 +8456,10 @@ function photoBlock(it, opts){
   /* photo_public=false 면 시민 화면에서만 가린다. 내부에서는 보인다. */
   const hideForCit = forCitizen && !ph.pub;
   const cards = [];
-  const local = (it.photoLocal || []);
-  const reports = ph.report.length ? ph.report : (forCitizen ? [] : local);
+  const local = ((it && it.photoLocal) || []);
+  /* 시민 화면에는 서버에 오른 것만. 내부에서는 기기 사본도 함께 본다 */
+  const reports = forCitizen ? ph.report
+    : Array.from(new Set(ph.report.concat(local).filter(Boolean)));
   reports.forEach((u, i)=>{
     cards.push(photoCard(u, '신고 사진' + (reports.length > 1 ? ' ' + (i + 1) : ''), photoMeta(it, 'report')));
   });
@@ -8516,7 +8578,10 @@ function trackPublic(id, precise){
   out.etaAt = new Date(t.t0start + t.dur);
   out.near = (1 - k) <= 0.18;                       /* 도착 임박 — 잔여 18% 구간 */
   out.stale = (Date.now() - t.lastAt) > 15000;      /* 위치 갱신이 끊긴 상태 */
-  out.trail = t.pts.slice(0, Math.max(2, Math.floor(t.pts.length * k))).map(fx);
+  /* 꼭짓점까지만 그리면 선이 마커보다 뒤처진다 — 지금 위치를 끝점으로 붙인다 */
+  const done = t.pts.slice(0, Math.max(1, Math.floor(t.pts.length * k))).map(fx);
+  done.push(out.pos);
+  out.trail = done;
   return out;
 }
 function trackHeading(t, k){
@@ -9797,8 +9862,9 @@ function doneSend(){
   if(it){
     it.vendorResult = res;
     it.vendorAt = new Date().toISOString();
-    if(donePhoto.before) it.photoBefore = donePhoto.before;
+    if(donePhoto.before){ it.photoBefore = donePhoto.before; photoQueue(it.id, 'before', donePhoto.before); }
     it.photoAfter = donePhoto.after;
+    photoQueue(it.id, 'after', donePhoto.after);
     if(memo) it.vendorMemo = memo;
     it.log.push(nowHM() + ' 용역업체 조치결과 등록 — ' + res + (memo ? ' · ' + memo : ''));
     if(res === '완료') it.st = '완료';
