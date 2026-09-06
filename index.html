@@ -2557,7 +2557,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2343';
+const BUILD_VER = 'v0906-2349';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -4443,8 +4443,9 @@ function renderSel(it){
           '<button class="cs-mini" data-no="C-11" onclick="assignAsk(' + it.id + ')">배부 부서 변경</button>'
         : '<button class="cs-mini" data-no="C-6c" onclick="deptReqAsk(' + it.id + ')">부서 재지정 요청</button>') +
       '</div>' +
-      '<p class="sel-note">처리부서 지정은 <b>' + esc(dispatchOrgOf(it)) + '</b>만 할 수 있습니다' +
-        (canAssignDept(it) ? ' — 지금 소속이 배부 부서입니다.' : '. 다른 부서는 재지정을 요청합니다.') + '</p></div>') +
+      '<p class="sel-note">처리부서 지정은 <b>' + esc(dispatchOrgOf(it)) + '</b>' +
+        (isEmdItem(it) ? ' · <b>시장</b>' : ' · <b>시장·부시장</b>') + '이(가) 합니다' +
+        (canAssignDept(it) ? ' — 지금 소속이 지정 권한을 가집니다.' : '. 다른 부서는 재지정을 요청합니다.') + '</p></div>') +
 
     /* 4 담당연락처 — 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다(§10 #5) */
     sec('C-7', '4. 담당연락처',
@@ -4552,7 +4553,7 @@ function deptReqAsk(id){
   const it = items.find(function(i){ return i.id === id; }); if(!it) return;
   const to = dispatchOrgOf(it);
   showModal('<h2 data-no="C-6c">📤 부서 재지정 요청</h2>' +
-    '<p class="hint">처리부서 지정은 <b>' + esc(to) + '</b>이(가) 합니다. 이 민원이 우리 소관이 아니라면 사유를 적어 요청하십시오.</p>' +
+    '<p class="hint">처리부서 지정은 <b>' + esc(to) + '</b>(또는 시장·부시장)이(가) 합니다. 이 민원이 우리 소관이 아니라면 사유를 적어 요청하십시오.</p>' +
     '<div class="sel-box" style="margin-bottom:12px">' +
       '<div class="sel-kv"><span>민원</span><b>#' + String(it.id).padStart(3,'0') + ' ' + esc(it.sub) + '</b></div>' +
       '<div class="sel-kv"><span>현재 처리부서</span><b>' + esc(deptOf(it).actor.org) + '</b></div>' +
@@ -9766,18 +9767,27 @@ function viceDepts(v){
   for(const g of (ORG_UNITS.사업소 || [])) if(g.상위 === v) for(const d of (g.과 || [])) out.push(g.기관 + ' ' + d);
   return out;
 }
+/* 읍면동 행정복지센터 소관 민원 — 부시장 관할(실·국) 밖이다. 시장이 본다 */
+function isEmdItem(it){
+  const org = String(deptOf(it).actor.org || '');
+  return org.indexOf('행정복지센터') >= 0 || /(읍|면|동)$/.test(org);
+}
 function inVice(it, v){
+  if(isEmdItem(it)) return false;   /* 읍면동은 시장 몫 */
   const list = viceDepts(v);
-  if(!list.length) return true;   /* 조직도가 아직 안 왔으면 막지 않는다 */
+  if(!list.length) return true;     /* 조직도가 아직 안 왔으면 막지 않는다 */
   const a = deptOf(it);
   return list.some(function(d){ return a.actor.org.indexOf(d) >= 0 || d.indexOf(a.actor.org) >= 0 ||
                                        a.legal.dept.indexOf(d) >= 0; });
 }
 /* 이 민원의 민원배부 부서(C-11) */
 function dispatchOrgOf(it){ return isRoadTeam(it) ? ROADTEAM_ORG : TRIAGE_ORG; }
-/* 처리부서 지정(C-6b)은 배부 부서만 한다 */
+/* 처리부서 지정(C-6b)은 배부 부서가 한다. 시장·부시장은 그 위에서 직접 지정할 수 있다 */
 function canAssignDept(it){
   if(!it) return false;
+  if(meIsMayor()) return true;
+  const v = meVice();
+  if(v) return isEmdItem(it) ? false : inVice(it, v);   /* 읍면동 건은 시장이 지정한다 */
   return isRoadTeam(it) ? meIsRoadTeam() : meIsTriage();
 }
 /* 이 민원을 처리·종결할 수 있는가 — 배부받은 부서, 배부 부서, 부시장(관할), 시장·상황실 */
