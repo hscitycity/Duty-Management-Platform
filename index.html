@@ -2579,7 +2579,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0907-0008';
+const BUILD_VER = 'v0907-0018';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2904,7 +2904,10 @@ function assignDept(it){
 }
 
 /* 담당자가 바꾼 이력 — 값은 브라우저에, 사실은 처리이력에 남는다 */
+/* 넣는 키와 꺼내는 키가 달라(hs_dept_ov vs hs_dept_ov_<id>) 지정 결과가 다시 읽히지 않았다.
+   서버(complaints.assigned_*)를 먼저 보고, 기기 사본은 오프라인 대비로만 둔다. */
 function deptOverrideSet(id, v){
+  try{ localStorage.setItem('hs_dept_ov_' + id, JSON.stringify(v)); }catch(e){}
   try{
     const all = JSON.parse(localStorage.getItem('hs_dept_ov') || '{}');
     all[id] = v; localStorage.setItem('hs_dept_ov', JSON.stringify(all));
@@ -2912,6 +2915,12 @@ function deptOverrideSet(id, v){
   try{ if(typeof DEPT_CACHE === 'object') for(const k of Object.keys(DEPT_CACHE)) delete DEPT_CACHE[k]; }catch(e){}
 }
 function deptOverrideGet(id){
+  /* 서버 값이 먼저다 — 다른 자리에서 지정한 것도 그대로 보인다 */
+  try{
+    const it = (typeof items !== 'undefined') ? items.find(function(x){ return x.id === id; }) : null;
+    if(it && it.deptList && it.deptList.length)
+      return {org:it.deptList[0], co:it.deptList.slice(1), basis:it.assignedBasis || '담당자 지정'};
+  }catch(e){}
   try{ const v = localStorage.getItem('hs_dept_ov_' + id); return v ? JSON.parse(v) : null; }catch(e){ return null; }
 }
 /* 목록·지도·집계가 매 렌더마다 부르므로 결과를 캐시한다(분장사무 1,892건 대조 반복 방지) */
@@ -4630,8 +4639,8 @@ function deptPickSave(id){
   const co = deptPickList.slice(1);                  /* 나머지는 협조 부서 */
   const why = ((document.getElementById('dpWhy') || {}).value || '').trim();
   it.deptList = deptPickList.slice();
-  deptOverrideSet(id, {org: org, co: co,
-    basis: '담당자 지정' + (co.length ? ' · 협조 ' + co.join(', ') : '') + (why ? ' — ' + why : '')});
+  it.assignedBasis = '담당자 지정' + (co.length ? ' · 협조 ' + co.join(', ') : '') + (why ? ' — ' + why : '');
+  deptOverrideSet(id, {org: org, co: co, basis: it.assignedBasis});
   it.log.push(nowHM() + ' 처리부서 지정(' + dispatchOrgOf(it) + ') → ' + org +
     (co.length ? ' (협조 ' + co.join(', ') + ')' : '') + (why ? ' — ' + why : ''));
   /* 요청을 받아 지정했으면 요청은 닫힌다 */
@@ -4663,7 +4672,7 @@ function deptReqSave(id){
   const why = ((document.getElementById('drqWhy') || {}).value || '').trim();
   if(!why){ toast('요청 사유를 적어 주세요'); return; }
   const to = dispatchOrgOf(it);
-  it.reassignReq = {by: meLabel(), hm: nowHM(), why: why, to: to};
+  it.reassignReq = {by: meLabel(), at: new Date().toISOString(), hm: nowHM(), why: why, to: to};
   it.log.push(nowHM() + ' 부서 재지정 요청 (' + meLabel() + ' → ' + to + '): ' + why.split(String.fromCharCode(10)).join(' / '));
   try{ sbPush(it); }catch(e){}
   closeModal();
@@ -7870,9 +7879,21 @@ function localJournal(t){
 
 /* ── 재난상황일지 수기 항목 (일일보고 연동·자동저장) ── */
 const J_IDS = ['jN1','jN2','jN3','jN4','jMjType','jMjDt','jMjLoc','jMjHum','jMjProp','jMjAct','jNation'];
+let jrnTimer = null;
 function saveJournal(){
   try{ const o = {}; J_IDS.forEach(id=>{ o[id] = document.getElementById(id).value; });
-    localStorage.setItem('hs_journal', JSON.stringify(o)); }catch(e){}
+    localStorage.setItem('hs_journal', JSON.stringify(o));
+    /* 글자마다 서버를 두드리지 않는다 — 손을 멈추면 그때 올린다 */
+    clearTimeout(jrnTimer);
+    jrnTimer = setTimeout(function(){
+      /* 날짜는 우리 시각으로 — UTC 로 자르면 자정 뒤 당직이 어제 장에 적힌다 */
+      const d = new Date();
+      const ymd = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      tblSave('journals', {ymd:ymd, body:o,
+        updated_at:new Date().toISOString(),
+        updated_by:(typeof meLabel === 'function' ? meLabel() : null)});
+    }, 1500);
+  }catch(e){}
 }
 function loadJournal(){
   try{ const j = JSON.parse(localStorage.getItem('hs_journal')||"{}");
@@ -8315,7 +8336,17 @@ function itRow(it){
     partner_org:it.partnerOrg||null, partner_sent_at:it.partnerAskAt||it.partnerSentAt||null,
     partner_reply_at:it.partnerReplyAt||null, partner_reply:it.partnerReply||null,
     intake_channel:it.intakeChannel||null,
-    assignee:it.assignee||null, assigned_at:it.assignedAt||null, assigned_why:it.assignedWhy||null};
+    assignee:it.assignee||null, assigned_at:it.assignedAt||null, assigned_why:it.assignedWhy||null,
+    /* 여러 자리에서 같은 건을 보려면 기기가 아니라 서버에 있어야 한다 */
+    assigned_dept:(it.deptList && it.deptList[0]) || null,
+    assigned_co:(it.deptList && it.deptList.length > 1) ? it.deptList.slice(1) : null,
+    assigned_basis:it.assignedBasis||null,
+    reassign_by:(it.reassignReq && it.reassignReq.by) || null,
+    reassign_at:(it.reassignReq && it.reassignReq.at) || null,
+    reassign_why:(it.reassignReq && it.reassignReq.why) || null,
+    reassign_to:(it.reassignReq && it.reassignReq.to) || null,
+    long_stage:(it.longStage == null ? null : it.longStage),
+    done_at:it.doneAt||null};
 }
 function rowIt(r){
   const it = {id:r.id, time:r.time, gu:r.gu, loc:r.loc, field:r.field, sub:r.sub, sum:r.sum, req:r.req,
@@ -8333,6 +8364,11 @@ function rowIt(r){
     guideMethod:r.guide_method||null, guideMemo:r.guide_memo||null,
     fieldCheckAt:r.field_check_at||null, fieldCheckBy:r.field_check_by||null,
     partnerOrg:r.partner_org||null, partnerAskAt:r.partner_sent_at||null, partnerSentAt:r.partner_sent_at||null,
+    deptList:r.assigned_dept ? [r.assigned_dept].concat(r.assigned_co || []) : null,
+    assignedBasis:r.assigned_basis||null,
+    reassignReq:r.reassign_by ? {by:r.reassign_by, at:r.reassign_at||null,
+      hm:(r.reassign_at ? hm(r.reassign_at) : ''), why:r.reassign_why||'', to:r.reassign_to||''} : null,
+    longStage:(r.long_stage == null ? null : r.long_stage), doneAt:r.done_at||null,
     partnerReplyAt:r.partner_reply_at||null, partnerReply:r.partner_reply||null,
     intakeChannel:r.intake_channel||null,
     assignee:r.assignee||null, assignedAt:r.assigned_at||null, assignedWhy:r.assigned_why||null};
@@ -8370,6 +8406,11 @@ async function sbInit(){
       });
     /* 실시간이 막혀도 따라잡는 폴링 백업 (20초) */
     setInterval(sbPoll, 20000);
+    /* 조치지시 — 부서 자리에서도 같은 것을 본다 */
+    ordersLoad(); ordersRealtime();
+    setInterval(ordersLoad, 60000);
+    /* 탐지 규칙도 한 벌이어야 한다 */
+    rulesLoad(); holdsLoad();
     if(bootedDuty) loadFeed();   // DB 연결 후 연합뉴스(재난) 축적분 재렌더 — 당직 경로에서만
   }catch(e){
     cloudOn = false;
@@ -8508,6 +8549,20 @@ function ruleSave(){
     localStorage.setItem('hs_rule_draft', JSON.stringify(RULES_DRAFT));
     localStorage.setItem('hs_rule_hist', JSON.stringify(RULE_HIST.slice(-50)));
   }catch(e){}
+  /* 규칙은 코드가 아니라 데이터다 — 한 자리에서 고치면 모두에게 같은 기준이 걸린다 */
+  tblSave('rules', {id:1, body:RULES_CUR, updated_at:new Date().toISOString(),
+    updated_by:(typeof meLabel === 'function' ? meLabel() : null)});
+  const last = RULE_HIST[RULE_HIST.length - 1];
+  if(last) tblSave('rule_history', {at:last.at || new Date().toISOString(), body:RULES_CUR,
+    by:last.by || null, why:last.why || null});
+}
+/* 시행 중 규칙을 서버에서 가져온다 — 남이 고친 기준으로 함께 본다 */
+async function rulesLoad(){
+  const d = await tblLoad('rules');
+  if(!d || !d.length || !d[0].body) return;
+  RULES_CUR = Object.assign({}, RULE_DEFAULT, d[0].body);
+  try{ localStorage.setItem('hs_rule_cur', JSON.stringify(RULES_CUR)); }catch(e){}
+  if(typeof cmdBadgeSync === 'function') cmdBadgeSync();
 }
 /* 특보 발효 여부 — 가중 규칙에 쓴다 */
 function warnActive(){ return !!(typeof WX !== 'undefined' && WX && WX.warn); }
@@ -8812,10 +8867,42 @@ function rpNeed(msg, id){
   try{ el.scrollIntoView({block:'center', behavior:'smooth'}); }catch(e){}
   setTimeout(()=>el.classList.remove('rp-need'), 2200);
 }
+/* ══════════ 표가 없으면 조용히 기기에만 — 있으면 함께 ══════════
+   스키마 적용 전에도 앱은 그대로 돈다. 적용하면 그때부터 여러 자리가 같은 것을 본다. */
+const TBL_WARNED = {};
+async function tblSave(tbl, row){
+  if(!cloudOn || !sb || !row) return false;
+  try{
+    const {error} = await sb.from(tbl).upsert(row);
+    if(error){
+      if(!TBL_WARNED[tbl]){ TBL_WARNED[tbl] = true;
+        console.warn(tbl + ' 표 없음 — 기기에만 남깁니다:', error.message || error); }
+      return false;
+    }
+    return true;
+  }catch(e){ return false; }
+}
+async function tblLoad(tbl, q){
+  if(!cloudOn || !sb) return null;
+  try{
+    let r = sb.from(tbl).select('*');
+    if(q && q.order) r = r.order(q.order, {ascending:false});
+    if(q && q.limit) r = r.limit(q.limit);
+    const {data, error} = await r;
+    if(error) return null;
+    return data || [];
+  }catch(e){ return null; }
+}
 function reportCommit(rec){
   const it = items.find(i=>i.id === rec.id);
   if(!it) return;
   REPORTS[rec.id] = rec; reportsSave();
+  /* 한 민원에 여러 번 보고할 수 있다 — 보고서는 쌓아 둔다(field_reports) */
+  tblSave('field_reports', {cid:rec.id, at:rec.at || new Date().toISOString(), hm:rec.hm || null,
+    org:rec.org || null, result:rec.result || null, memo:rec.memo || null, pub:rec.pub !== false,
+    before_url:rec.before || null, after_url:rec.after || null,
+    before_at:rec.beforeAt || null, after_at:rec.afterAt || null,
+    gps:rec.gps || null, arrive:rec.arrive || null, mins:rec.mins || null});
   /* 사진은 서버로 — 다른 기기·시민 화면에서 보여야 한다 */
   it.photoPublic = rec.pub !== false;
   it.resultType = rec.result; it.resultMemo = rec.memo || null;
@@ -8908,7 +8995,29 @@ const HOLD_REASONS = [
 ];
 let HOLDS = [];
 try{ const v = localStorage.getItem('hs_holds'); if(v) HOLDS = JSON.parse(v); }catch(e){}
-function holdsSave(){ try{ localStorage.setItem('hs_holds', JSON.stringify(HOLDS.slice(-40))); }catch(e){} }
+/* 보류도 부서·시장이 함께 봐야 한다 — 왜 안 올라왔는지가 곧 근거다 */
+function holdsSave(h){
+  try{ localStorage.setItem('hs_holds', JSON.stringify(HOLDS.slice(-40))); }catch(e){}
+  const list = h ? [h] : HOLDS.slice(0, 5);
+  for(const x of list) tblSave('order_holds', {key:x.key, at:x.at || new Date().toISOString(),
+    hm:x.hm || null, emd:x.emd || null, why:x.why || null,
+    until:x.reviewAt ? new Date(x.reviewAt).toISOString() : null, by:x.by || null,
+    closed:!!x.closed, closed_at:x.closedAt || null, close_why:x.closeWhy || null});
+}
+/* 서버에 있는 보류를 가져온다 */
+async function holdsLoad(){
+  const d = await tblLoad('order_holds', {order:'at', limit:60});
+  if(!d) return;
+  for(const r of d){
+    const k = HOLDS.findIndex(function(x){ return x.key === r.key; });
+    const h = {key:r.key, at:r.at, hm:r.hm || '', emd:r.emd || '', why:r.why || '',
+      by:r.by || '', reviewAt:r.until ? new Date(r.until).getTime() : 0,
+      closed:!!r.closed, closedAt:r.closed_at || null, closeWhy:r.close_why || ''};
+    if(k < 0) HOLDS.push(Object.assign({resub:0, ids:[]}, h)); else HOLDS[k] = Object.assign(HOLDS[k], h);
+  }
+  try{ localStorage.setItem('hs_holds', JSON.stringify(HOLDS.slice(-40))); }catch(e){}
+  if(curMode === 'cmd') renderCmd();
+}
 let FALSE_POSITIVES = [];
 try{ const v = localStorage.getItem('hs_fp'); if(v) FALSE_POSITIVES = JSON.parse(v); }catch(e){}
 
@@ -8941,7 +9050,7 @@ function holdSave(key){
     emd: su.emd, cnt0: su.cnt, mult0: su.mult, radius: su.radius, hours: su.hours,
     ids: su.list.map(i=>i.id), resub: 0, closed: false, closeWhy: ''
   };
-  HOLDS.unshift(h); holdsSave();
+  HOLDS.unshift(h); holdsSave(h);
   /* 오탐은 규칙 개정 자료로 자동 전달 */
   if(why === '오탐'){
     FALSE_POSITIVES.push({at: h.at, emd: h.emd, cnt: h.cnt0, mult: h.mult0, radius: h.radius, hours: h.hours});
@@ -9033,7 +9142,85 @@ let cmdDepts = null;    /* 부서별 인원 (조정 중) */
 let ORDERS = [];        /* 하달 이력 */
 try{ const v = localStorage.getItem('hs_orders'); if(v) ORDERS = JSON.parse(v); }catch(e){}
 /* ORDERS 는 새것이 앞(unshift)이다. slice(-40) 으로 자르면 새것부터 버려진다 */
-function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 200))); }catch(e){} }
+/* ══════════ 조치지시는 부서로 건너가야 한다 ══════════
+   기기에만 두면 시장 자리에서 내린 지시가 부서 자리에 닿지 않는다.
+   서버(orders)를 본체로 두고, 기기 사본은 오프라인·첫 화면용으로만 남긴다.
+   서버에 표가 없어도(스키마 적용 전) 앱은 그대로 돈다 — 기기 사본으로 버틴다. */
+let ordersCloud = false;   /* orders 표가 서버에 있는가 */
+function ordersSave(o){
+  try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 200))); }catch(e){}
+  if(o) ordPush(o); else for(const x of ORDERS.slice(0, 5)) ordPush(x);
+}
+function ordRow(o){
+  return {id:o.id, at:o.at || new Date().toISOString(), hm:o.hm || null, type:o.type || null,
+    emd:o.emd || null, cnt:o.cnt || null, mult:o.mult || null, total:o.total || null,
+    depts:o.depts || {}, ack:o.ack || {}, reports:o.reports || {},
+    memo:o.memo || null, notes:o.notes || [], ids:o.ids || [], retry:o.retry || 0,
+    closed_at:o.closedAt || null, closed_hm:o.closedHm || null,
+    miss_at_close:o.missAtClose || null, updated_at:new Date().toISOString()};
+}
+function rowOrd(r){
+  return {id:r.id, at:r.at, hm:r.hm || '', type:r.type || '', emd:r.emd || '',
+    cnt:r.cnt || 0, mult:r.mult || 0, total:r.total || 0,
+    depts:r.depts || {}, ack:r.ack || {}, reports:r.reports || {},
+    memo:r.memo || '', notes:r.notes || [], ids:r.ids || [], retry:r.retry || 0,
+    closedAt:r.closed_at || null, closedHm:r.closed_hm || null,
+    missAtClose:r.miss_at_close || null};
+}
+async function ordPush(o){
+  if(!cloudOn || !o || !sb) return;
+  try{
+    const {error} = await sb.from('orders').upsert(ordRow(o));
+    if(error){
+      /* 표가 아직 없으면 조용히 기기 사본으로 버틴다 — 한 번만 알린다 */
+      if(!ordersCloud && !ordWarned){ ordWarned = true;
+        console.warn('orders 표 없음 — 기기에만 남깁니다:', error.message || error); }
+      return;
+    }
+    ordersCloud = true;
+  }catch(e){}
+}
+let ordWarned = false;
+/* 서버에 있는 지시를 가져온다 — 기기 사본보다 서버가 먼저다 */
+async function ordersLoad(){
+  if(!cloudOn || !sb) return;
+  try{
+    const {data, error} = await sb.from('orders').select('*').order('at', {ascending:false}).limit(200);
+    if(error || !data) return;
+    ordersCloud = true;
+    const mine = {};
+    for(const o of ORDERS) mine[o.id] = o;
+    const merged = data.map(rowOrd);
+    for(const o of ORDERS) if(!data.some(function(r){ return r.id === o.id; })) merged.push(o);
+    ORDERS = merged.sort(function(a, b){ return String(b.at || '').localeCompare(String(a.at || '')); });
+    try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 200))); }catch(e){}
+    /* 아직 안 올라간 기기 사본은 이참에 올린다 */
+    for(const o of ORDERS) if(!data.some(function(r){ return r.id === o.id; })) ordPush(o);
+    if(curMode === 'cmd') renderCmd();
+    cmdBadgeSync();
+  }catch(e){}
+}
+/* 다른 자리에서 내린 지시가 곧바로 보이게 */
+function ordersRealtime(){
+  if(!cloudOn || !sb) return;
+  try{
+    sb.channel('rt-orders')
+      .on('postgres_changes', {event:'*', schema:'public', table:'orders'}, function(pl){
+        const r = pl && pl.new;
+        if(!r || !r.id) return;
+        const o = rowOrd(r);
+        const k = ORDERS.findIndex(function(x){ return x.id === o.id; });
+        const isNew = k < 0;
+        if(isNew) ORDERS.unshift(o); else ORDERS[k] = o;
+        try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 200))); }catch(e){}
+        if(curMode === 'cmd') renderCmd();
+        cmdBadgeSync();
+        /* 내 부서에 새로 내려온 지시는 알린다 — 창구가 명확해야 한다(I-8) */
+        if(isNew && typeof myDeptOf === 'function' && myDeptOf(o) && !meCanCommand())
+          toast('📣 ' + esc(o.emd || '') + ' 조치지시가 우리 부서에 내려왔습니다 — 헤더 조치지시 확인');
+      }).subscribe();
+  }catch(e){}
+}
 
 function cmdTotal(){ return Object.values(cmdDepts || {}).reduce((a,b)=>a + b, 0); }
 /* 조치 유형이 제안하는 부서 — 무엇이 추천값인지 표시한다 */
@@ -9422,7 +9609,7 @@ function cmdIssue(){
     closedAt: null,        /* 시장 확인 시각 — 여기서 종결된다 */
     retry: 0
   };
-  ORDERS.unshift(o); ordersSave();   /* 새것이 앞이다 — 저장도 앞에서 자른다 */
+  ORDERS.unshift(o); ordersSave(o);   /* 새것이 앞이다 — 저장도 앞에서 자른다 */
   for(const it of cmdSel.list){
     it.log.push(nowHM() + ' 시장 조치지시 하달 (' + o.type + ' · ' + o.total + '명)' +
       (o.memo ? ' — 지시: ' + o.memo.split(String.fromCharCode(10)).join(' / ') : ''));
@@ -9439,7 +9626,7 @@ function cmdIssue(){
     setTimeout(()=>{
       const cur = ORDERS.find(x=>x.id === o.id);
       if(!cur) return;
-      cur.ack[d] = nowHM(); ordersSave();
+      cur.ack[d] = nowHM(); ordersSave(cur);
       if(curMode === 'cmd') renderCmd();
       /* 시연: 수신확인한 부서가 조치를 마치고 처리완료 의견을 낸다 */
       setTimeout(function(){ cmdReport(o.id, d); }, 4000 + i * 1500);
@@ -9452,7 +9639,7 @@ function cmdRetry(id){
   if(!o) return;
   const miss = Object.keys(o.ack).filter(d=>!o.ack[d]);
   if(!miss.length) return;
-  o.retry = (o.retry || 0) + 1; ordersSave();
+  o.retry = (o.retry || 0) + 1; ordersSave(o);
   toast('미수신 ' + miss.length + '곳 자동 재통보 (' + miss.join(', ') + ')');
   if(curMode === 'cmd') renderCmd();
   if(o.retry < 3) setTimeout(()=>cmdRetry(id), 20000);
@@ -9522,7 +9709,7 @@ function cmdNoteAdd(oid){
   if(!v){ toast('추가 의견을 적어 주세요'); return; }
   o.notes = o.notes || [];
   o.notes.push({hm:nowHM(), who:'시장 추가지시', memo:v});
-  ordersSave();
+  ordersSave(o);
   for(const it of ordItems(o)){
     it.log.push(nowHM() + ' 시장 추가지시: ' + v.split(String.fromCharCode(10)).join(' / '));
     sbPush(it);
@@ -9590,7 +9777,7 @@ function cmdReport(oid, dept, memo){
   if(o.reports[dept]) return;
   const idx = ordDepts(o).indexOf(dept);
   o.reports[dept] = {hm: nowHM(), memo: memo || REP_MEMOS[(idx < 0 ? 0 : idx) % REP_MEMOS.length]};
-  ordersSave();
+  ordersSave(o);
   if(curMode === 'cmd') renderCmd();
   if(ordReady(o)) toast('📥 ' + o.emd + ' — 모든 부서 처리완료 의견 도착 · 시장 확인을 기다립니다');
 }
@@ -9625,7 +9812,7 @@ function cmdCloseDo(oid){
   o.missAtClose = miss;
   o.closedAt = new Date().toISOString();
   o.closedHm = nowHM();
-  ordersSave();
+  ordersSave(o);
   for(const id of (o.ids || [])){
     const it = items.find(function(x){ return x.id === id; });
     if(it){ it.log.push(nowHM() + ' 시장 조치지시 종결 확인 (' + o.type + ')' +
@@ -11258,6 +11445,7 @@ function fmtDate(d){ return (d.getMonth()+1) + '/' + d.getDate(); }
 /* 중장기 5단계 — S-04 와 공유 */
 const LONG_STEPS = ['교통분석','경찰 협의','설계','예산','공사'];
 function longStage(it){
+  if(it && it.longStage != null) return Math.max(0, Math.min(4, Number(it.longStage)));
   try{ const v = localStorage.getItem('hs_stage_' + it.id); if(v !== null) return Math.max(0, Math.min(4, Number(v))); }catch(e){}
   return 0;
 }
@@ -11266,6 +11454,7 @@ function longStageSet(id, n){
   const prev = it ? longStage(it) : 0;
   try{ localStorage.setItem('hs_stage_' + id, String(n)); }catch(e){}
   if(it){
+    it.longStage = n;
     const nm = longStepsOf(it)[n];
     it.log.push(nowHM() + ' 중장기 진행 단계 → ' + nm);
     if(nm === '경찰 심의' || longStepsOf(it)[prev] === '경찰 심의'){
