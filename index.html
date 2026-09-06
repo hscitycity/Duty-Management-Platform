@@ -1480,11 +1480,13 @@ body.modal-on #mapPickBar, body.modal-on #layerPanel, body.modal-on .leaflet-con
 /* 세부 구획 — 우측 패널 폭에 맞춰 열 수가 스스로 변한다.
    폭은 드래그로 300~720px 사이를 오가므로 고정 열 수로는 맞지 않는다.
    한 칸이 260px 아래로 내려가면 한 열로 떨어진다. */
-.sel-detail{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
-  gap:4px 18px; align-items:start;}
+/* 넓히면 칸이 넓어질 뿐, 두 단으로 쪼개지 않는다.
+   구획이 좌우로 갈리면 위에서 아래로 읽던 순서가 끊긴다. */
+.sel-detail{display:block;}
 .sel-sec{min-width:0;}
 .sel-sec .sel-h{margin-top:12px;}
 .sel-detail > .sel-sec:first-child .sel-h{margin-top:0;}
+.sel-sec{margin-bottom:2px;}
 .sel-sec .sel-box{min-width:0; overflow-wrap:anywhere;}
 /* 색은 하는 일로 나눈다 — 현장(적) · 인계(청) · 종결(녹) */
 .act3.a-fld{background:linear-gradient(160deg,#F0654A 0%,#D63B1F 60%,#B32E14 100%);}
@@ -1780,6 +1782,78 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 .gn-sum > div{display:flex; gap:10px; padding:3px 0;}
 .gn-sum span{flex:0 0 44px; color:var(--muted); font-size:12px;}
 .gn-sum b{min-width:0; overflow-wrap:anywhere;}
+
+/* C-22 처리단계 — 보여 주기만 한다 */
+.stg{display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:12px;
+  padding:8px 12px; border-radius:8px; background:#F7FAFD; border:1px solid var(--sline);}
+.stg i{font-style:normal; color:var(--sdim); font-size:12px;}
+.stg-s{font-size:12.5px; font-weight:700; color:var(--sdim); padding:2px 9px; border-radius:999px;}
+.stg-s.past{color:var(--smuted); background:#E9EEF5;}
+.stg-s.on{background:var(--hs-blue); color:#fff;}
+.stg-n{margin-left:auto; font-size:11.5px; color:var(--sdim);}
+/* 미뤄 둔 새 민원 알림 */
+#newBadge{position:fixed; right:18px; bottom:18px; z-index:var(--z-toast);
+  height:40px; padding:0 16px; border-radius:999px; cursor:pointer; border:none;
+  font-size:13.5px; font-weight:700; color:#fff; background:var(--urgent);
+  box-shadow:0 4px 14px rgba(214,59,31,.42); animation:nbP 1.8s ease-in-out infinite;}
+#newBadge b{font-family:var(--mono,ui-monospace); font-size:15px;}
+@keyframes nbP{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+
+/* C-4a1b 부서 지정 투입 */
+.dc-b{display:grid; grid-template-columns:34px 1fr; grid-template-rows:auto auto;
+  align-items:center; gap:0 11px; width:100%; margin-bottom:12px; padding:12px 14px;
+  border-radius:10px; border:none; cursor:pointer; text-align:left; color:#fff;
+  background:linear-gradient(160deg,#4A7FD1 0%,#1D4994 60%,#143567 100%);
+  box-shadow:0 3px 0 rgba(0,0,0,.18), 0 4px 12px rgba(16,32,64,.20);}
+.dc-b:hover{transform:translateY(-1px);}
+.dc-b:active{transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.18);}
+.dc-b .i{grid-row:1/3; font-size:20px; text-align:center;}
+.dc-b .t{font-size:14px; font-weight:800;}
+.dc-b .s{font-size:11.5px; opacity:.88; line-height:1.4;}
+.dc-now{margin:0 0 10px; padding:10px 12px; border-radius:8px;
+  background:#F7FAFD; border:1px solid var(--line);}
+.dc-h{display:flex; align-items:baseline; margin-bottom:6px;}
+.dc-h .k{font-size:12px; font-weight:700; color:var(--muted);}
+.dc-tot{margin-left:auto; font-size:12.5px; font-weight:700; color:var(--hs-blue-dark);}
+.dc-tot b{font-family:var(--mono,ui-monospace); font-size:14px;}
+.dc-row{display:flex; align-items:center; gap:6px; padding:5px 0;
+  border-bottom:1px dashed var(--line);}
+.dc-row:last-child{border-bottom:none;}
+.dc-row .org{flex:0 0 auto; font-size:13px; color:var(--hs-blue-dark); max-width:180px;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.dc-row .mi, .dc-row .pl{width:22px; height:22px; border-radius:5px; font-size:13px;
+  font-weight:800; border:1px solid var(--line); background:#fff; cursor:pointer;}
+.dc-row .mi:hover, .dc-row .pl:hover{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.dc-row .n{font-family:var(--mono,ui-monospace); font-size:14px; font-weight:800;
+  min-width:22px; text-align:center;}
+.dc-row .who{flex:1; min-width:90px; height:28px; font-size:12.5px;}
+.dc-row .x{width:22px; height:22px; border-radius:50%; font-size:10px; border:none;
+  background:rgba(0,0,0,.08); cursor:pointer;}
+.dc-row .x:hover{background:var(--urgent); color:#fff;}
+.dc-none{font-size:12.5px; color:var(--muted);}
+
+/* C-10 대응 이력 입력 */
+.lg-in{display:flex; gap:8px; align-items:flex-start; margin-bottom:4px;}
+.lg-in textarea{flex:1; min-height:52px; font-size:13px; line-height:1.6; resize:vertical;}
+.lg-in .btn-p{flex:0 0 auto; min-height:52px; padding:0 16px; font-size:13.5px;}
+.lg-tip{font-size:11.5px; color:var(--sdim); margin:0 0 8px;}
+.sel-log li .lt{display:inline-block; min-width:42px; margin-right:6px;
+  font-family:var(--mono,ui-monospace); font-weight:700; color:var(--hs-blue);}
+/* 사진 — 장수에 맞춰 칸이 바뀐다 */
+.ph-grid{display:grid; gap:6px;}
+.ph-grid.n1{grid-template-columns:1fr;}
+.ph-grid.n2{grid-template-columns:repeat(2,1fr);}
+.ph-grid.n3{grid-template-columns:repeat(3,1fr);}
+.ph-grid.n4{grid-template-columns:repeat(4,1fr);}
+.ph-grid.n5{grid-template-columns:repeat(5,1fr);}
+.ph-grid img{width:100%; aspect-ratio:4/3; object-fit:cover; border-radius:6px; cursor:zoom-in;}
+.ph-grid.n1 img{aspect-ratio:16/10;}
+.ph-grid.n4 figcaption, .ph-grid.n5 figcaption{font-size:10.5px;}
+.ph-grid.n4 figcaption span, .ph-grid.n5 figcaption span{display:none;}
+/* 지도 마커의 사진 */
+.pin.has-ph{background-size:cover !important; background-position:center !important; font-size:0 !important;}
+.pin.has-ph:after{content:""; position:absolute; inset:0; border-radius:50%;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);}
 
 </style>
 </head>
@@ -2174,7 +2248,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1645';
+const BUILD_VER = 'v0906-1723';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3602,6 +3676,14 @@ function clearMapPin(){
   document.getElementById('mapPin').style.display = 'none';
 }
 let mkById = {};
+/* 사진이 있으면 마커에 작은 사진을 붙인다 — 지도만 보고도 무엇인지 알 수 있게 */
+function photoThumb(it){
+  try{
+    const ph = photosOf(it);
+    return ph.after || ph.vafter || ph.before || ph.vbefore || ph.report[0] || null;
+  }catch(e){ return null; }
+}
+
 function renderMap(){
   if(!map) return;
   selPinSync();
@@ -3621,7 +3703,10 @@ function renderMap(){
     const sel = it.id===selId ? ' sel' : '';
     const dim = (hasSel && it.id!==selId) ? ' dim' : '';   // 선택 중이면 나머지 민원은 흐리게
     const emo = it.urg==="긴급" ? "🚨" : "📢";
-    const icon = L.divIcon({className:'', html:'<div class="pin'+pulse+sel+dim+'" style="background:#fff;border-color:'+c+';display:flex;align-items:center;justify-content:center;font-size:15px;width:30px;height:30px;border-width:3.5px">'+emo+'</div>', iconSize:[30,30], iconAnchor:[15,15]});
+    const thumb = photoThumb(it);
+    /* 사진이 있으면 마커 자체가 그 사진이 된다 — 지도만 보고도 무엇인지 안다 */
+    const pinBg = thumb ? ("#fff center/cover url('" + thumb + "')") : "#fff";
+    const icon = L.divIcon({className:'', html:'<div class="pin'+pulse+sel+dim+(thumb?' has-ph':'')+'" style="background:'+pinBg+';border-color:'+c+';display:flex;align-items:center;justify-content:center;font-size:15px;width:30px;height:30px;border-width:3.5px">'+(thumb?'':emo)+'</div>', iconSize:[30,30], iconAnchor:[15,15]});
     mkById[it.id] = L.marker(it.ll, {icon:icon}).addTo(markerLayer)
       .bindPopup(()=>{
         const dept = (RULES[it.field]||RULES["기타"]).dept.split("/")[0].split("·")[0].replace(/☎[0-9\- ]*/g,"").trim();
@@ -3857,10 +3942,7 @@ function renderSel(it){
       act('C-4c', 'a-rep', '✅', '조치결과 입력',
           it.replyAt ? '회신 ' + hm(it.replyAt) : (it.actAt ? '기록됨 · 회신 전' : '현장 없이 답변도 여기서'), stReply, 'resultOpen(' + it.id + ')') +
     '</div>' +
-    '<div class="act-st-row" data-no="C-22">처리 단계 ' +
-      '<select class="act-st" onchange="setStatus(' + it.id + ', this.value)" aria-label="처리 단계">' +
-      ['신규접수','처리중','완료'].map(x=>'<option' + (x === it.st ? ' selected' : '') + '>' + x + '</option>').join('') +
-      '</select></div>';
+    stageBar(it);
 
   /* ── 세부 6구획. 이 순서 고정. 모든 구획은 펼침이 기본이다 ── */
   /* 구획 하나 = 제목 + 내용 을 한 덩어리로 묶는다.
@@ -3903,7 +3985,18 @@ function renderSel(it){
 
     /* 6 처리이력 */
     sec('C-10', '6. 처리이력',
-    '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div>');
+    '<div class="sel-box">' +
+      '<div class="lg-in"><textarea id="lgIn" rows="2" ' +
+        'placeholder="예) 14:35 화성소방서 3대·소방관 10명 출동&#10;현장 도착 — 시각을 안 적으면 지금 시각으로 남습니다" ' +
+        'onkeydown="logKey(event,' + it.id + ')"></textarea>' +
+        '<button class="btn-p" onclick="logAdd(' + it.id + ')">기록</button></div>' +
+      '<p class="lg-tip">한 줄에 하나씩. 여러 줄을 붙여 넣어도 됩니다 · Ctrl+Enter</p>' +
+      '<ol class="sel-log">' + (it.log || []).map(function(x){
+        const t2 = String(x).slice(0, 5);
+        return /^[0-9]{2}:[0-9]{2}$/.test(t2)
+          ? '<li><span class="lt">' + t2 + '</span>' + esc(String(x).slice(6)) + '</li>'
+          : '<li>' + esc(x) + '</li>';
+      }).join('') + '</ol></div>');
 
   /* 640px 에서 2열: 좌열 조치 4구획, 우열 세부 6구획. 한 덩어리로 스크롤한다 */
   /* 조치 3버튼은 맨 위 가로 3열, 그 아래 세부 6구획. 한 덩어리로 스크롤한다 */
@@ -3929,14 +4022,18 @@ function deptPick(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   deptPickFor = id;
   deptPickSel = deptOf(it).actor.org;
-  showModal('<h2 data-no="C-6b">🏢 처리주체 변경</h2>' +
-    '<p class="hint">행정조직도에서 고릅니다. 직접 입력할 수 없습니다.</p>' +
-    '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
-    '<div class="oc-wrap oc-pick" id="orgPop"></div>' +
-    '<div class="dp-bar">고른 부서 <b id="dpNow">' + esc(deptPickSel || '—') + '</b>' +
-      '<input id="dpWhy" placeholder="변경 사유 (선택)"></div>' +
-    '<div class="row"><button class="btn-o" onclick="deptPickSave(' + id + ')">이 부서로 변경</button>' +
-    '<button class="btn-g" onclick="closeModal();deptPickFor=null">취소</button></div>', true);
+  /* 부서를 고르는 화면은 어디서든 같다 — 검색은 위에 붙고, 저장·닫기는 오른쪽 위 */
+  showModal('<div class="dp-top">' +
+      '<h2 data-no="C-6b">🏢 처리주체 변경</h2>' +
+      '<div class="dp-acts">' +
+        '<button class="btn-o" onclick="deptPickSave(' + id + ')">저장</button>' +
+        '<button class="btn-g" onclick="closeModal();deptPickFor=null">닫기</button></div>' +
+      '<p class="hint">조직도에서 부서를 누르면 아래 <b>고른 부서</b>에 바로 담깁니다.</p>' +
+      '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
+      '<div class="dp-bar">고른 부서 <b id="dpNow">' + esc(deptPickSel || '—') + '</b>' +
+        '<input id="dpWhy" placeholder="변경 사유 (선택)"></div>' +
+    '</div>' +
+    '<div class="oc-wrap oc-pick" id="orgPop"></div>', true);
   renderOrgPane('orgPop');
 }
 /* 조직도의 과 칩을 누르면 그 부서가 선택된다 */
@@ -4054,6 +4151,17 @@ function actMemoDraft(it){
   if(!rows.length) return '';
   return rows.map(r=>'· ' + r.k + ': ' + r.v + (r.t ? ' (' + r.t + ')' : '')).join('\n');
 }
+/* 조치결과 — 현장 결과보고와 같은 네 갈래로 고른다 */
+const ACT_RESULTS = ['조치 완료', '추가 작업 필요', '현장 이상 없음', '타 기관 이관'];
+function rsPick(i){
+  const el = document.getElementById('rsRes');
+  if(el) el.value = ACT_RESULTS[i];
+  ACT_RESULTS.forEach(function(r, j){
+    const b = document.getElementById('rsR' + j);
+    if(b) b.classList.toggle('on', i === j);
+  });
+}
+
 function resultOpen(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const rows = actLog(it);
@@ -4069,9 +4177,11 @@ function resultOpen(id){
             '<span class="v">' + esc(r.v) + '</span>' +
             '<span class="t">' + esc(r.t) + '</span></div>').join('')
         : '<div class="ar-none">아직 기록된 조치가 없습니다 — 아래에 직접 적어 주세요</div>') + '</div>' +
-    '<label class="rd-lb">처리 결과</label>' +
-    '<select id="rsRes"><option>조치 완료</option><option>추가 작업 필요</option><option>현장 이상 없음</option>' +
-    '<option>타 기관 이관</option><option>안내로 종결</option></select>' +
+    '<label class="rd-lb">처리 결과 <b class="rp-must">필수</b></label>' +
+    '<div class="rp-res" id="rsResWrap">' + ACT_RESULTS.map(function(r, i){
+      return '<button type="button" id="rsR' + i + '" onclick="rsPick(' + i + ')">' + r + '</button>';
+    }).join('') + '</div>' +
+    '<input type="hidden" id="rsRes" value="">' +
     '<label class="rd-lb">조치 내용 <span class="rd-sub">자동으로 담긴 내용에 덧붙이면 됩니다</span></label>' +
     '<textarea id="rsAct" style="min-height:88px">' + esc(it.actMemo || auto) + '</textarea>' +
     '<div class="row"><button class="btn-o" data-no="C-4c2" onclick="actSave(' + id + ')">📋 조치기록 입력</button>' +
@@ -4082,14 +4192,14 @@ function resultOpen(id){
 /* C-4c2 기록만 남긴다 — 회신은 하지 않는다 */
 function actSave(id){
   const it = items.find(i=>i.id === id); if(!it) return;
-  const res = (document.getElementById('rsRes') || {}).value || '조치 완료';
+  const res = (document.getElementById('rsRes') || {}).value || '';
   const memo = ((document.getElementById('rsAct') || {}).value || '').trim();
+  if(!res){ rpNeed('처리 결과를 골라 주세요', 'rsResWrap'); toast('처리 결과를 골라 주세요'); return; }
   if(!memo){ toast('조치 내용을 적어 주세요'); return; }
   it.actResult = res; it.actMemo = memo; it.actAt = new Date().toISOString();
   it.log.push(nowHM() + ' 조치기록: ' + res + ' — ' + memo.replace(/\n/g, ' / '));
-  if(res === '조치 완료' || res === '안내로 종결'){
-    if(it.st !== '완료') setStatus(it.id, '완료', true);
-  } else if(it.st === '신규접수'){ it.st = '처리중'; }
+  if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '조치결과 ' + res);
+  else stageAuto(it.id, '조치결과 입력');
   try{ sbPush(it); }catch(e){}
   closeModal();
   renderSel(it); renderList(); renderMap();
@@ -4124,7 +4234,8 @@ function replySave2(id){
   it.vendorResult = it.vendorResult || null;
   it.replyMemo = memo; it.replyVia = via; it.replyAt = new Date().toISOString();
   it.log.push(nowHM() + ' 민원인 회신(' + via + '): ' + memo.replace(/\n/g, ' / '));
-  if((res === '조치 완료' || res === '안내로 종결') && it.st !== '완료') setStatus(it.id, '완료', true);
+  if(DONE_RESULTS.indexOf(res) >= 0) stageDone(it.id, '회신 완료');
+  else stageAuto(it.id, '민원인 회신');
   try{ sbPush(it); }catch(e){}
   closeModal();
   if(via === '문자') replySms(it, memo);
@@ -4204,6 +4315,48 @@ function deptTel(nm){
   return '';
 }
 
+/* ══════════ C-10 대응 이력 ══════════
+   상황이 움직일 때마다 한 줄씩 남긴다. 담당자는 편하게 적기만 하고
+   시각은 자동으로 붙는다. 시각을 직접 적으면(14:35 …) 그 시각을 쓴다. */
+function logAdd(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const box = document.getElementById('lgIn');
+  if(!box) return;
+  const raw = (box.value || '').trim();
+  if(!raw){ box.focus(); return; }
+  /* 여러 줄을 한 번에 붙여 넣어도 줄마다 한 건으로 남긴다 */
+  const lines = raw.split(/\r?\n/).map(function(x){ return x.trim(); }).filter(Boolean);
+  for(const line of lines){
+    const m = line.match(/^(?:(오전|오후)\s*)?([0-9]{1,2})\s*[:시]\s*([0-9]{1,2})\s*분?\s*(.*)$/);
+    let hm2 = nowHM(), body = line;
+    if(m){
+      let h = parseInt(m[2], 10);
+      if(m[1] === '오후' && h < 12) h += 12;
+      else if(m[1] === '오전' && h === 12) h = 0;
+      /* 오전·오후를 안 적은 1~7시는 낮으로 본다 —
+         당직 기록에서 새벽 3시를 적을 때는 보통 '오전'을 붙인다 */
+      else if(!m[1] && h >= 1 && h <= 7) h += 12;
+      const mi = parseInt(m[3], 10);
+      if(h >= 0 && h < 24 && mi >= 0 && mi < 60 && m[4].trim()){
+        hm2 = String(h).padStart(2,'0') + ':' + String(mi).padStart(2,'0');
+        body = m[4].trim();
+      }
+    }
+    it.log.push(hm2 + ' ' + body);
+  }
+  /* 시각순으로 정렬해 둔다 — 지난 시각을 나중에 적어도 제자리로 간다 */
+  it.log.sort(function(a, b){ return String(a).slice(0,5).localeCompare(String(b).slice(0,5)); });
+  box.value = '';
+  try{ sbPush(it); }catch(e){}
+  stageAuto(it.id, '대응 이력 기록');
+  renderSel(it); renderList();
+  toast(lines.length + '건을 이력에 남겼습니다');
+}
+function logKey(ev, id){
+  /* Ctrl+Enter 로도 남긴다 — 손을 마우스로 옮기지 않게 */
+  if(ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)){ ev.preventDefault(); logAdd(id); }
+}
+
 /* 미선택 상태 — 대기 안내 + 최근 처리 요약 */
 function selIdleHtml(){
   const recent = realItems().filter(i=>i.st === '완료').sort((a,b)=>b.id - a.id).slice(0, 5);
@@ -4242,6 +4395,82 @@ function askDispatch(id){
   }
   chooseCrewType(id);
 }
+/* ══════════ C-4a1b 부서 지정 투입 ══════════
+   어느 부서에서 몇 명이 나가는지가 먼저다. 담당자 이름은 적어도 되고 안 적어도 된다. */
+let dcFor = null, dcList = [];
+function deptCrewOpen(id){
+  dcFor = id;
+  const it = items.find(i=>i.id === id);
+  dcList = (it && it.deptCrew) ? it.deptCrew.map(function(x){ return {org:x.org, n:x.n, who:x.who || ''}; }) : [];
+  deptPickFor = 'crew';
+  showModal('<div class="dp-top">' +
+      '<h2 data-no="C-4a1b">🏢 부서 지정 투입 <span class="sub">#' + String(id).padStart(3,'0') + '</span></h2>' +
+      '<div class="dp-acts">' +
+        '<button class="btn-o" onclick="deptCrewSave()">저장</button>' +
+        '<button class="btn-g" onclick="deptCrewCancel()">닫기</button></div>' +
+      '<p class="hint">부서를 누르면 아래에 담깁니다. 같은 부서를 다시 누르면 인원이 1명씩 늘어납니다. ' +
+        '<b>담당자 이름은 적지 않아도 됩니다.</b></p>' +
+      '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
+      '<div class="dc-now" id="dcNow"></div>' +
+    '</div>' +
+    '<div class="oc-wrap oc-pick" id="orgPop"></div>', true);
+  renderOrgPane('orgPop');
+  dcRender();
+}
+function dcRender(){
+  const el = document.getElementById('dcNow');
+  if(!el) return;
+  const tot = dcList.reduce(function(a, x){ return a + x.n; }, 0);
+  el.innerHTML = '<div class="dc-h"><span class="k">투입 부서</span>' +
+      (dcList.length ? '<span class="dc-tot">총 <b>' + tot + '</b>명</span>' : '') + '</div>' +
+    (dcList.length
+      ? dcList.map(function(x, i){
+          return '<div class="dc-row">' +
+            '<b class="org">' + esc(x.org) + '</b>' +
+            '<button class="mi" onclick="dcStep(' + i + ',-1)" aria-label="1명 줄이기">−</button>' +
+            '<span class="n">' + x.n + '</span>' +
+            '<button class="pl" onclick="dcStep(' + i + ',1)" aria-label="1명 늘리기">+</button>' +
+            '<input class="who" placeholder="담당자 이름 (선택)" value="' + esc(x.who || '') + '" ' +
+              'oninput="dcWho(' + i + ', this.value)">' +
+            '<button class="x" onclick="dcDel(' + i + ')" aria-label="빼기">✕</button></div>';
+        }).join('')
+      : '<div class="dc-none">아직 없습니다 — 아래 조직도에서 부서를 눌러 주세요</div>');
+}
+function dcPick(nm){
+  const i = dcList.findIndex(function(x){ return x.org === nm; });
+  if(i >= 0) dcList[i].n += 1;
+  else dcList.push({org:nm, n:2, who:''});
+  dcRender();
+  document.querySelectorAll('#orgPop .oc-chip').forEach(function(c){
+    c.classList.toggle('sel', dcList.some(function(x){ return x.org === c.textContent; }));
+  });
+}
+function dcStep(i, d){
+  if(!dcList[i]) return;
+  dcList[i].n = Math.max(0, dcList[i].n + d);
+  if(!dcList[i].n) dcList.splice(i, 1);
+  dcRender();
+}
+function dcWho(i, v){ if(dcList[i]) dcList[i].who = v; }
+function dcDel(i){ dcList.splice(i, 1); dcRender(); }
+function deptCrewSave(){
+  const it = items.find(i=>i.id === dcFor);
+  if(!it){ closeModal(); return; }
+  const tot = dcList.reduce(function(a, x){ return a + x.n; }, 0);
+  if(!tot){ toast('부서를 하나 이상 골라 주세요'); return; }
+  it.deptCrew = dcList.map(function(x){ return {org:x.org, n:x.n, who:(x.who || '').trim()}; });
+  it.dispN = (it.dispN || 0) + tot;
+  it.log.push(nowHM() + ' 부서 지정 투입: ' +
+    it.deptCrew.map(function(x){ return x.org + ' ' + x.n + '명' + (x.who ? '(' + x.who + ')' : ''); }).join(' · '));
+  try{ sbPush(it); }catch(e){}
+  closeModal(); deptPickFor = null;
+  stageAuto(it.id, '부서 지정 투입');
+  renderList(); renderMap();
+  if(selId === it.id) renderSel(it);
+  toast('투입 부서 ' + it.deptCrew.length + '곳 · 총 ' + tot + '명을 기록했습니다');
+}
+function deptCrewCancel(){ closeModal(); deptPickFor = null; dcFor = null; }
+
 function chooseCrewType(id){
   const it = items.find(i=>i.id===id);
   const opts = [
@@ -4250,7 +4479,14 @@ function chooseCrewType(id){
     {t:"경찰", d:"최근접 지구대·파출소 출동 요청", img:KOR_POLICE},
     {t:"소방", d:"최근접 119안전센터 출동 요청", img:KOR_FIRE}
   ];
-  showModal('<h2>🚨 투입 인력 선택 (#'+String(id).padStart(3,"0")+')</h2>'+
+  const dl = (it.deptCrew || []);
+  showModal('<h2 data-no="C-4a1">🚨 투입 인력 선택 (#'+String(id).padStart(3,"0")+')</h2>'+
+    /* 부서를 직접 지정하는 길을 맨 위에 둔다 — 조직도에서 고른다 */
+    '<button class="dc-b" data-no="C-4a1b" onclick="deptCrewOpen('+id+')">' +
+      '<span class="i">🏢</span><span class="t">부서 지정 — 어디서 몇 명</span>' +
+      '<span class="s">' + (dl.length
+        ? dl.map(function(x){ return esc(x.org) + ' ' + x.n + '명'; }).join(' · ')
+        : '조직도에서 부서를 고르고 인원을 정합니다 · 담당자 이름은 선택') + '</span></button>' +
     '<p style="font-size:14.5px;color:var(--muted);margin-bottom:10px">재난상황은 재난안전상황실, 일반상황은 당직자가 출동합니다. 필요 시 경찰·소방 공동 대응을 요청합니다.</p>'+
     opts.map(o=>{
       const r = resolveCrew(it, o.t);
@@ -4261,6 +4497,42 @@ function chooseCrewType(id){
     }).join("")+
     '<div class="row"><button class="btn-g" onclick="closeModal()">취소</button></div>');
 }
+/* ══════════ 처리단계 자동 전환 ══════════
+   담당자가 드롭다운을 여는 것도 일이다. 무엇이든 조치가 시작되면 처리중,
+   조치가 끝나면 완료로 스스로 바뀐다. 손으로 고르는 자리는 두지 않는다. */
+function stageAuto(id, why){
+  const it = items.find(i=>i.id === id);
+  if(!it || it.st === '완료') return;
+  if(it.st === '신규접수'){
+    it.st = '처리중';
+    it.log.push(nowHM() + ' 처리중으로 자동 전환 — ' + (why || '조치 시작'));
+    try{ sbPush(it); }catch(e){}
+    renderList(); renderMap();
+    if(selId === id) renderSel(it);
+    if(typeof trackSync === 'function') trackSync(id);
+    toast('처리중으로 바뀌었습니다 — ' + (why || '조치 시작'));
+  }
+}
+/* 조치가 끝났다고 볼 수 있는 결과들 */
+const DONE_RESULTS = ['조치 완료', '현장 이상 없음', '안내로 종결'];
+function stageDone(id, why){
+  const it = items.find(i=>i.id === id);
+  if(!it || it.st === '완료') return;
+  setStatus(id, '완료', true);
+  it.log.push(nowHM() + ' 완료로 자동 전환 — ' + (why || '조치 완료'));
+  try{ sbPush(it); }catch(e){}
+}
+/* 지금 어느 단계인지 보여 주기만 한다 */
+function stageBar(it){
+  const steps = ['신규접수', '처리중', '완료'];
+  const at = steps.indexOf(it.st);
+  return '<div class="stg" data-no="C-22" title="조치에 따라 자동으로 바뀝니다">' +
+    steps.map(function(x, i){
+      return '<span class="stg-s' + (i < at ? ' past' : (i === at ? ' on' : '')) + '">' + x + '</span>';
+    }).join('<i>›</i>') +
+    '<span class="stg-n">조치에 따라 자동</span></div>';
+}
+
 function setStatus(id, st, force){
   const it = items.find(i=>i.id===id);
   if(it.st === st) return;
@@ -4391,7 +4663,9 @@ function smsSend(id){
   const num = (document.getElementById('hNum').value||'').replace(/[^0-9]/g,'');
   const body = document.getElementById('hMsg').textContent;
   it.sms = true; if(it.st==="신규접수") it.st = "처리중"; it.log.push(nowHM()+" 처리요청 문자 발송(인계): "+handoffTarget(it).split("(")[0].trim());
+  it.smsAt = new Date().toISOString();
   sbPush(it);
+  stageAuto(id, '용역업체 문자발송');
   closeModal(); renderMap(); renderList(); selectItem(id);
   location.href = 'sms:'+num+'?&body='+encodeURIComponent(body);
 }
@@ -6583,9 +6857,46 @@ function manFull(i){
 
 /* ── 🚨 신규 민원 대형 알림 팝업 ── */
 let notifyQueue = [];
+/* 창이 열려 있고 그 안에 적은 것이 있으면 "쓰는 중" 으로 본다 */
+function modalBusy(){
+  const ovl = document.getElementById('ovl');
+  if(!ovl || !ovl.classList.contains('on')) return false;
+  const body = document.getElementById('modalBody');
+  if(!body) return false;
+  /* 글을 적었거나 무엇을 골랐으면 작업 중이다 */
+  const typed = [...body.querySelectorAll('textarea, input[type="text"], input:not([type])')]
+    .some(function(x){ return (x.value || '').trim(); });
+  const picked = !!body.querySelector('.on, .sel, input[type="file"]');
+  return typed || picked;
+}
+/* 미뤄 둔 새 민원을 화면 귀퉁이에 알린다 */
+function notifyBadge(){
+  let el = document.getElementById('newBadge');
+  if(!notifyQueue.length){ if(el) el.remove(); return; }
+  if(!el){
+    el = document.createElement('button');
+    el.id = 'newBadge';
+    el.onclick = function(){ notifyFlush(); };
+    document.body.appendChild(el);
+  }
+  el.innerHTML = '🚨 새 민원 <b>' + notifyQueue.length + '</b>건 — 눌러서 보기';
+}
+/* 미뤄 둔 알림을 지금 보여 준다 */
+function notifyFlush(){
+  if(!notifyQueue.length) return;
+  if(modalBusy()){ toast('적고 있는 내용을 먼저 저장하거나 닫아 주세요'); return; }
+  const id = notifyQueue.shift();
+  notifyBadge();
+  const it = items.find(function(i){ return i.id === id; });
+  if(it) notifyNew(it);
+}
+
 function notifyNew(it, defer){
   const dutyVisible = document.getElementById("duty").style.display !== "none";
   if(defer && !dutyVisible){ notifyQueue.push(it.id); return; }
+  /* 무언가 적고 있는 중이면 덮지 않는다 — 쓰던 것이 날아가면 안 된다.
+     대신 화면 귀퉁이에 알림만 띄우고, 그 창을 닫을 때 다시 보여 준다. */
+  if(modalBusy()){ notifyQueue.push(it.id); notifyBadge(); return; }
   const dept = (RULES[it.field]||RULES["기타"]).dept.split("/")[0].split("·")[0].replace(/☎[0-9\- ]*/g,"").trim();
   showModal('<div style="text-align:center;padding:6px 0 2px">'+
     '<div style="font-size:44px">🚨</div>'+
@@ -7840,7 +8151,7 @@ function surgeBanner(){
     '<b>' + surgeFocus.cnt + '건</b>만 보는 중' +
     '<button onclick="surgeOff()">전체 보기</button>';
 }
-
+
 function cmdItemPop(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const a = deptOf(it);
@@ -7864,7 +8175,7 @@ function cmdItemPop(id){
     '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button>' +
     '<button class="btn-p" onclick="closeModal();setMode(\'duty\');focusItem(' + id + ', 18)">상황판에서 크게 보기</button></div>', true);
 }
-
+
 function renderCmd(){
   const host = document.getElementById('cmd');
   if(!host) return;
@@ -8644,7 +8955,7 @@ function photoLocalDrop(id, kind, n){
   const k = plKey(id, kind, n);
   if(PHOTO_LOCAL[k]){ delete PHOTO_LOCAL[k]; photoLocalSave(); }
 }
-
+
 let PHOTO_Q = [];
 try{ PHOTO_Q = JSON.parse(localStorage.getItem('hs_photo_q') || '[]'); }catch(e){}
 function photoQSave(){ try{ localStorage.setItem('hs_photo_q', JSON.stringify(PHOTO_Q.slice(-30))); }catch(e){} }
@@ -8788,6 +9099,7 @@ function photoCard(url, label, meta, cls){
     '<figcaption><b>' + label + '</b>' + (meta ? '<span>' + meta + '</span>' : '') + '</figcaption></figure>';
 }
 /* 상황판·기동단·대시보드에서 쓰는 '현장' 구획 */
+const PHOTO_MAX = 20;   /* 한 자리에 보여 주는 사진 상한 */
 function photoBlock(it, opts){
   opts = opts || {};
   const ph = photosOf(it);
@@ -8814,7 +9126,13 @@ function photoBlock(it, opts){
   if(!cards.length){
     return '<div class="ph-wrap"><div class="ph-empty">📷 사진 없음</div>' + note + '</div>';
   }
-  return '<div class="ph-wrap"><div class="ph-grid">' + cards.join('') + '</div>' + note + '</div>';
+  /* 장수에 맞춰 칸을 나눈다 — 2장이면 크게, 20장이면 작게. 20장까지 본다 */
+  const shown = cards.slice(0, PHOTO_MAX);
+  const more = cards.length - shown.length;
+  const cols = shown.length <= 2 ? shown.length : (shown.length <= 6 ? 3 : (shown.length <= 12 ? 4 : 5));
+  return '<div class="ph-wrap"><div class="ph-grid n' + cols + '">' + shown.join('') + '</div>' +
+    (more > 0 ? '<div class="ph-note">그 밖 ' + more + '장 — 최근 ' + PHOTO_MAX + '장만 보입니다</div>' : '') +
+    note + '</div>';
 }
 /* 일일보고에 사진 목록을 싣는다 — 당직 산출물은 보고서다 */
 function photoReportLines(){
@@ -9445,14 +9763,14 @@ function roadGuideSave(id){
   it.guideMemo = memo;
   const late = Date.now() > guideDue(it);
   it.log.push(nowHM() + ' 처리방안 안내(' + via + ')' + (late ? ' · 기한 초과' : ' · 기한 내') + ': ' + memo.replace(/\n/g, ' / '));
-  if(it.st === '신규접수') it.st = '처리중';
   try{ sbPush(it); }catch(e){}
+  stageAuto(it.id, '처리방안 안내');
   closeModal();
   renderRoad(); renderList();
   if(via === '문자' && typeof replySms === 'function') replySms(it, memo);
   toast(late ? '안내를 기록했습니다 — 기한을 넘겼습니다' : '안내를 기록했습니다 — 기한 내 처리');
 }
-
+
 function roadDetail(id){
   const it0 = items.find(i=>i.id === id);
   /* 안내 대기 건은 '1시간 안내' 한 가지에 집중한다 */
@@ -10114,9 +10432,11 @@ function orgChips(list, q, grp){
   const pick = (typeof deptPickFor !== 'undefined') && deptPickFor != null;
   return '<div class="oc-chips">' + hit.map(d =>
     '<span class="oc-chip' + (q && String(d).indexOf(q) >= 0 ? ' hit' : '') +
-      (pick && (deptPickFor === 'cmd' ? !!(cmdDepts || {})[d] : d === deptPickSel) ? ' sel' : '') + '"' +
+      (pick && (deptPickFor === 'cmd' ? !!(cmdDepts || {})[d]
+                : (deptPickFor === 'crew' ? (typeof dcList !== 'undefined' && dcList.some(function(x){ return x.org === d; }))
+                : d === deptPickSel)) ? ' sel' : '') + '"' +
       (pick ? ' role="button" tabindex="0" onclick="' +
-        (deptPickFor === 'cmd' ? 'cmdDeptPick' : 'deptChipPick') +
+        (deptPickFor === 'cmd' ? 'cmdDeptPick' : (deptPickFor === 'crew' ? 'dcPick' : 'deptChipPick')) +
         '(\'' + String(d).replace(/'/g, "\\'") + '\')"' : '') +
       '>' + esc(d) + '</span>').join('') + '</div>';
 }
@@ -10389,6 +10709,9 @@ function showModal(html, wide){
 function closeModal(){
   document.getElementById("ovl").classList.remove("on");
   document.body.classList.remove("modal-on");
+  /* 쓰느라 미뤄 둔 새 민원 알림을 이어서 보여 준다 */
+  if(typeof notifyQueue !== 'undefined' && notifyQueue.length && curMode === 'duty')
+    setTimeout(function(){ notifyFlush(); }, 400);
   /* 부서 고르기 창을 어떻게 닫든 상태를 남기지 않는다 */
   if(typeof deptPickFor !== 'undefined') deptPickFor = null;
   if(sheetWasOpen){
