@@ -1000,6 +1000,38 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
 /* 상황판 목록의 기동단 이관 표시 */
 .it-b.road{background:#E8F1FF; color:#1D4994;}
 
+/* ── 3.1 통계 한 줄 — 숫자와 라벨이 한 덩어리로 붙어 있게 ── */
+.cs-sum1{display:flex; align-items:center; gap:10px; flex:1 1 auto; min-width:0;
+  height:24px; line-height:24px; overflow:hidden; white-space:nowrap;}
+.cs-sum1 i{font-style:normal; font-size:12px; color:var(--smuted); white-space:nowrap; flex:0 0 auto;}
+.cs-sum1 b{font-family:var(--mono,ui-monospace); font-size:14px; font-weight:800; color:var(--sink); margin-left:3px;}
+.cs-sum1 b.u{color:var(--urgent);} .cs-sum1 b.p{color:#9A6700;} .cs-sum1 b.d{color:var(--done);}
+.cs-statsub2{display:none;}   /* 창구·당직 내역은 통계 줄에서 뺀다 */
+.btn-csv.ico{width:24px; height:24px; padding:0; justify-content:center;}
+.btn-csv.ico .ico-csv{width:15px; height:15px; margin:0;}
+
+/* ── 3.1 민원 카드 — 52px 2줄 고정 ── */
+#duty .item{position:relative; height:52px; min-height:52px; padding:6px 12px 6px 15px;
+  margin-bottom:8px; border:1px solid var(--sline); border-radius:8px; background:#fff;
+  cursor:pointer; overflow:hidden; transition:.15s ease;}
+#duty .item:before{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--plan);}
+.it-r1{display:flex; align-items:center; gap:6px; height:20px; line-height:20px;
+  font-size:13px; overflow:hidden;}
+.it-t{font-family:var(--mono,ui-monospace); font-size:12px; color:var(--smuted); flex:0 0 auto;}
+.it-n{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-weight:700; color:var(--sink);}
+.it-ph{flex:0 0 auto; font-size:12px;}
+.it-r2{display:flex; align-items:center; gap:6px; height:18px; line-height:18px;
+  font-size:12px; color:var(--smuted); overflow:hidden;}
+.it-l{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.it-r2 .id{flex:0 0 auto; font-family:var(--mono,ui-monospace); color:#8D9299;}
+.it-b{flex:0 0 auto; font-size:11px; font-weight:800; border-radius:4px; padding:0 6px;
+  line-height:16px; max-width:96px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.it-b.urg{background:#FDECEA; color:var(--urgent);}
+.it-b.cat{background:#EEF2F7; color:var(--smuted);}
+.it-b.dept{background:#EEF2F7; color:var(--smuted);}
+.it-b.road{background:#E8F1FF; color:#1D4994;}
+
 </style>
 </head>
 <body>
@@ -1093,8 +1125,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div class="cs-blkhead">
             <b>민원 현황</b>
             <span class="cs-sum1" id="statLine"></span>
-            <button type="button" class="btn-csv sm" onclick="scopeExport()" title="현재 범위를 CSV 파일로 내려받기">
-              <img class="ico-csv" src="data/icons/csv.png" alt=""><span>CSV</span></button>
+            <button type="button" class="btn-csv ico" onclick="scopeExport()" aria-label="현재 범위를 CSV 파일로 내려받기" title="현재 범위를 CSV 파일로 내려받기">
+              <img class="ico-csv" src="data/icons/csv.png" alt=""></button>
           </div>
           <div class="sc-tabs" id="scTabs" style="display:none">
             <button id="scTabAll" onclick="scopeTab('all')">우리 관내 전체</button>
@@ -1358,7 +1390,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1021';
+const BUILD_VER = 'v0906-1024';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2643,21 +2675,27 @@ function listFoldToggle(k){
 function listRow(it){
   /* 3.1 목록 행 — 52px 2줄. 처리구분은 여기 표시하지 않는다(기동단 전용) */
   const ph = hasPhoto(it) ? '<span class="it-b" title="현장 사진 있음">📷' + (photosOf(it).pending ? '↑' : '') + '</span>' : '';
+  /* 배지는 한 줄에 최대 2개(상태 + 분야). 넘치면 생략한다 */
+  const badges = [];
+  if(it.urg === '긴급') badges.push('<span class="it-b urg">긴급</span>');
+  if(isRoadItem(it)) badges.push('<span class="it-b road" title="교통·도로 기동단 이관">기동단</span>');
+  else if(scopeOther(it)) badges.push('<span class="it-b dept">' + deptOf(it).actor.org + '</span>');
+  else badges.push('<span class="it-b cat">' + it.field + '</span>');
+
   return '<div class="item' + (it.id === selId ? ' sel' : '') +
     ((it.urg === '긴급' && !(it.dispN) && it.st !== '완료') ? ' blink' : '') +
     (scopeOther(it) ? ' other' : '') + '" data-id="' + it.id + '" onclick="cardClick(' + it.id + ')">' +
+    /* 1줄: 시각 · 유형 · 사진 · 배지 (내용 요약은 우측 상세에만) */
     '<div class="it-r1">' +
       '<span class="it-t">' + it.time + '</span>' +
-      '<span class="it-n">' + it.sub + ' · ' + it.sum + '</span>' + ph +
-      (it.urg === '긴급' ? '<span class="it-b urg">긴급</span>' : '') +
+      '<span class="it-n" title="' + String(it.sub + ' · ' + it.sum).replace(/"/g, '&quot;') + '">' + it.sub + '</span>' +
+      (hasPhoto(it) ? '<span class="it-ph" title="현장 사진 있음">📷</span>' : '') +
+      badges.slice(0, 2).join('') +
     '</div>' +
-    '<div class="it-r2">' +
-      '<span>' + it.loc + '</span>' +
-      /* 7장: 도로교통 민원은 기동단이 맡는다. 상황판에는 표시만 남긴다 */
-      (isRoadItem(it) ? '<span class="it-b road" title="교통·도로 기동단 이관">기동단</span>' : '') +
-      (scopeOther(it) ? '<span class="it-b dept">' + deptOf(it).actor.org + '</span>' : '') +
-      '<span class="id">#' + String(it.id).padStart(3, '0') + '</span>' +
-    '</div></div>';
+    /* 2줄: 위치 · 접수번호 */
+    '<div class="it-r2"><span class="it-l">' + it.loc + '</span>' +
+      '<span class="id">#' + String(it.id).padStart(3, '0') + '</span></div>' +
+  '</div>';
 }
 function renderList(){
   const l = document.getElementById("list");
@@ -2688,14 +2726,21 @@ function renderList(){
 
   /* 3.1 머리글 한 줄 — 숫자 4개만. 카드로 만들지 않는다 */
   const outN = sc.reduce((a,i)=>a + ((i.crews || []).length ? 1 : 0), 0);
+  /* 3.1 한 줄 요약 — 숫자와 라벨을 한 덩어리로 묶어 줄바꿈에 쪼개지지 않게 한다 */
   const sl = document.getElementById("statLine");
   if(sl) sl.innerHTML =
-    '미처리 <b>' + open.length + '</b> · 긴급 <b class="u">' + secUrg.length + '</b>' +
-    ' · 출동중 <b class="p">' + outN + '</b> · 오늘완료 <b class="d">' + sc.filter(i=>i.st === "완료").length + '</b>';
+    '<i>미처리 <b>' + open.length + '</b></i>' +
+    '<i>긴급 <b class="u">' + secUrg.length + '</b></i>' +
+    '<i>출동중 <b class="p">' + outN + '</b></i>' +
+    '<i>오늘완료 <b class="d">' + sc.filter(i=>i.st === "완료").length + '</b></i>';
+  /* 3.1: 범위 안내는 읍면동 두 탭에서만 의미가 있다. 그 외에는 통계 줄을 어지럽히지 않는다. */
   const sm = document.getElementById("scSum");
   if(sm){
-    const mine = sc.filter(isMine).length;
-    sm.textContent = meLabel() + ' · ' + sc.length + '건 (우리 ' + mine + ' · 타 부서 ' + (sc.length - mine) + ')';
+    if(meScope() === 'emd'){
+      const mine = sc.filter(isMine).length;
+      sm.style.display = '';
+      sm.textContent = '우리 처리 ' + mine + ' · 타 부서 ' + (sc.length - mine);
+    } else sm.style.display = 'none';
   }
   if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);
   saveState();
@@ -7220,10 +7265,16 @@ function guideKpi(){
           율: done.length ? Math.round(ok.length / done.length * 100) : null};
 }
 /* 도로교통 소관 여부 — 작업판에 자동으로 걸리는 조건 */
+/* 기동단 소관 — 5분류(3장)에 해당하는 건만. '도로변' 같은 단어 하나로 끌려오면 안 된다.
+   판단이 서지 않는 건은 상황판에 두고, 현장 확인 단계에서 기동단이 가져간다. */
+const ROAD_SUBS = ['불법주정차','포트홀(도로파손)','신호등 고장','차선·표지판 훼손',
+                   '가로등·보안등 고장','제설 요청','도로 침하','맨홀 파손','안전펜스 파손','빗물받이 막힘'];
 function isRoadItem(it){
+  if(it.roadCategory) return true;                 /* 현장 확인으로 확정된 건 */
   if(it.field === '교통·도로') return true;
+  if(ROAD_SUBS.indexOf(it.sub) >= 0) return true;
   const t = [it.sub, it.sum, it.req].filter(Boolean).join(' ');
-  return /도로|포트홀|노면|차선|표지판|신호등|가로등|보안등|맨홀|빗물받이|침하|낙하|안전펜스/.test(t);
+  return /(포트홀|도로 ?파손|노면 ?파손|도로 ?침하|보도 ?파손|신호기|신호등|표지판|반사경|BIS|버스정보|불법주정차|방치 ?PM|무단방치 ?차량|버스|무정차|배차|정류장|승강장|노선|신호체계|교통 ?혼잡)/.test(t);
 }
 function triage(it){
   /* 현장 확인으로 확정된 값이 있으면 그것을 쓴다(5.3) */
