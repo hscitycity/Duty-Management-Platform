@@ -763,11 +763,12 @@ body.gut-on{cursor:col-resize; user-select:none;}
 /* §2 하단 스트립 제거 — 잔재가 남아도 자리를 차지하지 않게 못 박는다 */
 .cs-strip, .cs-stripbody, .cs-stripbtn{display:none !important;}
 /* §6.3 접수 위치 지정 안내 띠 */
-#mapPickBar{position:absolute; left:50%; top:12px; transform:translateX(-50%); z-index:var(--z-maptool);
+#mapPickBar{position:absolute; left:50%; bottom:52px; transform:translateX(-50%); z-index:var(--z-maptool);
   display:flex; align-items:center; gap:10px; height:36px; padding:0 14px; border-radius:8px;
   background:var(--hs-orange); color:#fff; font-size:13px; white-space:nowrap;
   box-shadow:0 3px 12px rgba(16,32,64,.28);}
 #mapPickBar[hidden]{display:none;}
+#mapPickBar{max-width:calc(100% - 24px); flex-wrap:wrap; height:auto; min-height:36px; padding:6px 14px;}
 #mapPickBar span{font-size:12px; opacity:.9; font-weight:400;}
 #mapPickBar .cs-mini{background:rgba(255,255,255,.9); border-color:transparent;}
 .cs-map.picking{cursor:crosshair;}
@@ -1903,14 +1904,10 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 #mapCornerBR .lb.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;}
 /* 기상 관제 중 — 레이어를 하나로 묶고 자리를 내린다 */
 .mlb-one{display:none;}
-#mapBox.wx-on #mapLayerBar{top:62px;}
 #mapBox.wx-on .mlb-quick > .lb{display:none;}
 #mapBox.wx-on .mlb-quick > .mlb-one{display:inline-flex;}
-#mapBox.wx-on #layerPanel{top:102px;}
-#mapBox.wx-on #mapBaseBar{top:62px;}
-#mapBox.wx-on #mapCornerTL{top:146px;}
 /* 기상 중에는 지도 위 배지·안내를 내려 Windy 도구 줄과 겹치지 않게 */
-#mapBox.wx-on #mapPickBar{top:62px;}
+/* (기상 중 위치 지정 안내 띠는 아래쪽 규칙에서 bottom 으로 다룬다) */
 
 /* G-8 행정동 경계 — 이름표는 작고 옅게, 확대해야 읽히게 */
 .adm-label{background:transparent !important; border:none !important; box-shadow:none !important;
@@ -1929,7 +1926,7 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 #mapBox.wx-on #mapBaseBar{top:110px;}
 #mapBox.wx-on #layerPanel{top:150px;}
 #mapBox.wx-on #mapCornerTL{top:150px;}
-#mapBox.wx-on #mapPickBar{top:110px;}
+#mapBox.wx-on #mapPickBar{bottom:96px;}   /* Windy 하단 띠 위로 */
 #mapBox.wx-on #mapWxBadge{display:none;}        /* Windy 하단 띠와 겹친다 */
 #mapBox.wx-on #mapCornerBR{bottom:56px;}        /* Windy 하단 띠 위로 */
 /* 우하단 전체화면 — 글자가 잘리지 않게 */
@@ -2343,7 +2340,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1753';
+const BUILD_VER = 'v0906-1756';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
