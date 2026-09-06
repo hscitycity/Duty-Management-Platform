@@ -1922,6 +1922,19 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
   text-shadow:0 0 3px #08203a, 0 0 3px #08203a, 0 0 4px #08203a;}
 
+/* 기상 관제 중 — Windy 도구 줄은 두 줄까지 접힌다. 우리 도구를 그 아래로 */
+#wxOv{z-index:2;}
+#mapBox.wx-on #map{visibility:hidden;}          /* Windy 가 지도를 대신한다 */
+#mapBox.wx-on #mapLayerBar{top:110px;}
+#mapBox.wx-on #mapBaseBar{top:110px;}
+#mapBox.wx-on #layerPanel{top:150px;}
+#mapBox.wx-on #mapCornerTL{top:150px;}
+#mapBox.wx-on #mapPickBar{top:110px;}
+#mapBox.wx-on #mapWxBadge{display:none;}        /* Windy 하단 띠와 겹친다 */
+#mapBox.wx-on #mapCornerBR{bottom:56px;}        /* Windy 하단 띠 위로 */
+/* 우하단 전체화면 — 글자가 잘리지 않게 */
+#mapCornerBR .lb{width:auto; min-width:0; max-width:none; overflow:visible;}
+
 </style>
 </head>
 <body>
@@ -2330,7 +2343,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1749';
+const BUILD_VER = 'v0906-1753';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2798,6 +2811,7 @@ function initMap(){
     if(bldgOn){ bldgQuery(e.latlng); return; }
     if(jjOn){ jjQuery(e.latlng); return; }
     if(panMode) return;   // ✋ 탐색 모드 — 접수 위치 지정 안 함
+    if(wxOn) return;      // 🌦️ 기상 관제 중 — 지도를 보는 화면이지 접수하는 화면이 아니다
     const gu = pointInGu(e.latlng.lat, e.latlng.lng);
     mapPlace(e.latlng, gu);
     if(rpPick) pickApply(e.latlng, gu);   /* §6.3 접수 중이면 주소칸까지 채운다 */
@@ -3695,6 +3709,15 @@ function addLocate(m){
 let meMarker = {};
 function goMyLoc(m){
   if(!navigator.geolocation){ toast('이 브라우저는 위치 기능을 지원하지 않습니다'); return; }
+  /* 기상 관제 중이면 Windy 화면을 그 자리로 옮긴다 — 뒤에 숨은 지도를 옮겨도 보이지 않는다 */
+  if(typeof wxOn !== 'undefined' && wxOn){
+    toast('현재 위치를 확인하는 중…');
+    navigator.geolocation.getCurrentPosition(function(pos){
+      wxGoTo(pos.coords.latitude, pos.coords.longitude);
+      toast('기상 화면을 현재 위치로 옮겼습니다');
+    }, function(){ toast('위치를 찾지 못했습니다'); }, {enableHighAccuracy:true, timeout:9000, maximumAge:15000});
+    return;
+  }
   toast('현재 위치를 찾는 중…');
   navigator.geolocation.getCurrentPosition(p=>{
     const ll = [p.coords.latitude, p.coords.longitude];
@@ -7267,8 +7290,11 @@ function toggleSat(){
 
 /* ── 🌦️ 기상 관제 (Windy 임베드: 바람 입자·비 레이더·구름) ── */
 let wxOn = false, wxOv = null;
-function windyURL(overlay){
-  return "https://embed.windy.com/embed2.html?lat=37.19&lon=126.92&detailLat=37.19&detailLon=126.92&zoom=9&level=surface&overlay="+overlay+"&product=ecmwf&menu=&message=&marker=&calendar=now&type=map&location=coordinates&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1";
+let wxAt = [37.19, 126.92], wxOverlay = 'wind';
+function windyURL(overlay, at){
+  const c = at || wxAt;
+  return "https://embed.windy.com/embed2.html?lat=" + c[0] + "&lon=" + c[1] +
+    "&detailLat=" + c[0] + "&detailLon=" + c[1] + "&zoom=9&level=surface&overlay="+overlay+"&product=ecmwf&menu=&message=&marker=&calendar=now&type=map&location=coordinates&metricWind=m%2Fs&metricTemp=%C2%B0C&radarRange=-1";
 }
 function toggleWx(){
   wxOn = !wxOn;
@@ -7284,7 +7310,10 @@ function toggleWx(){
     return;
   }
   wxOv = document.createElement('div');
-  wxOv.style.cssText = 'position:absolute;inset:0;z-index:1000;/* --z-overlay */background:#0b1220;overflow:hidden;display:flex;flex-direction:column';
+  wxOv.id = 'wxOv';
+  wxOv.setAttribute('data-no', 'G-9');
+  /* 지도 도구(400)보다 아래에 깔린다 — 레이어 패널·버튼이 그 위에 보인다 */
+  wxOv.style.cssText = 'position:absolute;inset:0;z-index:2;background:#0b1220;overflow:hidden;display:flex;flex-direction:column';
   wxOv.innerHTML =
     '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--hs-blue-dark);flex-wrap:wrap">'+
     '<b style="color:#fff;font-size:14.5px">🌦️ 기상 관제 (Windy)</b>'+
@@ -7299,10 +7328,23 @@ function toggleWx(){
     '<button class="btn-g" style="min-height:34px;padding:5px 13px;font-size:13px" onclick="wxLayerSet(\'rh\',this)">💦 습도</button>'+
     '<button class="btn-o" style="min-height:34px;padding:5px 15px;font-size:13.5px;margin-left:auto" onclick="toggleWx()">↩ 다시 상황판으로</button></div>'+
     '<iframe id="windyFrame" src="'+windyURL("wind")+'" style="flex:1;width:100%;border:0"></iframe>';
-  mapEl.appendChild(wxOv);
+  /* #map 안이 아니라 #mapBox 안에 둔다 — Leaflet pane(400~700)보다 위,
+     우리 도구(400)보다 아래에 놓기 위해서다. 지도는 가려 두면 되므로 숨긴다. */
+  (document.getElementById('mapBox') || mapEl).appendChild(wxOv);
+  /* Windy 판 위를 눌러도 접수 위치가 찍히지 않게 — 지도로 클릭이 새지 않는다 */
+  wxOv.addEventListener('click', function(e){ e.stopPropagation(); });
+  wxOv.addEventListener('mousedown', function(e){ e.stopPropagation(); });
   toast('Windy 기상 관제 — 바람 입자 애니메이션·비 레이더 실시간');
 }
+/* 기상 관제 중에는 Leaflet 지도가 가려져 있다 — Windy 화면을 옮긴다 */
+function wxGoTo(lat, lon, zoom){
+  wxAt = [Number(lat.toFixed(4)), Number(lon.toFixed(4))];
+  const f = document.getElementById('windyFrame');
+  if(f) f.src = windyURL(wxOverlay, wxAt) + (zoom ? '' : '');
+}
+
 function wxLayerSet(ov, btn){
+  wxOverlay = ov;
   const f = document.getElementById('windyFrame');
   if(f) f.src = windyURL(ov);
   if(wxOv) wxOv.querySelectorAll('button.btn-g').forEach(b=>b.style.background='');
