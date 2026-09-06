@@ -903,6 +903,10 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
   .cs-left, .cs-right{transition:none;}
 }
 
+.me-search{margin-bottom:8px;}
+.me-count{font-size:12px; color:var(--muted); margin-bottom:8px;}
+.me-grid button{white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+
 </style>
 </head>
 <body>
@@ -1261,7 +1265,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1005';
+const BUILD_VER = 'v0906-1009';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -1415,9 +1419,11 @@ const SUB_DEPT = {
   '폐기물 방치':['자원순환과','환경지도과'], '수질오염':['물환경생태과','환경지도과'],
   '공사장 소음·먼지':['환경지도과','건축과'], '공사장 안전관리':['건축과','안전정책과'],
   '빈집 안전':['주택정책과','건축과'], '건축물 안전 불편':['건축과','공동주택과'],
-  '상수도 누수':['물환경생태과','건설과'], '하수도 막힘':['물환경생태과','건설과'],
-  '맨홀 파손':['물환경생태과','도로과'], '빗물받이 막힘':['물환경생태과','도로과'], '단수 신고':['물환경생태과'],
-  '공원시설물 파손':['공원녹지사업소','도시정책과'], '가로수 가지치기':['공원녹지사업소','도로과'],
+  /* 상하수도는 맑은물사업소 소관 — 하수과·맑은물운영과·맑은물시설과 */
+  '상수도 누수':['맑은물시설과','맑은물운영과','물환경생태과'], '하수도 막힘':['하수과','맑은물시설과','물환경생태과'],
+  '맨홀 파손':['하수과','도로과'], '빗물받이 막힘':['하수과','도로과'], '단수 신고':['맑은물운영과','맑은물시설과'],
+  /* 공원·가로수는 공원녹지사업소 소관 */
+  '공원시설물 파손':['공원조성과','서부공원관리과','동부공원관리과'], '가로수 가지치기':['산림휴양과','공원조성과','도로과'],
   '고라니':['동물보호과','자원순환과'], '고양이':['동물보호과'], '강아지':['동물보호과'],
   '도로 침하':['도로과','건설과','안전정책과'], '낙하 위험물':['안전정책과','재난대응과'],
   '옹벽·축대 균열':['건설과','안전정책과'], '안전펜스 파손':['안전정책과','도로과'],
@@ -1427,20 +1433,37 @@ const FIELD_DEPT = {
   '교통·도로':['도로과','교통정책과','주차물류과','건설과'],
   '환경':['환경지도과','자원순환과','기후환경정책과','물환경생태과'],
   '주택·건축':['건축과','주택정책과','공동주택과'],
-  '상하수도':['물환경생태과','건설과'],
-  '공원·녹지':['공원녹지사업소','도시정책과','도로과'],
+  '상하수도':['하수과','맑은물시설과','맑은물운영과','물환경생태과'],
+  '공원·녹지':['공원조성과','서부공원관리과','산림휴양과','도로과'],
   '동물사체 처리':['동물보호과','자원순환과'],
   '안전·재난':['재난대응과','안전정책과'],
   '기타':[]
 };
+/* 행정조직도에 실재하는 부서인지 — 별표 8(분장사무)에 없어도 조직에는 있다 */
+function orgHasDept(nm){
+  if(!ORG_UNITS) return false;
+  for(const g of ORG_UNITS.본청 || []) if(g.과.indexOf(nm) >= 0) return true;
+  for(const g of ORG_UNITS.사업소 || []){ if(g.기관 === nm) return true; if(g.과.indexOf(nm) >= 0) return true; }
+  for(const g of ORG_UNITS.구청 || []) if(g.과.indexOf(nm) >= 0) return true;
+  return false;
+}
 function deptCandidates(it){
   const a = SUB_DEPT[it.sub] || [];
   const b = FIELD_DEPT[it.field] || [];
   const out = [];
   for(const d of a.concat(b)) if(out.indexOf(d) < 0) out.push(d);
-  /* 별표 8 에 실재하는 부서만 — 목록에 없는 이름을 배정하지 않는다 */
-  if(DEPT_IDX) return out.filter(d=>DEPT_IDX.some(r=>r.dept === d));
-  return out;
+  /* 실재하는 부서만 배정한다 — 별표 8 또는 행정조직도 어느 쪽에든 있어야 한다.
+     둘 다 아직 안 받았으면 거르지 않는다(로드 후 캐시가 비워지며 다시 계산된다). */
+  if(!DEPT_IDX && !ORG_UNITS) return out;
+  return out.filter(d=>(DEPT_IDX && DEPT_IDX.some(r=>r.dept === d)) || orgHasDept(d));
+}
+/* 부서가 어느 조직 소속인지 — 근거 문구에 쓴다 */
+function orgWhere(nm){
+  if(!ORG_UNITS) return '';
+  for(const g of ORG_UNITS.사업소 || []){ if(g.기관 === nm) return g.기관; if(g.과.indexOf(nm) >= 0) return g.기관; }
+  for(const g of ORG_UNITS.구청 || []) if(g.과.indexOf(nm) >= 0) return g.기관;
+  for(const g of ORG_UNITS.본청 || []) if(g.과.indexOf(nm) >= 0) return g.실국;
+  return '';
 }
 const KW_STOP = ['신고','요청','확인','민원','발생','현장','조치','바랍니다','있습니다','대한','관한'];
 function kwOf(t){
@@ -1541,7 +1564,9 @@ function assignDept(it){
 
   return {outOfScope:false, grade:grade,
     legal:{dept: legalDept, basis: legalTask ? '조례 별표 8 「' + cut(legalTask, 26) + '」'
-                                                  : '조례 별표 8 · ' + legalDept + ' 분장사무 (신고 유형별 소관 기준)'},
+             : (orgHasDept(legalDept) && !(DEPT_IDX && DEPT_IDX.some(r=>r.dept === legalDept))
+                 ? '행정조직도 · ' + (orgWhere(legalDept) ? orgWhere(legalDept) + ' ' : '') + legalDept + ' 소관'
+                 : '조례 별표 8 · ' + legalDept + ' 분장사무 (신고 유형별 소관 기준)')},
     actor:{org: actorOrg, basis: actorBasis},
     confidence: Math.max(0.35, Math.min(0.95, score / 12))};
 }
@@ -6212,72 +6237,104 @@ const ORG_ROOMS = [
   {nm:'재난안전상황실',   role:'시장·부시장·상황실'},
   {nm:'신속기동단',      role:'신속기동단'}
 ];
-/* 본청·직속기관·구청 부서 (분장사무 배정과 이름을 맞춘다) */
-const ORG_DEPTS = {
-  '안전건설실': ['안전정책과','재난대응과','건설과','도로과'],
-  '기획조정실': ['정책기획관','균형발전과','의회법무과','군공항대응과','정보통신과'],
-  '자치행정국': ['행정지원과','자치분권과','시민협력과','인사과','민원여권과'],
-  '재정국': ['예산재정과','세정과','징수과','회계과','재산관리과'],
-  '돌봄복지국': ['복지정책과','통합돌봄과','장애인복지과','중장년노인과','위생정책과'],
-  '성평등가족국': ['저출생대응과','영유아보육과','아동친화과','청년청소년과','이주민지원과'],
-  '농정해양국': ['농업정책과','농식품유통과','축산정책과','동물보호과','해양수산과'],
-  '교통국': ['교통정책과','철도전략과','대중교통과','주차물류과','차량등록과'],
-  '도시정책실': ['도시정책과','도시개발과','신도시조성과','토지정보과'],
-  '기업투자실': ['첨단산업과','기업지원과','투자유치과','지역경제과','노사협력과'],
-  '문화관광국': ['문화예술과','문화유산과','관광진흥과'],
-  '교육체육국': ['교육지원과','평생학습과','도서관정책과','체육진흥과'],
-  '주택국': ['주택정책과','공동주택과','건축과','공공건축과'],
-  '기후에너지환경국': ['기후환경정책과','신재생에너지과','물환경생태과','자원순환과','환경지도과'],
-  '사업소': ['맑은물운영과','맑은물시설과','하수과','공원조성과','서부공원관리과','동부공원관리과','산림휴양과'],
-  '만세구청': ['자치행정과','안전건설과','민원토지과','돌봄복지과','경제교통과','도시건축과','환경관리과'],
-  '효행구청': ['자치행정과','안전건설과','민원토지과','돌봄복지과','도시건축과','경제환경과'],
-  '병점구청': ['자치행정과','안전건설과','민원토지과','돌봄복지과','도시건축과','경제환경과'],
-  '동탄구청': ['자치행정과','안전건설과','민원여권과','돌봄복지과','가정보육과','경제교통과','도시건축과','도시환경과']
-};
-/* 읍면동 29개 (행정조직도.md 4장) */
-const ORG_EMD = {
-  '만세구': ['우정읍','향남읍','남양읍','마도면','송산면','서신면','팔탄면','장안면','양감면','새솔동'],
-  '효행구': ['봉담읍','매송면','비봉면','정남면','기배동'],
-  '병점구': ['진안동','병점1동','병점2동','반월동','화산동'],
-  '동탄구': ['동탄1동','동탄2동','동탄3동','동탄4동','동탄5동','동탄6동','동탄7동','동탄8동','동탄9동']
-};
-
+/* 소속 목록의 출처는 행정조직도.md → data/org_units.json 하나뿐이다.
+   분장사무(부서배정_근거데이터.json)는 '배정 근거' 표시에만 쓰고 목록 생성에는 쓰지 않는다.
+   — 분장사무 표에 없는 부서(감사관·AI스마트전략실·트램건설추진단 등)가 빠지고
+     이름 앞부분이 잘리던 문제(정책기획관→획관) 때문이다. */
+let ORG_UNITS = null, orgUnitsP = null;
+function orgUnitsLoad(){
+  if(!orgUnitsP){
+    orgUnitsP = fetch('data/org_units.json').then(r=>{ if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(j=>{
+        ORG_UNITS = j;
+        /* 조직도가 도착하면 배정 후보가 넓어진다 — 캐시를 비우고 다시 계산한다 */
+        if(typeof DEPT_CACHE !== 'undefined'){ for(const k in DEPT_CACHE) delete DEPT_CACHE[k]; }
+        if(typeof renderList === 'function' && curMode === 'duty'){ renderList(); renderMap(); }
+        return j;
+      })
+      .catch(e=>{ console.warn('[소속] 조직도 로드 실패', e); return null; });
+  }
+  return orgUnitsP;
+}
+/* 부서 목록을 계층 그대로 펴 둔다: [{grp, nm}] */
+function orgDeptList(){
+  if(!ORG_UNITS) return [];
+  const out = [];
+  for(const g of ORG_UNITS.본청 || [])
+    for(const d of g.과) out.push({grp: g.상위 + ' · ' + g.실국, nm: d});
+  for(const g of ORG_UNITS.사업소 || []){
+    if(!g.과.length) out.push({grp: '직속기관·사업소', nm: g.기관});
+    else for(const d of g.과) out.push({grp: '직속기관·사업소 · ' + g.기관, nm: d});
+  }
+  for(const g of ORG_UNITS.구청 || [])
+    for(const d of g.과) out.push({grp: '구청 · ' + g.기관, nm: d});
+  return out;
+}
+function orgEmdList(){
+  if(!ORG_UNITS) return [];
+  const out = [];
+  for(const g of ORG_UNITS.읍면동 || [])
+    for(const e of g.목록) out.push({grp: g.구, nm: e + EMD_SUFFIX, short: e});
+  return out;
+}
 let meStep = 'root';   /* root | room | dept | emd */
-function openMe(){ meStep = 'root'; meRender(); }
+function openMe(){ meStep = 'root'; meQuery = ''; orgUnitsLoad(); meRender(); }
+let meQuery = '';
 function meRender(){
+  if(meStep !== 'root' && !ORG_UNITS){
+    showModal('<h2>👤 내 소속</h2><p class="hint">조직도를 불러오는 중…</p>');
+    orgUnitsLoad().then(()=>meRender());
+    return;
+  }
   let body;
   if(meStep === 'root'){
     body = '<p style="font-size:14px;color:var(--muted);line-height:1.7">소속을 고르면 화면에 걸리는 범위가 바뀝니다. 범위 밖 민원은 표시되지 않습니다.</p>' +
       '<div class="me-pick">' +
-      '<button onclick="meStep=\'room\';meRender()"><b>🏛️ 상황실</b><span>시장·부시장·재난안전상황실 — 전체 범위, 조치지시 권한</span></button>' +
-      '<button onclick="meStep=\'dept\';meRender()"><b>🏢 부서</b><span>본청·사업소·구청 — 부서 소관 전건</span></button>' +
-      '<button onclick="meStep=\'emd\';meRender()"><b>📍 행정복지센터</b><span>29개 읍·면·동 — 관내 전체</span></button>' +
+      '<button onclick="meGo(\'room\')"><b>🏛️ 상황실</b><span>시장·부시장·재난안전상황실 — 전체 범위, 조치지시 권한</span></button>' +
+      '<button onclick="meGo(\'dept\')"><b>🏢 부서</b><span>본청 실·국 · 직속기관·사업소 · 구청 — 부서 소관 전건</span></button>' +
+      '<button onclick="meGo(\'emd\')"><b>📍 행정복지센터</b><span>29개 읍·면·동 — 관내 전체</span></button>' +
       '</div>' +
       '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>';
-  } else if(meStep === 'room'){
+    showModal('<h2>👤 내 소속</h2>' + body, false);
+    return;
+  }
+  if(meStep === 'room'){
     body = meBack('상황실') +
       '<div class="me-grid">' + ORG_ROOMS.map(r=>
         '<button onclick="meSet(\'' + r.role + '\',\'' + r.nm + '\',\'\',\'\')">' + r.nm + '</button>').join('') + '</div>';
-  } else if(meStep === 'dept'){
-    body = meBack('부서') +
-      Object.keys(ORG_DEPTS).map(g=>
-        '<div class="me-grp">' + g + '</div><div class="me-grid">' +
-        ORG_DEPTS[g].map(d=>'<button onclick="meSet(\'부서장\',\'' + d + '\',\'\',\'' + d + '\')">' + d + '</button>').join('') +
-        '</div>').join('');
-  } else {
-    body = meBack('행정복지센터') +
-      Object.keys(ORG_EMD).map(g=>
-        '<div class="me-grp">' + g + '</div><div class="me-grid">' +
-        ORG_EMD[g].map(e=>{
-          const full = e + EMD_SUFFIX;
-          return '<button onclick="meSet(\'읍면동장\',\'' + full + '\',\'' + full + '\',\'\')">' + e + '</button>';
-        }).join('') + '</div>').join('');
+    showModal('<h2>👤 내 소속</h2>' + body, true);
+    return;
   }
-  showModal('<h2>👤 내 소속</h2>' + body, meStep !== 'root');
+  /* 부서 / 행정복지센터 — 검색으로 좁힐 수 있다 */
+  const isDept = (meStep === 'dept');
+  const list = isDept ? orgDeptList() : orgEmdList();
+  const q = meQuery.trim();
+  const hit = q ? list.filter(x=>(x.nm + ' ' + x.grp).indexOf(q) >= 0) : list;
+  const grps = [];
+  for(const x of hit){ if(grps.indexOf(x.grp) < 0) grps.push(x.grp); }
+  body = meBack(isDept ? '부서' : '행정복지센터') +
+    '<input id="meQ" class="me-search" placeholder="' + (isDept ? '부서명으로 찾기 (예: 정책기획관, 하수과)' : '읍·면·동으로 찾기 (예: 팔탄)') +
+      '" value="' + q.replace(/"/g, '&quot;') + '" oninput="meFilter(this.value)" autocomplete="off">' +
+    '<div class="me-count">' + hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '') + '</div>' +
+    (hit.length
+      ? grps.map(g=>'<div class="me-grp">' + g + '</div><div class="me-grid">' +
+          hit.filter(x=>x.grp === g).map(x=>{
+            const role = isDept ? '부서장' : '읍면동장';
+            const emd = isDept ? '' : x.nm;
+            const dept = isDept ? x.nm : '';
+            return '<button onclick="meSet(\'' + role + '\',\'' + x.nm + '\',\'' + emd + '\',\'' + dept + '\')" title="' + x.grp + ' · ' + x.nm + '">' +
+              (isDept ? x.nm : x.short) + '</button>';
+          }).join('') + '</div>').join('')
+      : '<p class="hint">"' + q + '" 에 해당하는 곳이 없습니다.</p>');
+  showModal('<h2>👤 내 소속</h2>' + body, true);
+  const inp = document.getElementById('meQ');
+  if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
+function meGo(step){ meStep = step; meQuery = ''; if(step === 'root') meRender(); else orgUnitsLoad().then(()=>meRender()); }
+function meFilter(v){ meQuery = v; meRender(); }
 function meBack(title){
   return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
-    '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:12.5px" onclick="meStep=\'root\';meRender()">← 뒤로</button>' +
+    '<button class="btn-g" style="min-height:32px;padding:4px 12px;font-size:12.5px" onclick="meGo(\'root\')">← 뒤로</button>' +
     '<b style="font-size:15px;color:var(--hs-blue-dark)">' + title + '</b></div>';
 }
 function meSet(role, org, emd, dept){
@@ -7145,7 +7202,7 @@ function setMode(m, fromHash){
   if(m==="road") renderRoad();
   if(m==="track") renderTrack();
   if(m==="cmd") renderCmd();
-  if(m!=="cit") deptDbLoad();   // S-06: 배정 근거데이터는 당직 경로에서만 로드
+  if(m!=="cit"){ deptDbLoad(); orgUnitsLoad(); }   // S-06: 배정 근거·조직도는 당직 경로에서만 로드
   bootFor(m);   // D-02: 이 모드에 필요한 것만 준비(중복 실행 없음)
   if(m==="dash"){ initDashMap(); renderDash(); }   /* 대시보드 지도는 이 화면에서만 만든다 */
   if(m==="duty" && map){
