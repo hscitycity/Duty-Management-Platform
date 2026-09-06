@@ -1,0 +1,14 @@
+{
+  "name": "duty-management-platform",
+  "private": true,
+  "version": "1.0.0",
+  "description": "화성특례시 당직 업무 플랫폼 — index.html 한 장이 본체. 이 package.json 은 검증 도구용이다.",
+  "type": "module",
+  "scripts": {
+    "verify": "node scripts/verify/all.mjs",
+    "smoke": "node scripts/verify/smoke.mjs duty"
+  },
+  "devDependencies": {
+    "jsdom": "^26.0.0"
+  }
+}
