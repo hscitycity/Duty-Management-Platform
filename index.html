@@ -1972,6 +1972,15 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
 #mapBox.wx-on.tools-open #mapBaseBar > .lb{display:inline-flex;}
 .mb-one{display:none;}
 
+/* D-2 · D-3 소속 고르기 — 부서지정과 같은 화면 */
+.me-count{font-size:12px; color:var(--muted); margin:0 0 8px;}
+.dp-top .rp-q{width:100%;}
+.dp-top h2 .sub{font-size:13px; font-weight:400; color:var(--muted); margin-left:6px;}
+/* 옛 me-grid 는 배치 규칙이 없어 버튼이 글줄로 흘렀다 — 남은 자리를 위해 최소 규칙만 둔다 */
+.me-grid{display:flex; flex-wrap:wrap; gap:6px;}
+.me-grid button{height:30px; padding:0 12px; border-radius:6px; font-size:12.5px;
+  background:#F1F5FA; color:var(--muted); border:1px solid var(--line);}
+
 </style>
 </head>
 <body>
@@ -2385,7 +2394,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1812';
+const BUILD_VER = 'v0906-1823';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -8984,38 +8993,67 @@ function meRender(){
       '<button onclick="meGo(\'emd\')"><b>📍 행정복지센터</b><span>29개 읍·면·동 — 관내 전체</span></button>' +
       '</div>' +
       '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>';
-    showModal('<h2>👤 내 소속</h2>' + body, false);
+    showModal('<h2 data-no="D-1">👤 내 소속</h2>' + body, false);
     return;
   }
+  /* 부서를 고르는 화면은 어디서든 같다 —
+     검색은 위에 붙고, 항목은 칩으로 눌러 고르고, 닫기는 오른쪽 위(F-3 · C-6b · I-4a · C-4a1b). */
   if(meStep === 'room'){
-    body = meBack('상황실') +
-      '<div class="me-grid" data-no="D-3">' + ORG_ROOMS.map(r=>
-        '<button onclick="meSet(\'' + r.role + '\',\'' + r.nm + '\',\'\',\'\')">' + r.nm + '</button>').join('') + '</div>';
-    showModal('<h2>👤 내 소속</h2>' + body, true);
+    body = '<div class="dp-top">' +
+        '<h2 data-no="D-3">👤 내 소속 <span class="sub">상황실</span></h2>' +
+        '<div class="dp-acts">' +
+          '<button class="btn-g" onclick="meGo(\'root\')">← 뒤로</button>' +
+          '<button class="btn-g" onclick="closeModal()">닫기</button></div>' +
+        '<p class="hint">누르면 그 소속으로 바뀝니다. 전체 범위 · 조치지시 권한을 갖습니다.</p>' +
+      '</div>' +
+      '<div class="oc-wrap oc-pick">' +
+        '<section class="fs-grp"><div class="fs-h"><span class="ic">🏛️</span><b>상황실</b>' +
+          '<span class="cnt">' + ORG_ROOMS.length + '곳</span></div>' +
+        '<div class="oc-chips">' + ORG_ROOMS.map(function(r){
+          return '<span class="oc-chip" role="button" tabindex="0" ' +
+            'onclick="meSet(\'' + r.role + '\',\'' + r.nm + '\',\'\',\'\')">' + esc(r.nm) + '</span>';
+        }).join('') + '</div></section></div>';
+    showModal(body, true);
     return;
   }
-  /* 부서 / 행정복지센터 — 검색으로 좁힐 수 있다 */
+  /* 부서 / 행정복지센터 — 소속 갈래별로 묶어 칩으로 고른다 */
   const isDept = (meStep === 'dept');
   const list = isDept ? orgDeptList() : orgEmdList();
   const q = meQuery.trim();
-  const hit = q ? list.filter(x=>(x.nm + ' ' + x.grp).indexOf(q) >= 0) : list;
+  const hit = q ? list.filter(function(x){ return (x.nm + ' ' + x.grp).indexOf(q) >= 0; }) : list;
   const grps = [];
   for(const x of hit){ if(grps.indexOf(x.grp) < 0) grps.push(x.grp); }
-  body = meBack(isDept ? '부서' : '행정복지센터') +
-    '<input id="meQ" class="me-search" placeholder="' + (isDept ? '부서명으로 찾기 (예: 정책기획관, 하수과)' : '읍·면·동으로 찾기 (예: 팔탄)') +
-      '" value="' + q.replace(/"/g, '&quot;') + '" oninput="meFilter(this.value)" autocomplete="off">' +
-    '<div class="me-count">' + hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '') + '</div>' +
+  body = '<div class="dp-top">' +
+      '<h2 data-no="D-2">👤 내 소속 <span class="sub">' + (isDept ? '부서' : '행정복지센터') + '</span></h2>' +
+      '<div class="dp-acts">' +
+        '<button class="btn-g" onclick="meGo(\'root\')">← 뒤로</button>' +
+        '<button class="btn-g" onclick="closeModal()">닫기</button></div>' +
+      '<p class="hint">누르면 그 소속으로 바뀝니다. 소속 범위 밖 민원은 화면에 뜨지 않습니다.</p>' +
+      '<input id="meQ" class="rp-q oc-q" autocomplete="off" ' +
+        'placeholder="' + (isDept ? '부서명으로 찾기 (예: 정책기획관, 하수과)' : '읍·면·동으로 찾기 (예: 팔탄)') + '" ' +
+        'value="' + q.replace(/"/g, '&quot;') + '" oninput="meFilter(this.value)">' +
+      '<div class="me-count">' + hit.length + '개' + (q ? ' / 전체 ' + list.length + '개' : '') + '</div>' +
+    '</div>' +
+    '<div class="oc-wrap oc-pick">' +
     (hit.length
-      ? grps.map(g=>'<div class="me-grp">' + g + '</div><div class="me-grid">' +
-          hit.filter(x=>x.grp === g).map(x=>{
-            const role = isDept ? '부서장' : '읍면동장';
-            const emd = isDept ? '' : x.nm;
-            const dept = isDept ? x.nm : '';
-            return '<button onclick="meSet(\'' + role + '\',\'' + x.nm + '\',\'' + emd + '\',\'' + dept + '\')" title="' + x.grp + ' · ' + x.nm + '">' +
-              (isDept ? x.nm : x.short) + '</button>';
-          }).join('') + '</div>').join('')
-      : '<p class="hint">"' + q + '" 에 해당하는 곳이 없습니다.</p>');
-  showModal('<h2>👤 내 소속</h2>' + body, true);
+      ? grps.map(function(g){
+          const rows = hit.filter(function(x){ return x.grp === g; });
+          return '<section class="fs-grp"><div class="fs-h">' +
+            '<span class="ic">' + (isDept ? '🏢' : '📍') + '</span><b>' + esc(g) + '</b>' +
+            '<span class="cnt">' + rows.length + '곳</span></div>' +
+            '<div class="oc-chips">' + rows.map(function(x){
+              const role = isDept ? '부서장' : '읍면동장';
+              const emd = isDept ? '' : x.nm;
+              const dept = isDept ? x.nm : '';
+              return '<span class="oc-chip' + (q && x.nm.indexOf(q) >= 0 ? ' hit' : '') + '" ' +
+                'role="button" tabindex="0" title="' + esc(x.grp + ' · ' + x.nm) + '" ' +
+                'onclick="meSet(\'' + role + '\',\'' + x.nm + '\',\'' + emd + '\',\'' + dept + '\')">' +
+                esc(isDept ? x.nm : x.short) + '</span>';
+            }).join('') + '</div></section>';
+        }).join('')
+      : '<p class="hint">"' + esc(q) + '" 에 해당하는 곳이 없습니다.</p>') +
+    '</div>';
+  showModal(body, true);
   const inp = document.getElementById('meQ');
   if(inp){ inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }
 }
