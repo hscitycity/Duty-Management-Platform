@@ -705,10 +705,7 @@ body.mapfs #mapLegend{position:absolute; left:12px; bottom:12px; right:12px; z-i
 /* ── E. 모달이 열려 있으면 시민 시트를 확실히 내린다 ── */
 body:has(#ovl.on) #citSheet{transform:translateY(101%);}
 
-/* ── CSV 내려받기 아이콘 ── */
-.ico-csv{width:15px; height:15px; vertical-align:-3px; margin-right:4px; flex:0 0 auto;}
-button .ico-csv, a .ico-csv{pointer-events:none;}
-.btn-csv{display:inline-flex; align-items:center; gap:2px;}
+/* CSV 내려받기 규칙은 아래 한 곳으로 모았다 */
 
 /* ── 사진 첨부·표시 ── */
 .cp-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px;}
@@ -738,6 +735,28 @@ button .ico-csv, a .ico-csv{pointer-events:none;}
 
 .dtable tr.drow{cursor:pointer;}
 .dtable tr.drow:hover td{background:var(--hs-blue-bg);}
+
+/* ══════════ CSV 내려받기 버튼 ══════════
+   파란 밑줄 링크가 아니라 "누르는 것"으로 보이게 한다. */
+.sc-sum{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.sc-info{flex:1 1 auto; min-width:0;}
+.sc-info b{color:var(--hs-blue-dark);}
+.sc-split{color:var(--muted);}
+.btn-csv{flex:0 0 auto; display:inline-flex; align-items:center; gap:6px;
+  height:32px; padding:0 12px; border-radius:8px; cursor:pointer;
+  background:#fff; border:1.5px solid var(--hs-blue-line);
+  font-size:12.5px; font-weight:700; color:var(--hs-blue-dark); text-decoration:none;
+  box-shadow:0 1px 3px rgba(16,32,64,.10); transition:.18s ease; white-space:nowrap;}
+.btn-csv:hover{background:var(--hs-blue-bg); border-color:var(--hs-blue);
+  box-shadow:0 3px 10px rgba(29,73,148,.20); transform:translateY(-1px);}
+.btn-csv:active{transform:none; box-shadow:0 1px 3px rgba(16,32,64,.14);}
+.btn-csv:focus-visible{outline:2px solid var(--hs-blue); outline-offset:2px;}
+.btn-csv .ico-csv{width:18px; height:18px; margin:0; vertical-align:0;}
+.ico-csv{width:15px; height:15px; vertical-align:-3px; margin-right:4px; flex:0 0 auto;}
+button .ico-csv, a .ico-csv{pointer-events:none;}
+@media (prefers-reduced-motion: reduce){
+  .btn-csv{transition:none;} .btn-csv:hover{transform:none;}
+}
 
 </style>
 </head>
@@ -1088,7 +1107,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0938';
+const BUILD_VER = 'v0906-0947';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2171,9 +2190,13 @@ function renderList(){
   const sm = document.getElementById("scSum");
   if(sm){
     const mine = sc.filter(isMine).length;
-    sm.innerHTML = '<b>' + meLabel() + '</b> · ' + sc.length + '건 (우리 ' + mine + ' · 타 부서 ' + (sc.length - mine) + ')' +
-      ' <a href="#" class="btn-csv" onclick="scopeExport();return false" title="현재 범위를 CSV 파일로 내려받기">' +
-      '<img class="ico-csv" src="data/icons/csv.png" alt="CSV">내려받기</a>';
+    sm.innerHTML =
+      '<span class="sc-info"><b>' + meLabel() + '</b> · ' + sc.length + '건 ' +
+      '<span class="sc-split">우리 ' + mine + ' · 타 부서 ' + (sc.length - mine) + '</span></span>' +
+      '<button type="button" class="btn-csv" onclick="scopeExport()" ' +
+      'title="현재 범위 ' + sc.length + '건을 CSV 파일로 내려받습니다">' +
+      '<img class="ico-csv" src="data/icons/csv.png" alt="">' +
+      '<span>내려받기</span></button>';
   }
   if(typeof csApply === 'function' && curMode === 'duty') setTimeout(csApply, 0);
   saveState();
