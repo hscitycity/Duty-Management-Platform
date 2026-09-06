@@ -710,6 +710,35 @@ body:has(#ovl.on) #citSheet{transform:translateY(101%);}
 button .ico-csv, a .ico-csv{pointer-events:none;}
 .btn-csv{display:inline-flex; align-items:center; gap:2px;}
 
+/* ── 사진 첨부·표시 ── */
+.cp-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:8px;}
+.cp-thumb{position:relative; aspect-ratio:1/1; border-radius:10px; overflow:hidden; border:1.5px solid var(--line);}
+.cp-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+.cp-thumb button{position:absolute; right:4px; top:4px; width:24px; height:24px; border-radius:50%;
+  background:rgba(0,0,0,.55); color:#fff; font-size:12px; line-height:24px; padding:0;}
+.rp-kb{font-size:11px; color:var(--muted); margin-top:4px;}
+
+/* ── 사진 표시 ── */
+.ph-sec{margin-top:12px;}
+.ph-head{font-size:12px; font-weight:800; color:var(--hs-blue-dark); margin-bottom:6px;}
+.ph-wrap{margin-bottom:4px;}
+.ph-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:8px;}
+.ph-card{border:1.5px solid var(--line); border-radius:10px; overflow:hidden; background:#fff;}
+.ph-card.after{border-color:#A9D9BC;}
+.ph-card img{width:100%; aspect-ratio:4/3; object-fit:cover; display:block; cursor:zoom-in;}
+.ph-card figcaption{padding:5px 7px; font-size:11px; line-height:1.5; color:var(--muted);}
+.ph-card figcaption b{display:block; color:var(--ink); font-size:11.5px;}
+.ph-card.after figcaption b{color:#1D8348;}
+.ph-empty{font-size:12px; color:var(--muted); background:#F7FAFD; border:1px dashed var(--line);
+  border-radius:8px; padding:12px; text-align:center;}
+.ph-note{font-size:11.5px; color:var(--hs-orange); margin-top:6px;}
+.ph-mini{float:right; width:52px; height:52px; object-fit:cover; border-radius:8px;
+  margin:0 0 6px 8px; border:1px solid var(--line);}
+#track .ph-grid{grid-template-columns:repeat(auto-fill,minmax(130px,1fr));}
+
+.dtable tr.drow{cursor:pointer;}
+.dtable tr.drow:hover td{background:var(--hs-blue-bg);}
+
 </style>
 </head>
 <body>
@@ -1059,7 +1088,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-0931';
+const BUILD_VER = 'v0906-0938';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2097,9 +2126,13 @@ function listRow(it){
     '<div class="meta"><span>🕐 ' + it.time + ' (' + elapsed(it.time) + ')</span>' +
     '<span>' + it.gu + '</span>' +
     (it.sms ? '<span>📨 인계</span>' : '') +
-    (it.photo ? '<span>📷</span>' : '') +
+    (hasPhoto(it) ? '<span title="현장 사진 있음">📷' + (photosOf(it).pending ? '↑' : '') + '</span>' : '') +
     ((it.crews && it.crews.length) ? '<span>🛵 ' + it.crews.length + '</span>' : '') +
-    '</div></div>';
+    '</div>' +
+    /* 읍면동 '우리가 처리한 건' 화면에서는 조치 후 사진을 바로 보여 결과보고를 확인한다 */
+    ((meScope() === 'emd' && scopeMode === 'mine' && photosOf(it).after)
+      ? '<img class="ph-mini" style="float:none;margin:6px 0 0" src="' + photosOf(it).after + '" alt="조치 후 사진">' : '') +
+    '</div>';
 }
 function renderList(){
   const l = document.getElementById("list");
@@ -2173,7 +2206,7 @@ function selectItem(id){
     '<span class="badge b-cat">'+it.gu+'</span>'+(it.urg!=="일반"?'<span class="badge b-urg">긴급도: '+it.urg+'</span>':"")+'</div>'+
     '<p style="font-size:17px;font-weight:700;margin-top:10px">📍 '+it.loc+'</p>'+
     '<p style="font-size:15px;margin-top:4px">'+it.sum+' · <b>'+it.req+'</b></p>'+
-    (it.photo?'<img src="'+it.photo+'" style="max-width:100%;max-height:200px;border-radius:11px;margin-top:8px;border:1.5px solid var(--line)">':"")+
+    '<div class="ph-sec"><div class="ph-head">📷 현장</div>'+photoBlock(it)+'</div>'+
     '<div class="manual"><h3>📘 대응 매뉴얼 (자동 표시) <a href="#" onclick="openManual(\''+it.sub.split("(")[0]+'\');return false" style="float:right;font-size:12.5px;font-weight:500;color:var(--hs-blue)">전문 검색 ▸</a></h3><ol>'+r.steps.map(x=>"<li>"+x+"</li>").join("")+'</ol>'+
     deptBlock(it)+
     '<div class="dept">당직 대응 소관(매뉴얼): '+r.dept+'</div>'+vendor+'<div class="dept">🏢 담당자 확인: <a href="http://105.24.1.136:13680/smart/main.do" target="_blank" rel="noopener" style="color:var(--hs-blue)">행정조직도(스마트행정지원시스템)</a> <span style="font-size:11.5px">내부망 전용</span></div></div>'+
@@ -2495,10 +2528,12 @@ function openReport(){
 " · 처리: 완료 "+items.filter(i=>i.st==="완료").length+"건 / 처리중 "+items.filter(i=>i.st==="처리중").length+"건 / 신규접수 "+items.filter(i=>i.st==="신규접수").length+"건\n\n"+
 "□ 유선·시민 민원 내역\n"+lines.join("\n")+"\n\n"+
 (holdReportLines().length ? "□ 상신 보류 건 (자동 반영)\n"+holdReportLines().join("\n")+"\n\n" : "")+
+(photoReportLines().length ? "□ 현장 사진 (별지 첨부)\n"+photoReportLines().join("\n")+"\n\n" : "")+
 "□ 행사·인파 밀집 (출처: 화성시 문화관광포털 tour.hscity.go.kr 웹크롤링)\n"+(function(){const a=FESTIVALS.filter(f=>festStatus(f)==="live");const b=FESTIVALS.filter(f=>festStatus(f)==="soon");let s="";if(a.length)s+=a.map(f=>" · [진행중] "+f.n+" ("+f.p+") — 운집예상 "+f.crowd.toLocaleString()+"명·인파관리 "+f.grade).join("\n")+"\n";if(b.length)s+=b.map(f=>" · [D-7] "+f.n+" "+f.d+" ("+f.p+")").join("\n")+"\n";return s||" · 금일 해당 없음\n";})()+"\n□ 유관기관 이상유무\n · 동탄경찰서·서부경찰서·평택해양경찰서: 이상없음 (버튼 체크 자동기록)\n\n"+
 "재난안전상황실장 / 당직사령  (전자결재 연계 예정)";
   showModal('<h2>📄 일일보고 자동 생성</h2><pre class="report">'+rep+'</pre>'+
     '<div class="row"><button class="btn-o" onclick="dlDaily()">📥 재난상황실 일일보고 HWPX</button>'+
+    '<button class="btn-g" onclick="photoPack()">📷 현장 사진 묶음(zip)</button>'+
     '<button class="btn-o" onclick="formChooser()">📥 당직실 민원접수서 HWPX</button></div>'+
     '<div class="row"><button class="btn-p" onclick="navigator.clipboard.writeText(document.querySelector(\'.report\').textContent).then(()=>toast(\'복사되었습니다\'))">복사</button>'+
     '<button class="btn-g" onclick="closeModal()">닫기</button></div>'+
@@ -2506,7 +2541,7 @@ function openReport(){
 }
 
 /* ── 화성시 24시간 민원접수창구 ── */
-let citMap=null, citMarker=null, cit = {ll:null, gu:null, near:"", field:null, sub:null, etc:"", photo:null};
+let citMap=null, citMarker=null, cit = {ll:null, gu:null, near:"", field:null, sub:null, etc:"", photo:null, photos:[]};
 
 function nearestEmd(lat,lng){
   let best=null, bd=1e9;
@@ -2636,26 +2671,38 @@ function citTypeLabel(){
   if(cit.field.f==="기타") return "기타 신고";
   return cit.field.f+" — "+(cit.sub==="기타(직접 작성)"?"기타":cit.sub);
 }
-function citPhotoPick(inp){
-  const f = inp.files && inp.files[0];
-  if(!f) return;
-  const rd = new FileReader();
-  rd.onload = e=>{
-    /* 축소 저장 (데모) */
-    const img = new Image();
-    img.onload = ()=>{
-      const cv = document.createElement('canvas');
-      const sc = Math.min(1, 900/img.width);
-      cv.width = img.width*sc; cv.height = img.height*sc;
-      cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);
-      cit.photo = cv.toDataURL('image/jpeg',0.7);
-      const pv = document.getElementById('citPhotoPrev');
-      pv.src = cit.photo; pv.style.display='block';
-      toast('사진이 첨부되었습니다');
-    };
-    img.src = e.target.result;
-  };
-  rd.readAsDataURL(f);
+/* 최대 3장. 장변 1600px·목표 500KB 로 줄여 이동통신 회선에서도 올라가게 한다. */
+async function citPhotoPick(inp){
+  const files = Array.from((inp && inp.files) || []);
+  if(!files.length) return;
+  if(!Array.isArray(cit.photos)) cit.photos = [];
+  const room = PHOTO_MAX_REPORT - cit.photos.length;
+  if(room <= 0){ toast('사진은 ' + PHOTO_MAX_REPORT + '장까지 첨부할 수 있습니다'); inp.value = ''; return; }
+  for(const f of files.slice(0, room)){
+    try{
+      const r = await photoResize(f);
+      cit.photos.push(r.dataUrl);
+    }catch(e){ console.warn('[사진] 변환 실패', e); toast('사진 한 장을 처리하지 못했습니다'); }
+  }
+  cit.photo = cit.photos[0] || null;   /* 기존 표시 경로 호환 */
+  inp.value = '';
+  citPhotoRender();
+  toast('사진 ' + cit.photos.length + '장 첨부 (' + PHOTO_MAX_REPORT + '장까지)');
+}
+function citPhotoRender(){
+  const host = document.getElementById('citPhotoPrev');
+  if(!host) return;
+  const arr = cit.photos || [];
+  host.style.display = arr.length ? 'grid' : 'none';
+  host.innerHTML = arr.map((u,i)=>
+    '<div class="cp-thumb"><img src="' + u + '" alt="첨부 사진 ' + (i+1) + '">' +
+    '<button type="button" onclick="citPhotoDrop(' + i + ')" aria-label="사진 ' + (i+1) + ' 빼기">✕</button></div>').join('');
+}
+function citPhotoDrop(i){
+  if(!cit.photos) return;
+  cit.photos.splice(i, 1);
+  cit.photo = cit.photos[0] || null;
+  citPhotoRender();
 }
 /* S-02: 3단계 카드 화면은 하단 시트로 대체됐다. 남은 호출을 새 흐름으로 넘긴다. */
 function citGoStep(n){
@@ -2673,8 +2720,17 @@ function citSubmit(){
   if(extra) sum += " · "+extra;
   const it={id:seq++, time:nowHM(), loc:(cit.gu!=="미상"?cit.gu+" ":"")+cit.near+" 인근(지도지정)", gu:cit.gu,
     field:field, sub:sub, sum:sum, req:"현장 확인 및 조치 요청", urg:"일반", st:"신규접수", src:"시민접수", pin:cit.ll,
-    photo:cit.photo, log:[nowHM()+" 24시간 민원접수창구 등록"+(cit.photo?" (사진 첨부)":"")]};
+    photo:cit.photo, photoReport:[], photoLocal:(cit.photos||[]).slice(), photoPublic:true,
+    log:[nowHM()+" 24시간 민원접수창구 등록"+((cit.photos&&cit.photos.length)?" (사진 "+cit.photos.length+"장 첨부)":"")]};
   assignXY(it); items.push(it); sbPush(it); renderMap(); renderList();
+  /* 사진은 접수번호가 정해진 뒤에 올린다 — sbPush 가 DB id 를 확정한다 */
+  const shots = (cit.photos || []).slice();
+  if(shots.length){
+    setTimeout(()=>{
+      shots.forEach((u, i)=>photoQueue(it.id, 'report', u, i + 1));
+      toast('사진 ' + shots.length + '장 전송 중…');
+    }, 600);
+  }
   const done=document.getElementById('citSheetBody');
   citStage='done'; citCross(false); citBtns(false);
   done.innerHTML='<div class="confirm" style="border-color:var(--hs-orange);background:var(--hs-orange-bg)">'+
@@ -2686,7 +2742,7 @@ function citSubmit(){
   notifyNew(it, true);
 }
 function citReset(){
-  cit={ll:null,gu:null,near:"",field:null,sub:null,etc:"",photo:null};
+  cit={ll:null,gu:null,near:"",field:null,sub:null,etc:"",photo:null,photos:[]};
   if(citMarker && citMap){ citMap.removeLayer(citMarker); citMarker=null; }
   citFlow('home');
 }
@@ -4027,7 +4083,7 @@ function dashDisasters(){
 }
 function dashDone(){
   /* S-11: 중장기 진행 건은 완료 결과보고와 섞지 않는다 */
-  const cur = scopeItems(realItems()).filter(i=>i.st==="완료" && triage(i) !== '중장기').map(i=>({dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
+  const cur = scopeItems(realItems()).filter(i=>i.st==="완료" && triage(i) !== '중장기').map(i=>({id:i.id, dt:"오늘", time:i.time, gu:i.gu, field:i.field, sub:i.sub, sum:i.sum, src:i.src, urg:i.urg, dur:"-", act:i.log[i.log.length-1].replace(/^[0-9:]+ /,''), live:1}));
   return [...cur, ...HIST.slice().reverse()];
 }
 function hbar(label, v, max, col, clickType){
@@ -4096,8 +4152,14 @@ function renderDash(){
     dis.map(x=>'<tr'+(dashF?rowStyle(x):(x.live?' style="background:#FFF7ED"':''))+'><td>'+x.dt+' '+x.time+'</td><td>'+x.gu+'</td><td>'+x.field+'·'+x.sub+(x.urg==="긴급"?' <span class="badge b-urg" style="font-size:11px">긴급</span>':'')+'</td><td>'+x.sum+'</td><td>'+(x.act||"-")+'</td><td>'+(x.st||"완료")+'</td></tr>').join("")+'</table>';
   /* 민원처리 이력 */
   renderDashMap();
-  document.getElementById('dDone').innerHTML = '<table class="dtable"><tr><th>일시</th><th>관할</th><th>분야</th><th>내용</th><th>경로</th><th>처리</th><th>소요</th></tr>'+
-    done.map(x=>'<tr'+(dashF?rowStyle(x):(x.live?' style="background:#F0FDF4"':''))+'><td>'+x.dt+' '+x.time+'</td><td>'+x.gu+'</td><td>'+x.field+'·'+x.sub+'</td><td>'+x.sum+'</td><td>'+(SRC_ICO[x.src]||"")+'</td><td>'+(x.act||"-")+'</td><td>'+(x.dur!=="-"?x.dur+"분":"-")+'</td></tr>').join("")+'</table>';
+  document.getElementById('dDone').innerHTML = '<table class="dtable"><tr><th>일시</th><th>관할</th><th>분야</th><th>내용</th><th>경로</th><th>처리</th><th>소요</th><th>사진</th></tr>'+
+    done.map(x=>{
+      const it = (x.id != null) ? items.find(i=>i.id === x.id) : null;
+      const ph = it ? (hasPhoto(it) ? '📷' : '—') : '—';
+      return '<tr'+(dashF?rowStyle(x):(x.live?' style="background:#F0FDF4"':''))+
+        (it ? ' class="drow" onclick="doneDetail('+it.id+')" title="누르면 사진 포함 상세"' : '')+
+        '><td>'+x.dt+' '+x.time+'</td><td>'+x.gu+'</td><td>'+x.field+'·'+x.sub+'</td><td>'+x.sum+'</td><td>'+(SRC_ICO[x.src]||"")+'</td><td>'+(x.act||"-")+'</td><td>'+(x.dur!=="-"?x.dur+"분":"-")+'</td><td>'+ph+'</td></tr>';
+    }).join("")+'</table>';
 }
 
 
@@ -4778,12 +4840,23 @@ async function sbPoll(){
 function itRow(it){
   return {time:it.time, gu:it.gu, loc:it.loc, field:it.field, sub:it.sub, sum:it.sum, req:it.req||'',
     urg:it.urg, st:it.st, src:it.src, sms:!!it.sms, disp_n:it.dispN||0,
-    lat:it.ll?it.ll[0]:(it.pin?it.pin[0]:null), lng:it.ll?it.ll[1]:(it.pin?it.pin[1]:null), log:it.log||[]};
+    lat:it.ll?it.ll[0]:(it.pin?it.pin[0]:null), lng:it.ll?it.ll[1]:(it.pin?it.pin[1]:null), log:it.log||[],
+    /* 사진·결과보고 — 서버에 있어야 다른 기기에서 보인다 */
+    photo_report:(it.photoReport||[]).filter(Boolean), photo_before:it.photoBefore||null,
+    photo_after:it.photoAfter||null, photo_public:it.photoPublic !== false,
+    result_type:it.resultType||null, result_memo:it.resultMemo||null,
+    reported_by:it.reportedBy||null, reported_at:it.reportedAt||null,
+    report_lat:it.reportLL?it.reportLL[0]:null, report_lng:it.reportLL?it.reportLL[1]:null};
 }
 function rowIt(r){
   const it = {id:r.id, time:r.time, gu:r.gu, loc:r.loc, field:r.field, sub:r.sub, sum:r.sum, req:r.req,
     demo:Array.isArray(r.log) && r.log.some(x=>String(x).indexOf(DEMO_TAG)>=0),   // D-04: 시연 데이터 표식 복원
-    urg:r.urg, st:(r.st==="미확인"||r.st==="신규")?"신규접수":r.st, src:r.src, sms:r.sms, dispN:r.disp_n||0, log:r.log||[], crews:[], _db:true};
+    urg:r.urg, st:(r.st==="미확인"||r.st==="신규")?"신규접수":r.st, src:r.src, sms:r.sms, dispN:r.disp_n||0, log:r.log||[], crews:[], _db:true,
+    photoReport:Array.isArray(r.photo_report)?r.photo_report:[], photoBefore:r.photo_before||null,
+    photoAfter:r.photo_after||null, photoPublic:r.photo_public !== false,
+    resultType:r.result_type||null, resultMemo:r.result_memo||null,
+    reportedBy:r.reported_by||null, reportedAt:r.reported_at||null,
+    reportLL:(r.report_lat!=null)?[r.report_lat, r.report_lng]:null};
   if(r.lat != null) it.pin = [r.lat, r.lng];
   assignXY(it);
   return it;
@@ -5082,28 +5155,24 @@ function minsBetween(a, b){
   if(m < 0) m += 24 * 60;
   return m;
 }
-function rpPhoto(inp, which){
+async function rpPhoto(inp, which){
   const f = inp.files && inp.files[0];
   if(!f || !rpDraft) return;
-  const rd = new FileReader();
-  rd.onload = e=>{
-    const img = new Image();
-    img.onload = ()=>{
-      const cv = document.createElement('canvas');
-      const sc = Math.min(1, 900 / img.width);
-      cv.width = img.width * sc; cv.height = img.height * sc;
-      cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      rpDraft[which] = cv.toDataURL('image/jpeg', 0.7);
-      const slot = document.getElementById(which === 'before' ? 'rpSlotB' : 'rpSlotA');
-      if(slot){
-        slot.classList.add('on');
-        const old = slot.querySelector('img'); if(old) old.remove();
-        const im = document.createElement('img'); im.src = rpDraft[which]; slot.appendChild(im);
-      }
-    };
-    img.src = e.target.result;
-  };
-  rd.readAsDataURL(f);
+  try{
+    const r = await photoResize(f);
+    rpDraft[which] = r.dataUrl;
+    rpDraft[which + 'At'] = nowHM();
+    const slot = document.getElementById(which === 'before' ? 'rpSlotB' : 'rpSlotA');
+    if(slot){
+      slot.classList.add('on');
+      const old = slot.querySelector('img'); if(old) old.remove();
+      const im = document.createElement('img'); im.src = r.dataUrl; im.alt = (which === 'before' ? '조치 전' : '조치 후') + ' 사진';
+      slot.appendChild(im);
+      const kb = slot.querySelector('.rp-kb') || document.createElement('div');
+      kb.className = 'rp-kb'; kb.textContent = r.w + '×' + r.h + ' · ' + r.kb + 'KB';
+      slot.appendChild(kb);
+    }
+  }catch(e){ console.warn('[사진] 변환 실패', e); toast('사진을 처리하지 못했습니다'); }
 }
 function rpPickResult(i){
   if(!rpDraft) return;
@@ -5125,6 +5194,8 @@ function reportSubmit(){
     id: it.id, at: new Date().toISOString(), hm: nowHM(), org: a.actor.org,
     result: rpDraft.result, memo: rpDraft.memo, pub: rpDraft.pubPhoto,
     before: rpDraft.before, after: rpDraft.after,
+    beforeAt: rpDraft.beforeAt || null, afterAt: rpDraft.afterAt || null,
+    gps: rpDraft.gps || null,
     arrive: arrive, mins: Math.max(1, minsBetween(it.time, arrive))
   };
   /* 통신 실패 시 기기에 저장했다가 자동 재전송 */
@@ -5142,6 +5213,14 @@ function reportCommit(rec){
   const it = items.find(i=>i.id === rec.id);
   if(!it) return;
   REPORTS[rec.id] = rec; reportsSave();
+  /* 사진은 서버로 — 다른 기기·시민 화면에서 보여야 한다 */
+  it.photoPublic = rec.pub !== false;
+  it.resultType = rec.result; it.resultMemo = rec.memo || null;
+  it.reportedBy = rec.org; it.reportedAt = new Date().toISOString();
+  if(rec.gps) it.reportLL = rec.gps;
+  if(rec.before) photoQueue(rec.id, 'before', rec.before);
+  if(rec.after)  photoQueue(rec.id, 'after',  rec.after);
+  if(rec.before || rec.after) toast('조치 사진 전송 중…');
   it.log.push(nowHM() + ' 현장 결과보고: ' + rec.result + (rec.memo ? ' — ' + rec.memo : '') + ' (' + rec.org + ' · 소요 ' + rec.mins + '분)');
   if(rec.result === '조치 완료' || rec.result === '현장 이상 없음'){
     setStatus(it.id, '완료', true);          /* 시민 화면 완료 전환 + 대시보드 이관 */
@@ -5845,9 +5924,10 @@ function citFlow(stage){
       '📋 <b>' + citTypeLabel() + '</b>' + (cit.etc ? '<br>✏️ ' + cit.etc : '') + '</div>' +
       '<label style="font-size:13px;font-weight:700;color:var(--muted);display:block;margin-top:12px">추가 설명 (선택)</label>' +
       '<input id="citExtra" placeholder="예) 이틀째 그대로예요" style="margin-top:6px">' +
-      '<div style="margin-top:12px"><label class="btn-g" style="display:block;text-align:center;line-height:32px;min-height:48px">📷 사진 첨부 (선택)' +
-      '<input type="file" id="citPhoto" accept="image/*" capture="environment" style="display:none" onchange="citPhotoPick(this)"></label>' +
-      '<img id="citPhotoPrev" style="display:none;max-width:100%;max-height:180px;border-radius:12px;margin-top:8px;border:1.5px solid var(--line)"></div>' +
+      '<div style="margin-top:12px"><label class="btn-g" style="display:block;text-align:center;line-height:32px;min-height:48px">📷 사진 첨부 (선택 · 최대 3장)' +
+      '<input type="file" id="citPhoto" accept="image/*" capture="environment" multiple style="display:none" onchange="citPhotoPick(this)"></label>' +
+      '<div id="citPhotoPrev" class="cp-grid" style="display:none"></div>' +
+      '<p class="hint" style="margin-top:6px">현장이 보이는 사진이 있으면 출동 판단이 빨라집니다.</p></div>' +
       '<div class="cit-act"><button class="btn-g" onclick="citFlow(\'loc\')">← 위치 수정</button>' +
       '<button class="btn-o" onclick="citSubmit()">신고 접수</button></div>';
     citSheet(true);
@@ -5912,6 +5992,253 @@ function distM(a, b, c, d){
   const dx = (c - a) * t, dy = (d - b) * t;
   const h = Math.sin(dx/2)**2 + Math.cos(a*t)*Math.cos(c*t)*Math.sin(dy/2)**2;
   return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+/* ══════════════════════════════════════════════════════════
+   사진 파이프라인 — Supabase Storage
+     photos/{민원번호}/report_1..3.jpg   시민 신고 사진
+     photos/{민원번호}/before.jpg        조치 전
+     photos/{민원번호}/after.jpg         조치 후
+   사진은 서버에 올라가야 다른 기기에서 보인다. 기기 안에만 두지 않는다.
+   ══════════════════════════════════════════════════════════ */
+const PHOTO_BUCKET   = 'photos';
+const PHOTO_MAX_EDGE = 1600;   /* 장변 */
+const PHOTO_QUALITY  = 0.8;
+const PHOTO_TARGET_KB= 500;    /* 이동통신 회선 전제 — 한 장 목표 용량 */
+const PHOTO_MAX_REPORT = 3;    /* 시민 신고 사진 장수 */
+const PHOTO_KEEP_DAYS  = 180;  /* 완료 후 보존 기간 — 사진_파이프라인.sql photo_prune 과 같은 값 */
+
+/* 장변 1600px·JPEG 0.8 로 줄이고, 목표 용량을 넘으면 화질을 한 단계씩 낮춘다 */
+function photoResize(file){
+  return new Promise((resolve, reject)=>{
+    const rd = new FileReader();
+    rd.onerror = ()=>reject(new Error('파일을 읽지 못했습니다'));
+    rd.onload = e=>{
+      const img = new Image();
+      img.onerror = ()=>reject(new Error('이미지를 열지 못했습니다'));
+      img.onload = ()=>{
+        const sc = Math.min(1, PHOTO_MAX_EDGE / Math.max(img.width, img.height));
+        const cv = document.createElement('canvas');
+        cv.width = Math.round(img.width * sc);
+        cv.height = Math.round(img.height * sc);
+        cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        let q = PHOTO_QUALITY;
+        const step = ()=>{
+          cv.toBlob(blob=>{
+            if(!blob){ reject(new Error('변환 실패')); return; }
+            if(blob.size / 1024 > PHOTO_TARGET_KB && q > 0.45){ q -= 0.12; step(); return; }
+            resolve({blob: blob, dataUrl: cv.toDataURL('image/jpeg', q), w: cv.width, h: cv.height, kb: Math.round(blob.size/1024)});
+          }, 'image/jpeg', q);
+        };
+        step();
+      };
+      img.src = e.target.result;
+    };
+    rd.readAsDataURL(file);
+  });
+}
+/* 대기열 — 통신이 끊겨도 잃지 않는다. 미리보기는 기기에 남기고 전송만 미룬다. */
+let PHOTO_Q = [];
+try{ PHOTO_Q = JSON.parse(localStorage.getItem('hs_photo_q') || '[]'); }catch(e){}
+function photoQSave(){ try{ localStorage.setItem('hs_photo_q', JSON.stringify(PHOTO_Q.slice(-30))); }catch(e){} }
+function photoPending(id){ return PHOTO_Q.some(x=>String(x.id) === String(id)); }
+
+function photoPath(id, kind, n){
+  return String(id) + '/' + (kind === 'report' ? 'report_' + (n || 1) : kind) + '.jpg';
+}
+/* dataURL → Blob (대기열에 넣을 때는 문자열로 두고, 보낼 때 되살린다) */
+function dataUrlToBlob(u){
+  const parts = String(u).split(',');
+  const bin = atob(parts[1]);
+  const arr = new Uint8Array(bin.length);
+  for(let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], {type: 'image/jpeg'});
+}
+async function photoUpload(id, kind, dataUrl, n){
+  if(!cloudOn || !sb) throw new Error('클라우드 미연결');
+  const path = photoPath(id, kind, n);
+  const {error} = await sb.storage.from(PHOTO_BUCKET)
+    .upload(path, dataUrlToBlob(dataUrl), {contentType:'image/jpeg', upsert:true});
+  if(error) throw error;
+  const {data} = sb.storage.from(PHOTO_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+/* 한 건의 사진을 올리고 complaints 에 URL 을 기록한다 */
+async function photoSend(job){
+  const url = await photoUpload(job.id, job.kind, job.dataUrl, job.n);
+  const it = items.find(i=>i.id === job.id);
+  const patch = {};
+  if(job.kind === 'report'){
+    const arr = (it && Array.isArray(it.photoReport)) ? it.photoReport.slice() : [];
+    arr[(job.n || 1) - 1] = url;
+    patch.photo_report = arr.filter(Boolean);
+    if(it) it.photoReport = patch.photo_report;
+  } else if(job.kind === 'before'){
+    patch.photo_before = url; if(it) it.photoBefore = url;
+  } else {
+    patch.photo_after = url;  if(it) it.photoAfter = url;
+  }
+  try{ await sb.from('complaints').update(patch).eq('id', job.id); }catch(e){}
+  return url;
+}
+/* 대기열 비우기 — 연결이 돌아오면 자동으로 다시 보낸다 */
+let photoFlushing = false;
+async function photoFlush(){
+  if(photoFlushing || !PHOTO_Q.length || !navigator.onLine || !cloudOn) return;
+  photoFlushing = true;
+  const rest = [];
+  for(const job of PHOTO_Q.slice()){
+    try{ await photoSend(job); }
+    catch(e){ job.try = (job.try || 0) + 1; if(job.try < 8) rest.push(job); }
+  }
+  const sent = PHOTO_Q.length - rest.length;
+  PHOTO_Q = rest; photoQSave();
+  photoFlushing = false;
+  if(sent){
+    toast('사진 ' + sent + '장을 전송했습니다');
+    renderList(); if(selId) selectItem(selId);
+    if(curMode === 'track') renderTrack();
+    if(curMode === 'road') renderRoad();
+  }
+}
+window.addEventListener('online', photoFlush);
+setInterval(photoFlush, 20000);
+/* 사진 1장을 큐에 넣고 바로 보내 본다. 실패해도 큐에 남는다. */
+function photoQueue(id, kind, dataUrl, n){
+  PHOTO_Q.push({id:id, kind:kind, dataUrl:dataUrl, n:n || 1, at:Date.now(), try:0});
+  photoQSave();
+  photoFlush();
+}
+/* 표시용 — 없으면 null */
+function photosOf(it){
+  return {
+    report: (it && it.photoReport) ? it.photoReport.filter(Boolean) : [],
+    before: (it && it.photoBefore) || null,
+    after:  (it && it.photoAfter) || null,
+    pub:    !(it && it.photoPublic === false),
+    pending: photoPending(it && it.id)
+  };
+}
+function hasPhoto(it){
+  const p = photosOf(it);
+  return !!(p.report.length || p.before || p.after || p.pending);
+}
+
+/* ══════════ 사진 표시 ══════════
+   신고 / 조치 전 / 조치 후를 라벨로 구분한다. 어느 쪽이 처리 후인지 헷갈리면 증빙이 안 된다.
+   촬영 시각과 신고 지점으로부터의 거리를 사진 아래 적고, 없으면 '사진 없음'을 명시한다. */
+function photoMeta(it, kind){
+  const rec = (typeof REPORTS !== 'undefined' && REPORTS[it.id]) || null;
+  let when = '', far = '';
+  if(kind === 'report') when = it.time;
+  else if(rec) when = (kind === 'before' ? rec.beforeAt : rec.afterAt) || (rec.hm || '');
+  const ll = it.ll || it.pin;
+  const gps = (kind !== 'report') ? (it.reportLL || (rec && rec.gps)) : null;
+  if(gps && ll){
+    const d = Math.round(distM(ll[0], ll[1], gps[0], gps[1]));
+    far = d > 300 ? '신고 지점에서 ' + d + 'm ⚠️' : '신고 지점에서 ' + d + 'm';
+  }
+  return [when, far].filter(Boolean).join(' · ');
+}
+function photoCard(url, label, meta, cls){
+  return '<figure class="ph-card' + (cls ? ' ' + cls : '') + '">' +
+    '<img src="' + url + '" alt="' + label + ' 사진" loading="lazy" onclick="photoZoom(\'' + url + '\',\'' + label + '\')">' +
+    '<figcaption><b>' + label + '</b>' + (meta ? '<span>' + meta + '</span>' : '') + '</figcaption></figure>';
+}
+/* 상황판·기동단·대시보드에서 쓰는 '현장' 구획 */
+function photoBlock(it, opts){
+  opts = opts || {};
+  const ph = photosOf(it);
+  const forCitizen = !!opts.citizen;
+  /* photo_public=false 면 시민 화면에서만 가린다. 내부에서는 보인다. */
+  const hideForCit = forCitizen && !ph.pub;
+  const cards = [];
+  const local = (it.photoLocal || []);
+  const reports = ph.report.length ? ph.report : (forCitizen ? [] : local);
+  reports.forEach((u, i)=>{
+    cards.push(photoCard(u, '신고 사진' + (reports.length > 1 ? ' ' + (i + 1) : ''), photoMeta(it, 'report')));
+  });
+  if(!hideForCit){
+    if(ph.before) cards.push(photoCard(ph.before, '조치 전', photoMeta(it, 'before')));
+    if(ph.after)  cards.push(photoCard(ph.after,  '조치 후', photoMeta(it, 'after'), 'after'));
+  }
+  let note = '';
+  if(ph.pending) note = '<div class="ph-note">📤 사진 전송 중 — 연결되면 자동으로 올라갑니다</div>';
+  else if(hideForCit && (ph.before || ph.after)) note = '<div class="ph-note">담당자가 비공개로 지정한 사진이 있습니다</div>';
+  if(!cards.length){
+    return '<div class="ph-wrap"><div class="ph-empty">📷 사진 없음</div>' + note + '</div>';
+  }
+  return '<div class="ph-wrap"><div class="ph-grid">' + cards.join('') + '</div>' + note + '</div>';
+}
+/* 일일보고에 사진 목록을 싣는다 — 당직 산출물은 보고서다 */
+function photoReportLines(){
+  return scopeItems(realItems()).filter(hasPhoto).map(it=>{
+    const ph = photosOf(it);
+    const kinds = [];
+    if(ph.report.length) kinds.push('신고 ' + ph.report.length + '장');
+    if(ph.before) kinds.push('조치 전');
+    if(ph.after) kinds.push('조치 후');
+    return ' · #' + String(it.id).padStart(3,'0') + ' ' + it.loc + ' — ' + kinds.join(', ') +
+           (ph.pending ? ' (전송 중)' : '');
+  });
+}
+/* 보고서에 붙일 사진을 한 번에 내려받는다 (hwpx 본문 삽입은 서식 BinData 구조 변경이 필요해 별도 작업) */
+async function photoPack(){
+  const list = scopeItems(realItems()).filter(hasPhoto);
+  if(!list.length){ toast('첨부할 사진이 없습니다'); return; }
+  if(typeof JSZip === 'undefined'){ toast('압축 모듈을 불러오지 못했습니다'); return; }
+  const zip = new JSZip();
+  let n = 0;
+  for(const it of list){
+    const ph = photosOf(it);
+    const dir = zip.folder(String(it.id).padStart(4,'0') + '_' + (it.sub || '').replace(/[\\/:*?"<>|]/g, ''));
+    const add = async (url, nm)=>{
+      try{
+        const r = await fetch(url);
+        if(!r.ok) return;
+        dir.file(nm, await r.blob());
+        n++;
+      }catch(e){ console.warn('[사진] 내려받기 실패', nm, e); }
+    };
+    for(let i = 0; i < ph.report.length; i++) await add(ph.report[i], '신고_' + (i+1) + '.jpg');
+    if(ph.before) await add(ph.before, '조치전.jpg');
+    if(ph.after)  await add(ph.after,  '조치후.jpg');
+  }
+  if(!n){ toast('사진을 내려받지 못했습니다 — 아직 서버에 올라가지 않았을 수 있습니다'); return; }
+  const blob = await zip.generateAsync({type:'blob'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '현장사진_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.zip';
+  document.body.appendChild(a); a.click(); a.remove();
+  toast('현장 사진 ' + n + '장을 묶어 내려받았습니다 — 보고서 별지로 붙이세요');
+}
+
+/* 대시보드 완료 이력 행 → 사진 포함 상세 */
+function doneDetail(id){
+  const it = items.find(i=>i.id === id);
+  if(!it){ toast('이 건은 누적 이력이라 상세 사진이 없습니다'); return; }
+  const a = deptOf(it);
+  showModal('<h2>✅ #' + String(it.id).padStart(3,'0') + ' ' + it.sub + '</h2>' +
+    '<p style="font-size:14px;line-height:1.8;color:var(--muted)">📍 ' + it.loc + '<br>' +
+    it.sum + '<br>처리 주체 <b>' + a.actor.org + '</b>' +
+    (it.resultType ? ' · 조치 결과 <b>' + it.resultType + '</b>' : '') +
+    (it.resultMemo ? '<br>' + it.resultMemo : '') + '</p>' +
+    '<div class="ph-head" style="margin-top:14px">📷 현장</div>' + photoBlock(it) +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
+}
+/* 확대 보기 */
+function photoZoom(url, label){
+  showModal('<h2>📷 ' + (label || '사진') + '</h2>' +
+    '<img src="' + url + '" alt="' + (label || '사진') + '" style="width:100%;border-radius:12px;margin-top:8px">' +
+    '<div class="row"><a class="btn-g" href="' + url + '" target="_blank" rel="noopener" style="text-align:center;line-height:22px;text-decoration:none">새 창에서 원본</a>' +
+    '<button class="btn-g" onclick="closeModal()">닫기</button></div>', true);
+}
+/* 작은 썸네일 (목록·카드용) */
+function photoThumb(it){
+  const ph = photosOf(it);
+  const u = ph.report[0] || (it.photoLocal && it.photoLocal[0]) || ph.after || ph.before;
+  if(!u) return '';
+  return '<img class="ph-mini" src="' + u + '" alt="첨부 사진" loading="lazy">';
 }
 
 /* ══════════ S-03 처리 현황 추적 ══════════
@@ -6010,6 +6337,7 @@ function renderTrack(){
     '<div class="tk-h">' + it.sub + '</div>' +
     '<div style="font-size:14px;color:var(--muted);line-height:1.7">📍 ' + it.loc + '<br>처리구분 <b>' + cls + '처리</b> · 담당 <b>' + pub.org + '</b></div>' +
     '</div>' + body +
+    '<div class="tk-card"><div class="ph-head">📷 현장 사진</div>' + photoBlock(it, {citizen:true}) + '</div>' +
     '<div class="tk-card"><div class="tk-note">· 이 화면은 담당 조직명·남은 거리·도착 예정 시각까지만 보여드립니다. 담당자 개인 정보와 정확한 위치는 표시되지 않습니다.<br>' +
     '· 접수번호로 언제든 다시 조회하실 수 있습니다.</div>' +
     '<div class="row"><button class="btn-g" onclick="trkId=null;renderTrack()">다른 번호 조회</button>' +
@@ -6245,6 +6573,7 @@ function renderRoad(){
           '<button class="btn-g" style="min-height:32px;padding:2px 10px;font-size:12px;margin-top:8px;margin-left:4px" onclick="event.stopPropagation();longDrop(' + r.it.id + ')">타당성 미달 종결</button>'
         : '';
       return '<div class="rd-card ' + r.d.state + '" onclick="roadOpen(' + r.it.id + ')">' +
+        photoThumb(r.it) +
         '<div class="rd-t">' + (r.it.urg === '긴급' ? '🚨 ' : '') + r.it.sub + '</div>' +
         '<div class="rd-m">' + r.it.loc + '<br>' + r.it.sum + '<br>🛠️ ' + a.actor.org + ' · #' + String(r.it.id).padStart(3,'0') + '</div>' +
         '<span class="rd-due ' + r.d.state + '">' + leftText(r.d) + '</span>' + steps + '</div>';
