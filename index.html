@@ -843,8 +843,8 @@ body.sel-open .cs-body.cl-R{--wR:640px;}
     box-shadow:-8px 0 28px rgba(16,32,64,.22);}
   body.sel-open .cs-body{--wR:340px;}
 }
+/* .sel-2col 은 상세가 좌·우 2열이던 시절의 규칙이다. 지금은 .sel-detail 이 맡는다 */
 .sel-2col{display:grid; grid-template-columns:1fr; gap:12px;}
-body.sel-open .sel-2col{grid-template-columns:1fr 1fr;}
 .sel-col{min-width:0;}
 .sel-h{font-size:12px; font-weight:800; color:var(--hs-blue-d); margin:10px 0 4px;}
 .sel-h:first-child{margin-top:0;}
@@ -1469,10 +1469,15 @@ body.modal-on #mapPickBar, body.modal-on #layerPanel, body.modal-on .leaflet-con
 .act3 .a-s{font-size:11px; opacity:.86; line-height:1.35;}
 .act3 .a-b{position:absolute; right:7px; top:7px; font-size:10px; font-weight:800;
   padding:1px 7px; border-radius:999px; background:rgba(255,255,255,.24); white-space:nowrap;}
-/* 세부 구획은 넓을 때만 2열로 */
-.sel-detail{display:grid; grid-template-columns:1fr; gap:0 18px;}
-body.sel-open .sel-detail{grid-template-columns:1fr 1fr;}
-body.sel-open .sel-detail > .sel-h:first-child{margin-top:0;}
+/* 세부 구획 — 우측 패널 폭에 맞춰 열 수가 스스로 변한다.
+   폭은 드래그로 300~720px 사이를 오가므로 고정 열 수로는 맞지 않는다.
+   한 칸이 260px 아래로 내려가면 한 열로 떨어진다. */
+.sel-detail{display:grid; grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
+  gap:4px 18px; align-items:start;}
+.sel-sec{min-width:0;}
+.sel-sec .sel-h{margin-top:12px;}
+.sel-detail > .sel-sec:first-child .sel-h{margin-top:0;}
+.sel-sec .sel-box{min-width:0; overflow-wrap:anywhere;}
 /* 색은 하는 일로 나눈다 — 현장(적) · 인계(청) · 종결(녹) */
 .act3.a-fld{background:linear-gradient(160deg,#F0654A 0%,#D63B1F 60%,#B32E14 100%);}
 .act3.a-sms{background:linear-gradient(160deg,#4A7FD1 0%,#1D4994 60%,#143567 100%);}
@@ -2053,7 +2058,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1611';
+const BUILD_VER = 'v0906-1615';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3737,42 +3742,47 @@ function renderSel(it){
       '</select></div>';
 
   /* ── 세부 6구획. 이 순서 고정. 모든 구획은 펼침이 기본이다 ── */
+  /* 구획 하나 = 제목 + 내용 을 한 덩어리로 묶는다.
+     둘을 형제로 나열하면 여러 열로 배치할 때 제목과 내용이 서로 다른 칸으로 흩어진다. */
+  const sec = (no, nm, inner) =>
+    '<section class="sel-sec" data-no="' + no + '">' +
+    '<div class="sel-h">' + nm + '</div>' + inner + '</section>';
+
   const colB =
     /* 1 민원내용 — 위치 · 문제상황 · 조치필요사항 */
-    '<div class="sel-h" data-no="C-5">1. 민원내용</div>' +
+    sec('C-5', '1. 민원내용',
     '<div class="sel-box">' +
       '<div class="sel-kv"><span>위치</span><b>' + it.loc + ' (' + it.gu + ')</b></div>' +
       '<div class="sel-kv"><span>문제상황</span><b>' + it.sum + '</b></div>' +
       '<div class="sel-kv"><span>조치필요</span><b>' + (it.req || '—') + '</b></div>' +
-      '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + it.urg + '</b></div></div>' +
+      '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + it.urg + '</b></div></div>') +
 
     /* 2 담당부서 — AI 분석 결과 · 배정 근거 · 확신도. 변경은 부서 목록에서 고른다 */
-    '<div class="sel-h" data-no="C-6">2. 담당부서</div>' +
+    sec('C-6', '2. 담당부서',
     '<div class="sel-box">' +
       '<div class="sel-kv"><span>배정 부서</span><b>' + a.actor.org + '</b></div>' +
       '<div class="sel-kv"><span>담당 주체</span><b>' + assigneeOf(it) + '</b></div>' +
       '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
       '<div class="act-r"><button class="cs-mini" onclick="deptWhy(' + it.id + ')">📋 배정 근거</button>' +
       '<button class="cs-mini" onclick="deptPick(' + it.id + ')">부서 변경</button>' +
-      '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">주체 변경</button></div></div>' +
+      '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">주체 변경</button></div></div>') +
 
-    /* 3 담당연락처 — 같은 문장을 제목·본문에 반복하지 않는다(§10 #5) */
-    /* C-7 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다 — 줄을 나눈다 */
-    '<div class="sel-h" data-no="C-7">3. 담당연락처</div>' +
-    '<div class="sel-box tel-box">' + telRows(it, a) + vendor + '</div>' +
+    /* 3 담당연락처 — 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다(§10 #5) */
+    sec('C-7', '3. 담당연락처',
+    '<div class="sel-box tel-box">' + telRows(it, a) + vendor + '</div>') +
 
     /* 4 현장사진 — 신고 / 조치 전 / 조치 후 */
-    '<div class="sel-h" data-no="C-8">4. 현장사진</div>' +
-    '<div class="sel-box">' + photoBlock(it) + '</div>' +
+    sec('C-8', '4. 현장사진',
+    '<div class="sel-box">' + photoBlock(it) + '</div>') +
 
     /* 5 대응매뉴얼 */
-    '<div class="sel-h" data-no="C-9">5. 대응매뉴얼</div>' +
+    sec('C-9', '5. 대응매뉴얼',
     '<div class="sel-box"><ol class="sel-ol">' + r.steps.map(x=>'<li>' + x + '</li>').join('') + '</ol>' +
-      '<div class="act-r"><button class="cs-mini" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">매뉴얼 전문 검색</button></div></div>' +
+      '<div class="act-r"><button class="cs-mini" onclick="openManual(\'' + (it.sub || '').split('(')[0].replace(/'/g, '') + '\')">매뉴얼 전문 검색</button></div></div>') +
 
     /* 6 처리이력 */
-    '<div class="sel-h" data-no="C-10">6. 처리이력</div>' +
-    '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div>';
+    sec('C-10', '6. 처리이력',
+    '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + x + '</li>').join('') + '</ol></div>');
 
   /* 640px 에서 2열: 좌열 조치 4구획, 우열 세부 6구획. 한 덩어리로 스크롤한다 */
   /* 조치 3버튼은 맨 위 가로 3열, 그 아래 세부 6구획. 한 덩어리로 스크롤한다 */
