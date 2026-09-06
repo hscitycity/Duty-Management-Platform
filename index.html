@@ -1855,6 +1855,26 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
 .pin.has-ph:after{content:""; position:absolute; inset:0; border-radius:50%;
   box-shadow:inset 0 0 0 1px rgba(255,255,255,.7);}
 
+/* C-2d · C-2e 제보 신빙성 갈래 */
+.cr-bar{display:grid; grid-template-columns:1fr 1fr; gap:6px; padding:0 12px 8px;}
+.cr-b{display:flex; align-items:center; gap:6px; height:34px; padding:0 10px;
+  border-radius:8px; cursor:pointer; font-size:12px; font-weight:700;
+  background:#F1F5FA; color:var(--smuted); border:1px solid var(--sline);}
+.cr-b .t{min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.cr-b .n{margin-left:auto; font-family:var(--mono,ui-monospace); font-size:13px; font-weight:800;}
+.cr-b:hover{background:var(--hs-blue-bg); color:var(--hs-blue-d);}
+.cr-b.b-chk.on{background:linear-gradient(180deg,#8B93A5,#5C6675); color:#fff; border-color:#5C6675;}
+.cr-b.b-rdy.on{background:linear-gradient(180deg,#2AA06B,#127A50); color:#fff; border-color:#127A50;}
+.cr-note{font-size:11.5px; line-height:1.6; color:var(--smuted); padding:0 12px 8px;}
+.cr-note[hidden]{display:none;}
+.cr-note b{color:var(--ok,#127A50);}
+.cr-note a{color:var(--hs-blue); text-decoration:none;}
+.cr-note a:hover{text-decoration:underline;}
+/* 카드의 유사 제보 배지 */
+.it-cr{flex:0 0 auto; font-size:10.5px; font-weight:800; padding:1px 6px; border-radius:4px;
+  background:#EEF2F7; color:var(--smuted); white-space:nowrap;}
+.it-cr.ok{background:#E3F5EC; color:var(--ok,#127A50);}
+
 </style>
 </head>
 <body>
@@ -1897,6 +1917,9 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
         <!-- §4.1 분류 카드 3개 — 입구를 셋으로 나누고 하나씩 본다 -->
         <section class="cs-blk blk-list" id="blkList">
           <div class="cls-cards" id="clsCards" data-no="C-2"></div>
+          <!-- 제보 신빙성 — 긴급·일반·교통도로의 하위 갈래 -->
+          <div class="cr-bar" id="credBar"></div>
+          <div class="cr-note" id="credNote" hidden></div>
           <!-- §4.2 한 줄 통계 -->
           <div class="cs-blkhead">
             <span class="cs-sum1" id="statLine" data-no="C-16"></span>
@@ -2248,7 +2271,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1723';
+const BUILD_VER = 'v0906-1728';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2910,6 +2933,7 @@ function csShowAll(){ csAll = !csAll; csApply(); toast(csAll ? '전체 보기 �
 function surgePass(it){ return !surgeFocus || surgeFocus.ids.has(it.id); }
 function csPass(it){
   if(!surgePass(it)) return false;
+  if(!credPass(it)) return false;
   if(csAll) return true;
   /* §4.4 선택한 분류만 진하게, 나머지는 흐리게(숨기지 않는다) */
   if(!clsOf(clsSel).test(it)) return false;
@@ -3762,6 +3786,77 @@ function csFilter(k){
   renderClsCards();
   renderList(); renderMap();
 }
+/* ══════════ 제보 신빙성 ══════════
+   한 건만 들어온 제보는 오신고·허위신고일 수 있다.
+   같은 곳에서 같은 종류의 제보가 여러 건 모이면 그때 신빙성이 선다.
+   기준은 새로 정하지 않고 시행 중인 탐지 규칙(반경·시간창·최소 건수)을 그대로 쓴다.
+   규칙을 고치면 이 화면도 함께 움직인다. */
+function credRule(){
+  const R = (typeof RULES_CUR !== 'undefined' && RULES_CUR) ? RULES_CUR : {반경_m:1000, 시간창_시간:3, 최소_건수:3};
+  return {r:R.반경_m, h:R.시간창_시간, need:R.최소_건수};
+}
+/* 같은 곳·같은 종류의 제보가 몇 건인지 — 자기 자신을 포함해 센다 */
+function credOf(it){
+  const R = credRule();
+  const ll = it.ll || it.pin;
+  const t0 = itemStart(it).getTime();
+  let n2 = 1;
+  if(ll){
+    for(const x of realItems()){
+      if(x.id === it.id) continue;
+      if(x.sub !== it.sub) continue;
+      const l2 = x.ll || x.pin;
+      if(!l2) continue;
+      if(distM(ll[0], ll[1], l2[0], l2[1]) > R.r) continue;
+      if(Math.abs(itemStart(x).getTime() - t0) > R.h * 3600 * 1000) continue;
+      n2++;
+    }
+  }
+  return {n:n2, need:R.need, ok:n2 >= R.need, r:R.r, h:R.h};
+}
+/* 확인중 / 처리대상 — 좌측에서 갈라 본다 */
+let credSel = 'all';
+function credPass(it){
+  if(credSel === 'all') return true;
+  const c = credOf(it);
+  return credSel === 'ready' ? c.ok : !c.ok;
+}
+function credPick(k){
+  credSel = (credSel === k) ? 'all' : k;
+  renderList(); renderMap();
+}
+/* 지금 분류에서 각각 몇 건인지 */
+function credCount(){
+  const c = clsOf(clsSel);
+  const open = scopeItems().filter(function(i){ return i.st !== '완료'; }).filter(c.test);
+  let ready = 0;
+  for(const it of open) if(credOf(it).ok) ready++;
+  return {ready:ready, check:open.length - ready, total:open.length};
+}
+function renderCredBar(){
+  const host = document.getElementById('credBar');
+  if(!host) return;
+  const c = credCount();
+  const R = credRule();
+  host.innerHTML =
+    '<button class="cr-b b-chk' + (credSel === 'check' ? ' on' : '') + '" data-no="C-2d" ' +
+      'onclick="credPick(\'check\')" title="유사 제보가 아직 ' + R.need + '건에 못 미치는 건입니다">' +
+      '<span class="t">🔎 민원제보 확인중</span><span class="n">' + c.check + '</span></button>' +
+    '<button class="cr-b b-rdy' + (credSel === 'ready' ? ' on' : '') + '" data-no="C-2e" ' +
+      'onclick="credPick(\'ready\')" title="반경 ' + R.r.toLocaleString() + 'm · ' + R.h + '시간 안에 같은 종류 제보가 ' + R.need + '건 이상">' +
+      '<span class="t">✅ 처리대상 민원목록</span><span class="n">' + c.ready + '</span></button>';
+  const nt = document.getElementById('credNote');
+  if(nt){
+    nt.hidden = credSel === 'all';
+    nt.innerHTML = credSel === 'all' ? '' :
+      (credSel === 'ready'
+        ? '동일지역 유사제보 <b>' + R.need + '건 이상</b> — 반경 ' + R.r.toLocaleString() + 'm · ' + R.h + '시간'
+        : '유사제보가 아직 ' + R.need + '건에 못 미칩니다 — 오신고 가능성을 함께 봅니다') +
+      ' <a href="#" onclick="credPick(\'' + credSel + '\');return false">전체 보기</a>' +
+      ' · <a href="#" onclick="openRules();return false">기준 보기</a>';
+  }
+}
+
 function renderClsCards(){
   const host = document.getElementById('clsCards');
   if(!host) return;
@@ -3777,6 +3872,15 @@ function renderClsCards(){
   }).join('');
 }
 /* §4.3 카드 — 52px 2줄, 구획 머리글 없음 */
+/* 유사 제보가 몇 건인지 카드에서 바로 보이게 */
+function credBadge(it){
+  const c = credOf(it);
+  if(c.n <= 1) return '';
+  return '<span class="it-cr' + (c.ok ? ' ok' : '') + '" title="반경 ' + c.r.toLocaleString() +
+    'm · ' + c.h + '시간 안에 같은 종류 제보 ' + c.n + '건' + (c.ok ? ' — 처리대상' : ' (' + c.need + '건부터 처리대상)') + '">' +
+    '유사 ' + c.n + '</span>';
+}
+
 function listRow(it){
   /* 배지는 최대 2개. 처리구분은 교통·도로 분류에서만 */
   const badges = [];
@@ -3792,6 +3896,7 @@ function listRow(it){
       '<span class="it-n" title="' + String(it.sub + ' · ' + it.sum).replace(/"/g, '&quot;') + '">' +
         it.sub + ' · ' + it.field + '</span>' +
       (hasPhoto(it) ? '<span class="it-ph" title="현장 사진 있음">📷</span>' : '') +
+      credBadge(it) +
       badges.slice(0, 2).join('') +
     '</div>' +
     '<div class="it-r2"><span class="it-l">' + it.loc + '</span>' +
@@ -3804,12 +3909,15 @@ function renderList(){
   const open = sc.filter(i=>i.st !== "완료");
   renderClsCards();
   const c = clsOf(clsSel);
-  const rows = open.filter(c.test).sort((a,b)=>b.id - a.id);
+  renderCredBar();
+  const rows = open.filter(c.test).filter(credPass).sort((a,b)=>b.id - a.id);
   l.innerHTML = rows.length
     ? rows.map(listRow).join('') +
       (clsSel === '교통도로'
         ? '<button class="cs-mini" style="width:100%;margin-top:6px" onclick="setMode(\'road\')">기동단 작업판 열기 →</button>' : '')
-    : '<p class="cs-empty">해당 분류에 열린 민원이 없습니다</p>';
+    : '<p class="cs-empty">' + (credSel === 'ready'
+        ? '유사제보 ' + credRule().need + '건 이상인 민원이 없습니다'
+        : (credSel === 'check' ? '확인중인 제보가 없습니다' : '해당 분류에 열린 민원이 없습니다')) + '</p>';
 
   /* §4.2 한 줄 통계 */
   const outN = sc.reduce((a,i)=>a + ((i.crews || []).length ? 1 : 0), 0);
@@ -3966,6 +4074,8 @@ function renderSel(it){
       '<div class="sel-kv"><span>배정 부서</span><b>' + a.actor.org + '</b></div>' +
       '<div class="sel-kv"><span>담당 주체</span><b>' + assigneeOf(it) + '</b></div>' +
       '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
+      '<div class="sel-kv"><span>유사 제보</span><b>' + credOf(it).n + '건' +
+        (credOf(it).ok ? ' — 처리대상' : ' — 확인중(' + credOf(it).need + '건부터)') + '</b></div>' +
       '<div class="act-r"><button class="cs-mini" onclick="deptWhy(' + it.id + ')">📋 배정 근거</button>' +
       '<button class="cs-mini" onclick="deptPick(' + it.id + ')">부서 변경</button>' +
       '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">주체 변경</button></div></div>') +
@@ -4281,7 +4391,8 @@ function deptWhy(id){
     '<div class="sel-kv"><span>배정 부서</span><b>' + esc(a.actor.org) + '</b></div>' +
     '<div class="sel-kv"><span>확신도</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
     '<div class="sel-kv"><span>처리구분</span><b>' + triage(it) + '</b></div>' +
-    '<div class="sel-kv"><span>유사 민원</span><b>' + similarCount(it) + '건 (반경 1km · 같은 유형)</b></div>' +
+    '<div class="sel-kv"><span>유사 제보</span><b>' + credOf(it).n + '건 · 반경 ' + credOf(it).r.toLocaleString() + 'm · ' + credOf(it).h + '시간' +
+      (credOf(it).ok ? ' — 처리대상' : ' — 확인중(' + credOf(it).need + '건부터)') + '</b></div>' +
     (a.overridden ? '<div class="sel-kv"><span>변경</span><b>담당자가 지정</b></div>' : '') +
     '<div class="sel-h" style="margin-top:12px">근거</div>' +
     '<div class="sel-box" style="line-height:1.8">' + esc(a.legal.basis) + '</div>' +
