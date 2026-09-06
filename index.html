@@ -2135,6 +2135,15 @@ body.night .adm-label, .sat-on .adm-label{color:#BFE3FA !important;
   background:var(--hs-orange); color:#fff;}
 .ord-sec .ord-row[onclick]{cursor:pointer;}
 .ord-sec .ord-row[onclick]:hover{background:#F7FAFD;}
+/* C-6c 권한 안내 · 재지정 요청 */
+.sel-note{margin:8px 0 0; font-size:11.5px; line-height:1.6; color:var(--muted);}
+.sel-note b{color:var(--hs-blue-dark);}
+.sel-kv b.warn{color:#8A3E0C;}
+/* C-4e 권한 잠금 — 남의 부서 민원은 보되 손대지 못한다 */
+.sel-lock{margin-bottom:10px; padding:9px 11px; border-radius:9px; font-size:12.5px; line-height:1.7;
+  background:#F2F4F7; border:1px solid var(--line); color:var(--muted);}
+.sel-lock b{color:var(--ink);}
+.act3s.locked{opacity:.5; pointer-events:none; filter:saturate(.3);}
 </style>
 </head>
 <body>
@@ -2308,8 +2317,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
                 <span class="e-i">📝</span><span class="e-t">일반민원 접수</span><span class="e-s">당직자 · 타 부서 직원</span></button>
               <button class="rp-ent e-road" data-no="C-12b" onclick="rpForm('road')">
                 <span class="e-i">🚧</span><span class="e-t">교통·도로 기동단 접수</span><span class="e-s">기동단 전담 인력</span></button>
-              <button class="rp-ent e-jrn" data-no="C-12c" onclick="rpForm('jrn')">
-                <span class="e-i">📕</span><span class="e-t">재난상황일지 작성</span><span class="e-s">재난안전상황실 직원</span></button>
+              <button class="rp-ent e-jrn" data-no="C-12c" id="entJrn" onclick="rpForm('jrn')">
+                <span class="e-i">📕</span><span class="e-t">재난상황일지 작성</span><span class="e-s">재난안전상황실 전용</span></button>
             </div>
             <div class="rp-h">최근 처리</div>
             <div class="rp-recent" id="rpRecent" data-no="C-15"></div>
@@ -2548,7 +2557,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2326';
+const BUILD_VER = 'v0906-2343';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -3800,7 +3809,10 @@ function renderHeader(m){
   let html = '<img class="cs-logo" src="data/icons/logo.png" alt="화성특례시">';
 
   if(o.tabs){
-    html += '<div class="cs-modes" role="tablist" data-no="C-1">' + HDR_TABS.map(t=>
+    /* 들어갈 수 없는 화면은 탭에 두지 않는다 — 눌러도 안 되는 단추를 보이지 않게 */
+    html += '<div class="cs-modes" role="tablist" data-no="C-1">' + HDR_TABS
+      .filter(t=>t.k !== 'road' || (typeof canRoadBoard !== 'function') || canRoadBoard())
+      .map(t=>
       '<button class="cs-chip' + (m === t.k ? ' on' : '') + '" id="csm' + t.k + '" role="tab" ' +
       'aria-selected="' + (m === t.k) + '" onclick="setMode(\'' + t.k + '\')">' + t.nm + '</button>').join('') + '</div>';
   } else {
@@ -4366,9 +4378,13 @@ function renderSel(it){
       '<span class="a-b">' + stTx[state] + '</span></button>';
 
   /* 조치는 맨 위에, 가로로 나란히. 무엇부터 할지가 먼저 보여야 한다 */
+  /* 권한 ① — 배부받은 부서만 조치·종결한다. 남의 건은 보되 손대지 못한다 */
+  const may = canHandle(it);
   const actRow = (it.urg === '긴급'
       ? '<div class="sel-urg">⚡ 인명·안전 위험 시 <b>119/112 즉시 공동대응</b> → 재난안전상황실 ☎5189-2119</div>' : '') +
-    '<div class="act3s" data-no="C-4">' +
+    (may ? '' : '<div class="sel-lock" data-no="C-4e">🔒 <b>' + esc(deptOf(it).actor.org) + '</b> 소관 민원입니다 — ' +
+      '조치·종결은 배부받은 부서가 합니다. 우리 소관이 아니라면 아래에서 <b>부서 재지정</b>을 요청하십시오.</div>') +
+    '<div class="act3s' + (may ? '' : ' locked') + '" data-no="C-4">' +
       act('C-4a', 'a-fld', '🚨', '초동조치 · 현장사진 등록',
           crewCnt ? crewCnt + '명 출동 중' : '출동·현장사진을 남깁니다', stField, 'fieldGo(' + it.id + ')') +
       act('C-4b', 'a-sms', '📨', '용역업체 문자발송',
@@ -4414,13 +4430,21 @@ function renderSel(it){
       '<div class="sel-kv"><span>배정 부서</span><b>' + a.actor.org + '</b></div>' +
       ((it.deptList && it.deptList.length > 1)
         ? '<div class="sel-kv"><span>협조 부서</span><b>' + esc(it.deptList.slice(1).join(' · ')) + '</b></div>' : '') +
-      '<div class="sel-kv"><span>담당 주체</span><b>' + assigneeOf(it) + '</b></div>' +
+      '<div class="sel-kv"><span>민원배부 부서</span><b>' + assigneeOf(it) + '</b></div>' +
+      (it.reassignReq
+        ? '<div class="sel-kv"><span>재지정 요청</span><b class="warn">' + esc(it.reassignReq.by) + ' · ' +
+          esc(it.reassignReq.hm) + (it.reassignReq.why ? ' — ' + esc(it.reassignReq.why) : '') + '</b></div>' : '') +
       '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
       '<div class="sel-kv"><span>유사 제보</span><b>' + credOf(it).n + '건' +
         (credOf(it).ok ? ' — 처리대상' : ' — 확인중(' + credOf(it).need + '건부터)') + '</b></div>' +
       '<div class="act-r"><button class="cs-mini" onclick="deptWhy(' + it.id + ')">📋 배정 근거</button>' +
-      '<button class="cs-mini" onclick="deptPick(' + it.id + ')">부서 변경</button>' +
-      '<button class="cs-mini" onclick="assignAsk(' + it.id + ')">주체 변경</button></div></div>') +
+      (canAssignDept(it)
+        ? '<button class="cs-mini" data-no="C-6b" onclick="deptPick(' + it.id + ')">부서지정</button>' +
+          '<button class="cs-mini" data-no="C-11" onclick="assignAsk(' + it.id + ')">배부 부서 변경</button>'
+        : '<button class="cs-mini" data-no="C-6c" onclick="deptReqAsk(' + it.id + ')">부서 재지정 요청</button>') +
+      '</div>' +
+      '<p class="sel-note">처리부서 지정은 <b>' + esc(dispatchOrgOf(it)) + '</b>만 할 수 있습니다' +
+        (canAssignDept(it) ? ' — 지금 소속이 배부 부서입니다.' : '. 다른 부서는 재지정을 요청합니다.') + '</p></div>') +
 
     /* 4 담당연락처 — 부서명과 전화번호를 한 줄에 붙이면 번호가 다음 줄로 밀린다(§10 #5) */
     sec('C-7', '4. 담당연락처',
@@ -4458,17 +4482,21 @@ function deptOptions(){
 let deptPickFor = null, deptPickSel = '', deptPickList = [];
 function deptPick(id){
   const it = items.find(i=>i.id === id); if(!it) return;
+  /* 배부 부서가 아니면 지정할 수 없다 — 대신 재지정을 요청한다 */
+  if(!canAssignDept(it)){ deptReqAsk(id); return; }
   deptPickFor = id;
   /* 소관이 여러 곳일 수 있다 — 누르는 대로 쌓인다 */
   deptPickList = (it.deptList && it.deptList.length) ? it.deptList.slice() : [deptOf(it).actor.org];
   deptPickSel = deptPickList[0] || '';
   /* 부서를 고르는 화면은 어디서든 같다 — 검색은 위에 붙고, 저장·닫기는 오른쪽 위 */
   showModal('<div class="dp-top">' +
-      '<h2 data-no="C-6b">🏢 처리주체 변경</h2>' +
+      '<h2 data-no="C-6b">🏢 처리부서 지정 <span class="sub">' + esc(dispatchOrgOf(it)) + '</span></h2>' +
       '<div class="dp-acts">' +
         '<button class="btn-o" onclick="deptPickSave(' + id + ')">저장</button>' +
         '<button class="btn-g" onclick="closeModal();deptPickFor=null">닫기</button></div>' +
-      '<p class="hint">조직도에서 부서를 누르면 아래 <b>고른 부서</b>에 바로 담깁니다.</p>' +
+      '<p class="hint">기본값은 <b>AI 추천 부서</b>입니다. 조직도에서 누르면 아래 <b>고른 부서</b>에 담깁니다.' +
+        (it.reassignReq ? '<br>📥 <b>' + esc(it.reassignReq.by) + '</b> 재지정 요청' +
+          (it.reassignReq.why ? ' — ' + esc(it.reassignReq.why) : '') : '') + '</p>' +
       '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
       '<div class="dp-now" id="dpNow"></div>' +
       '<input id="dpWhy" class="dp-why" placeholder="변경 사유 (선택)">' +
@@ -4509,12 +4537,43 @@ function deptPickSave(id){
   it.deptList = deptPickList.slice();
   deptOverrideSet(id, {org: org, co: co,
     basis: '담당자 지정' + (co.length ? ' · 협조 ' + co.join(', ') : '') + (why ? ' — ' + why : '')});
-  it.log.push(nowHM() + ' 처리주체 변경 → ' + org +
+  it.log.push(nowHM() + ' 처리부서 지정(' + dispatchOrgOf(it) + ') → ' + org +
     (co.length ? ' (협조 ' + co.join(', ') + ')' : '') + (why ? ' — ' + why : ''));
+  /* 요청을 받아 지정했으면 요청은 닫힌다 */
+  if(it.reassignReq){ it.log.push(nowHM() + ' 재지정 요청 처리 완료 (' + it.reassignReq.by + ')'); it.reassignReq = null; }
   try{ sbPush(it); }catch(e){}
   closeModal(); deptPickFor = null;
   renderSel(it); renderList();
-  toast('처리주체를 ' + org + (co.length ? ' 외 ' + co.length + '곳' : '') + '(으)로 변경했습니다');
+  toast('처리부서를 ' + org + (co.length ? ' 외 ' + co.length + '곳' : '') + '(으)로 지정했습니다');
+}
+/* C-6c 부서 재지정 요청 — 배부 부서가 아닌 곳은 스스로 바꾸지 못한다.
+   대신 배부 부서에 요청을 남긴다. 지정 권한과 요청 경로를 나눠야 배부가 흐트러지지 않는다. */
+function deptReqAsk(id){
+  const it = items.find(function(i){ return i.id === id; }); if(!it) return;
+  const to = dispatchOrgOf(it);
+  showModal('<h2 data-no="C-6c">📤 부서 재지정 요청</h2>' +
+    '<p class="hint">처리부서 지정은 <b>' + esc(to) + '</b>이(가) 합니다. 이 민원이 우리 소관이 아니라면 사유를 적어 요청하십시오.</p>' +
+    '<div class="sel-box" style="margin-bottom:12px">' +
+      '<div class="sel-kv"><span>민원</span><b>#' + String(it.id).padStart(3,'0') + ' ' + esc(it.sub) + '</b></div>' +
+      '<div class="sel-kv"><span>현재 처리부서</span><b>' + esc(deptOf(it).actor.org) + '</b></div>' +
+      '<div class="sel-kv"><span>요청 받는 곳</span><b>' + esc(to) + '</b></div></div>' +
+    (it.reassignReq ? '<p class="hint">이미 ' + esc(it.reassignReq.by) + ' 이(가) ' + esc(it.reassignReq.hm) + ' 에 요청했습니다.</p>' : '') +
+    '<label class="rd-lb">요청 사유 <b class="rp-must">필수</b></label>' +
+    '<textarea id="drqWhy" style="min-height:72px" placeholder="예) 사유지 내 시설물로 우리 과 소관이 아닙니다. 건축과 검토 필요"></textarea>' +
+    '<div class="row"><button class="btn-o" onclick="deptReqSave(' + id + ')">📤 재지정 요청</button>' +
+    '<button class="btn-g" onclick="closeModal()">취소</button></div>');
+}
+function deptReqSave(id){
+  const it = items.find(function(i){ return i.id === id; }); if(!it) return;
+  const why = ((document.getElementById('drqWhy') || {}).value || '').trim();
+  if(!why){ toast('요청 사유를 적어 주세요'); return; }
+  const to = dispatchOrgOf(it);
+  it.reassignReq = {by: meLabel(), hm: nowHM(), why: why, to: to};
+  it.log.push(nowHM() + ' 부서 재지정 요청 (' + meLabel() + ' → ' + to + '): ' + why.split(String.fromCharCode(10)).join(' / '));
+  try{ sbPush(it); }catch(e){}
+  closeModal();
+  renderSel(it); renderList();
+  toast(to + '에 재지정을 요청했습니다 — 이력에 남습니다');
 }
 /* §6.2 민원회신 — 신고인에게 알린 내용·시각·방법을 남긴다 */
 /* 회신은 C-4c3 replyOpen2 로 일원화했다 */
@@ -9682,7 +9741,62 @@ let ME = {role:'시장·부시장·상황실', org:'재난안전상황실', emd:
 try{ const v = localStorage.getItem('hs_me'); if(v) ME = Object.assign(ME, JSON.parse(v)); }catch(e){}
 let scopeMode = 'all';   /* 읍면동 탭 — all | mine */
 
-function meScope(){ return (ROLES[ME.role] || ROLES['담당자']).scope; }
+/* ══════════ 권한 — 누가 무엇을 할 수 있는가 ══════════
+   ① 각 부서는 제 부서에 배부된 민원만 보고 처리·종결한다.
+   ② 제1·제2부시장은 관할 실·국의 민원 전부를 보고 처리한다.
+   ③ 기동단 화면은 기동단만 연다.
+   ④ 재난상황일지는 재난안전상황실만 쓴다.
+   ⑤ 처리부서 지정은 민원배부 부서만 한다 — 생활민원은 행정종합관찰관, 교통·도로는 기동단. */
+const TRIAGE_ORG = '행정종합관찰관';        /* 생활민원 배부 부서 */
+const ROADTEAM_ORG = '교통·도로 기동단';    /* 교통·도로민원 배부 부서 */
+function meOrg(){ return (ME.org || ME.dept || ME.emd || ''); }
+function meNamed(nm){ const o = meOrg(); return !!o && (o === nm || o.indexOf(nm) >= 0 || nm.indexOf(o) >= 0); }
+function meIsMayor(){ return meOrg() === '시장'; }
+function meVice(){ const o = meOrg(); return (o === '제1부시장' || o === '제2부시장') ? o : null; }
+function meIsSitRoom(){ return meNamed('재난안전상황실'); }
+function meIsRoadTeam(){ return meOrg().indexOf('기동단') >= 0; }
+function meIsTriage(){ return meOrg().indexOf(TRIAGE_ORG) >= 0; }
+/* 시장·상황실은 전체를 본다. 부시장은 관할 실·국만 본다 */
+function meTop(){ return meIsMayor() || meIsSitRoom(); }
+/* 부시장 관할 — 조직도의 상위 값이 근거다(분장사무로 만들지 않는다) */
+function viceDepts(v){
+  const out = [];
+  if(typeof ORG_UNITS === 'undefined' || !ORG_UNITS) return out;
+  for(const g of (ORG_UNITS.본청 || [])) if(g.상위 === v) for(const d of (g.과 || [])) out.push(d);
+  for(const g of (ORG_UNITS.사업소 || [])) if(g.상위 === v) for(const d of (g.과 || [])) out.push(g.기관 + ' ' + d);
+  return out;
+}
+function inVice(it, v){
+  const list = viceDepts(v);
+  if(!list.length) return true;   /* 조직도가 아직 안 왔으면 막지 않는다 */
+  const a = deptOf(it);
+  return list.some(function(d){ return a.actor.org.indexOf(d) >= 0 || d.indexOf(a.actor.org) >= 0 ||
+                                       a.legal.dept.indexOf(d) >= 0; });
+}
+/* 이 민원의 민원배부 부서(C-11) */
+function dispatchOrgOf(it){ return isRoadTeam(it) ? ROADTEAM_ORG : TRIAGE_ORG; }
+/* 처리부서 지정(C-6b)은 배부 부서만 한다 */
+function canAssignDept(it){
+  if(!it) return false;
+  return isRoadTeam(it) ? meIsRoadTeam() : meIsTriage();
+}
+/* 이 민원을 처리·종결할 수 있는가 — 배부받은 부서, 배부 부서, 부시장(관할), 시장·상황실 */
+function canHandle(it){
+  if(!it) return false;
+  if(meTop()) return true;
+  const v = meVice();
+  if(v) return inVice(it, v);
+  if(canAssignDept(it)) return true;
+  return isMine(it);
+}
+/* 화면 자체의 문 — 기동단 작업판 · 재난상황일지 */
+function canRoadBoard(){ return meTop() || meIsRoadTeam(); }
+function canJournal(){ return meIsSitRoom() || meIsMayor(); }
+function meScope(){
+  if(meVice()) return 'vice';
+  if(meIsTriage()) return 'triage';   /* 생활민원 배부 부서 — 배부하려면 다 보여야 한다 */
+  return (ROLES[ME.role] || ROLES['담당자']).scope;
+}
 /* 상황실 소속은 조치지시(#cmd) 권한을 갖는다 */
 function meCanCommand(){ return meScope() === 'all'; }
 /* meLabel 은 소속 선택 블록에서 정의한다(고른 결과만 짧게) */
@@ -9698,6 +9812,8 @@ function scopeItems(list){
   const src = list || items;
   const sc = meScope();
   if(sc === 'all') return src;
+  if(sc === 'vice'){ const v = meVice(); return src.filter(function(i){ return inVice(i, v); }); }
+  if(sc === 'triage') return src.filter(function(i){ return !isRoadTeam(i); });
   if(sc === 'road') return src.filter(isRoadItem);
   if(sc === 'own')  return src.filter(isMine);
   if(sc === 'dept') return src.filter(i=>{
@@ -9727,6 +9843,8 @@ const ORG_ROOMS = [
   {nm:'제1부시장',       role:'시장·부시장·상황실'},
   {nm:'제2부시장',       role:'시장·부시장·상황실'},
   {nm:'재난안전상황실',   role:'시장·부시장·상황실'},
+  /* 민원배부 두 곳 — 처리부서 지정 권한을 가진다(C-11) */
+  {nm:'행정종합관찰관',   role:'부서장'},
   {nm:'교통·도로민원 신속처리 기동단', role:'교통·도로 기동단'}
 ];
 /* 소속 목록의 출처는 행정조직도.md → data/org_units.json 하나뿐이다.
@@ -9898,6 +10016,8 @@ function meBack(title){
 function meSet(role, org, emd, dept){
   /* 기동단 소속은 작업판이 첫 화면이다(§1-1) */
   if(String(org).indexOf('기동단') >= 0) role = '교통·도로 기동단';
+  /* 배부 부서는 부서 칸도 채워 둔다 — 범위 계산이 소속 이름을 본다 */
+  if(String(org).indexOf('행정종합관찰관') >= 0 && !dept) dept = org;
   ME = {role:role, org:org, emd:emd || '', dept:dept || ''};
   try{ localStorage.setItem('hs_me', JSON.stringify(ME)); }catch(e){}
   closeModal(); meApply();
@@ -9911,8 +10031,16 @@ function meChipSync(){
   if(t) t.textContent = meLabel();
 }
 
+/* 소속이 바뀌면 권한도 함께 바뀐다 — 화면 입구부터 다시 건다 */
+function permApply(){
+  const j = document.getElementById('entJrn');
+  if(j) j.hidden = !canJournal();
+  if(curMode === 'road' && !canRoadBoard()) setMode('duty');
+  if(typeof renderHeader === 'function') renderHeader(curMode);
+}
 function meApply(){
   meChipSync();
+  permApply();
   const tabs = document.getElementById('scTabs');
   if(tabs) tabs.style.display = meScope() === 'emd' ? 'flex' : 'none';
   const a = document.getElementById('scTabAll'), b = document.getElementById('scTabMine');
@@ -10856,13 +10984,17 @@ function guideKpi(){
    접수 시 당직 처리 / 교통·도로 기동단 중에 정한다.
    AI 가 유형(3장 5분류)을 근거로 먼저 제안하고 접수자가 확정한다.
    긴급과 기동단은 축이 다르다 — 한 건이 상황판 긴급 목록과 기동단 목록에 모두 나타날 수 있다. */
-/* C-11 축은 '생활민원 / 교통·도로 기동단' 이다. '당직 처리'는 부서가 아니라 근무 형태였다 */
-const ASSIGNEES = ['생활민원', '교통·도로 기동단'];
-/* 배정이 확정됐으면 그 값을, 아니면 AI 제안(유형 기준)을 쓴다 */
+/* C-11 민원배부 부서 — 생활민원은 행정종합관찰관, 교통·도로는 기동단이 배부한다.
+   '담당 주체'라는 말은 누가 배부하는지도, 누가 처리하는지도 가리키지 못했다. */
+const ASSIGNEES = [TRIAGE_ORG, ROADTEAM_ORG];
+/* 옛 값('당직 처리' · '생활민원')은 행정종합관찰관과 같은 뜻이다 */
 function assigneeOf(it){
-  /* 옛 데이터의 '당직 처리'는 '생활민원'과 같은 뜻이다(C-11) */
-  if(it && it.assignee === '당직 처리') return '생활민원'; return it.assignee || (isRoadType(it) ? '교통·도로 기동단' : '당직 처리'); }
-function isRoadTeam(it){ return assigneeOf(it) === '교통·도로 기동단'; }
+  const v = it && it.assignee;
+  if(v === '당직 처리' || v === '생활민원') return TRIAGE_ORG;
+  if(v) return v;
+  return isRoadType(it) ? ROADTEAM_ORG : TRIAGE_ORG;
+}
+function isRoadTeam(it){ return assigneeOf(it) === ROADTEAM_ORG; }
 /* 담당 주체를 바꾼다 — 이관 시각과 사유를 남긴다 */
 function assignSet(id, who, why){
   const it = items.find(i=>i.id === id); if(!it) return;
@@ -10871,18 +11003,18 @@ function assignSet(id, who, why){
   it.assignee = who;
   it.assignedAt = new Date().toISOString();
   it.assignedWhy = why || '';
-  it.log.push(nowHM() + ' 담당 주체 ' + prev + ' → ' + who + (why ? ' (' + why + ')' : ''));
-  if(who === '교통·도로 기동단' && !it.intakeChannel) it.intakeChannel = '당직이관';
+  it.log.push(nowHM() + ' 민원배부 부서 ' + prev + ' → ' + who + (why ? ' (' + why + ')' : ''));
+  if(who === ROADTEAM_ORG && !it.intakeChannel) it.intakeChannel = '당직이관';
   sbPush(it); renderList(); renderMap();
   if(curMode === 'road') renderRoad();
   if(selId === id) selectItem(id);
-  toast(who + '으로 배정했습니다 — 이력에 기록됨');
+  toast('민원배부 부서를 ' + who + '(으)로 바꿨습니다 — 이력에 기록됨');
 }
 function assignAsk(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   const cur = assigneeOf(it);
-  const sug = isRoadType(it) ? '교통·도로 기동단' : '생활민원';
-  showModal('<h2 data-no="C-11">🧭 담당 주체 배정</h2>' +
+  const sug = isRoadType(it) ? ROADTEAM_ORG : TRIAGE_ORG;
+  showModal('<h2 data-no="C-11">🧭 민원배부 부서</h2>' +
     '<p style="font-size:14px;line-height:1.8">#' + String(it.id).padStart(3,'0') + ' ' + it.sub + '<br>' +
     '<span style="font-size:13px;color:var(--muted)">AI 제안: <b>' + sug + '</b> · ' +
     (isRoadType(it) ? roadCat(it).nm + ' 유형' : '교통·도로 5분류에 해당하지 않음') + '</span></p>' +
@@ -10900,7 +11032,7 @@ function assignPick(a){
   document.querySelectorAll('.asg-pick button').forEach(b=>b.classList.toggle('on', b.textContent.indexOf(a) === 0));
 }
 function assignSave(id){
-  if(!asgSel){ toast('담당 주체를 골라 주세요'); return; }
+  if(!asgSel){ toast('민원배부 부서를 골라 주세요'); return; }
   const why = ((document.getElementById('asgWhy') || {}).value || '').trim();
   closeModal();
   assignSet(id, asgSel, why);
@@ -11782,7 +11914,15 @@ function rpState(k, sub){
 }
 /* ③ 접수 입력 — 세 서식 중 하나 */
 const RP_FORM_TIT = {gen:'📝 일반민원 접수', road:'🚧 교통·도로 기동단 접수', jrn:'📕 재난상황일지 작성'};
+/* 권한 ④ — 재난상황일지는 재난안전상황실이 쓴다 */
+function rpFormAllowed(sub){
+  if(sub !== 'jrn') return true;
+  if(typeof canJournal !== 'function' || canJournal()) return true;
+  toast('재난상황일지는 재난안전상황실만 작성할 수 있습니다');
+  return false;
+}
 function rpForm(sub){
+  if(!rpFormAllowed(sub)) return;
   rpFormSub = sub;
   const t = document.getElementById('rpFormTit');
   if(t) t.textContent = RP_FORM_TIT[sub] || '접수';
@@ -12200,6 +12340,11 @@ function setMode(m, fromHash){
     return;
   }
   if(MODES.indexOf(m) < 0) m = "duty";
+  /* 화면의 문 — 소속이 아니면 들어가지 못한다(권한 ③ ④) */
+  if(m === "road" && typeof canRoadBoard === 'function' && !canRoadBoard()){
+    toast('교통·도로 기동단 작업판은 기동단 소속만 볼 수 있습니다');
+    m = "duty";
+  }
   curMode = m;
   if(!fromHash && location.hash !== "#"+m){ history.replaceState(null, "", "#"+m); }
   document.body.setAttribute("data-mode", m);
