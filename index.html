@@ -2557,7 +2557,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-2349';
+const BUILD_VER = 'v0906-2352';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2775,6 +2775,24 @@ function emdOf(it){
   const m = String(it.loc || '').match(/([가-힣]{2,4}(?:읍|면|동))/);
   if(!m) return null;
   return m[1] + EMD_SUFFIX;
+}
+/* 구만 적으면 '동탄구' 처럼 넓기만 하다. 읍·면·동까지 붙여 어디인지 바로 알게 한다 */
+function guEmd(it){
+  if(!it) return '';
+  const gu = String(it.gu || '').trim();
+  let e = '';
+  const m = String(it.loc || '').match(/([가-힣]{1,5}[0-9]{0,2}(?:읍|면|동))/);
+  if(m) e = m[1];
+  else if(it.emd){
+    e = String(it.emd).trim();
+    if(e && !/(읍|면|동)$/.test(e)) e = '';   /* '동탄' 처럼 꼬리가 없으면 지어내지 않는다 */
+  }
+  if(!e && typeof emdOf === 'function'){
+    const f = emdOf(it);
+    if(f) e = emdShort(f);
+  }
+  if(gu && e) return gu + ' ' + e;
+  return gu || e || '';
 }
 /* 목록·배지용 축약 — '매송면사무소' 같은 잘못된 축약을 만들지 않는다 */
 function emdShort(name){
@@ -4419,7 +4437,8 @@ function renderSel(it){
     /* 2 민원내용 — 위치 · 문제상황 · 조치필요사항 */
     sec('C-5', '2. 민원내용',
     '<div class="sel-box">' +
-      '<div class="sel-kv"><span>위치</span><b>' + it.loc + ' (' + it.gu + ')</b></div>' +
+      '<div class="sel-kv"><span>위치</span><b>' + it.loc + '</b></div>' +
+      '<div class="sel-kv"><span>관할</span><b>' + esc(guEmd(it)) + '</b></div>' +
       '<div class="sel-kv"><span>문제상황</span><b>' + it.sum + '</b></div>' +
       '<div class="sel-kv"><span>조치필요</span><b>' + (it.req || '—') + '</b></div>' +
       '<div class="sel-kv"><span>접수</span><b>' + it.time + ' · ' + it.urg + '</b></div></div>') +
