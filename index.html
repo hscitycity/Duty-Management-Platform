@@ -1634,6 +1634,32 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
   font-size:11.5px; font-weight:700; color:#fff; background:var(--urgent);
   padding:2px 8px; border-radius:5px; white-space:nowrap;}
 
+/* I-3 이상징후 부제 */
+.cw-sub{font-size:12.5px; font-weight:400; color:#8FB2E0;}
+/* I-4 투입부서 — 추천 표시 · 빼기 · 추가 */
+.cmd-sug{font-size:10px; font-weight:800; padding:1px 6px; border-radius:999px;
+  background:rgba(56,189,248,.18); color:#7CC7F0; margin-right:4px;}
+.cmd-del{width:22px; height:22px; margin-left:4px; border-radius:6px; font-size:11px;
+  background:rgba(255,255,255,.10); color:#8FB2E0; border:1px solid rgba(255,255,255,.16);}
+.cmd-del:hover{background:var(--urgent); color:#fff; border-color:var(--urgent);}
+.cmd-add{width:100%; height:34px; margin-top:8px; border-radius:8px; cursor:pointer;
+  font-size:12.5px; font-weight:700; background:transparent; color:var(--hs-blue-dark);
+  border:1.5px dashed var(--hs-blue-line);}
+.cmd-add:hover{background:var(--hs-blue-bg);}
+/* 투입부서 지정 팝업 */
+.cmd-now{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:10px 0 12px;
+  padding:10px 12px; border-radius:8px; background:#F7FAFD; border:1px solid var(--line);}
+.cmd-now .k{font-size:12px; font-weight:700; color:var(--muted); margin-right:4px;}
+.cmd-none{font-size:12.5px; color:var(--muted);}
+.cmd-tag{display:inline-flex; align-items:center; gap:5px; padding:3px 6px 3px 10px;
+  border-radius:999px; font-size:12.5px; background:#EEF3FA; color:var(--hs-blue-dark);
+  border:1px solid var(--hs-blue-line);}
+.cmd-tag.sug{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.cmd-tag b{font-family:var(--mono,ui-monospace); font-weight:800;}
+.cmd-tag button{width:18px; height:18px; border-radius:50%; font-size:10px; border:none;
+  background:rgba(0,0,0,.10); color:inherit; cursor:pointer;}
+.cmd-tag button:hover{background:var(--urgent); color:#fff;}
+
 </style>
 </head>
 <body>
@@ -2027,7 +2053,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1602';
+const BUILD_VER = 'v0906-1606';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -7391,6 +7417,49 @@ try{ const v = localStorage.getItem('hs_orders'); if(v) ORDERS = JSON.parse(v); 
 function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(-40))); }catch(e){} }
 
 function cmdTotal(){ return Object.values(cmdDepts || {}).reduce((a,b)=>a + b, 0); }
+/* 조치 유형이 제안하는 부서 — 무엇이 추천값인지 표시한다 */
+let CMD_SUGGEST = [];
+/* 투입부서는 조직도를 보면서 고른다(F-3 와 같은 화면) */
+function cmdDeptAdd(){
+  deptPickFor = 'cmd';
+  deptPickSel = '';
+  showModal('<h2 data-no="I-4a">🏢 투입부서 지정</h2>' +
+    '<p class="hint">행정조직도에서 고릅니다. 추천 부서는 그대로 두고 필요한 곳만 더하거나 빼면 됩니다.</p>' +
+    '<div class="cmd-now" id="cmdNow"></div>' +
+    '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
+    '<div class="oc-wrap oc-pick" id="orgPop"></div>' +
+    '<div class="dp-bar">고른 부서 <b id="dpNow">—</b>' +
+      '<label style="font-size:13px;display:flex;align-items:center;gap:6px">인원 ' +
+      '<input id="cmdN" type="number" min="1" max="30" value="2" style="width:66px"></label></div>' +
+    '<div class="row"><button class="btn-o" onclick="cmdDeptCommit()">이 부서 넣기</button>' +
+    '<button class="btn-g" onclick="closeModal();deptPickFor=null;renderCmd()">닫기</button></div>', true);
+  renderOrgPane('orgPop');
+  cmdNowRender();
+}
+function cmdNowRender(){
+  const el = document.getElementById('cmdNow');
+  if(!el || !cmdDepts) return;
+  const ks = Object.keys(cmdDepts);
+  el.innerHTML = '<span class="k">지금 투입</span>' + (ks.length
+    ? ks.map(d=>'<span class="cmd-tag' + (CMD_SUGGEST.indexOf(d) >= 0 ? ' sug' : '') + '">' + esc(d) +
+        ' <b>' + cmdDepts[d] + '</b>' +
+        '<button onclick="cmdDeptDel(\'' + d + '\', true)" aria-label="' + esc(d) + ' 빼기">✕</button></span>').join('')
+    : '<span class="cmd-none">아직 없습니다</span>');
+}
+function cmdDeptCommit(){
+  if(!deptPickSel){ toast('조직도에서 부서를 눌러 골라 주세요'); return; }
+  const v = Math.max(1, Math.min(30, parseInt((document.getElementById('cmdN') || {}).value, 10) || 1));
+  cmdDepts = cmdDepts || {};
+  cmdDepts[deptPickSel] = v;
+  toast(deptPickSel + ' ' + v + '명 — 투입부서에 넣었습니다');
+  cmdNowRender();
+}
+function cmdDeptDel(d, inPop){
+  if(!cmdDepts) return;
+  delete cmdDepts[d];
+  if(inPop) cmdNowRender(); else renderCmd();
+}
+
 function cmdStep(dept, d){
   if(!cmdDepts) return;
   cmdDepts[dept] = Math.max(0, (cmdDepts[dept] || 0) + d);
@@ -7405,6 +7474,7 @@ function cmdPick(key){
   const su = detectSurges().find(x=>x.key === key);
   cmdSel = su || null;
   if(!cmdDepts) cmdDepts = Object.assign({}, ACT_TYPES[cmdType].depts);
+  CMD_SUGGEST = Object.keys(ACT_TYPES[cmdType].depts);   /* 무엇이 추천값이었는지 표시용 */
   renderCmd();
 }
 /* 시장이 무엇을 보고 지시하는지 — 근거가 된 민원을 그대로 펼쳐 놓는다.
@@ -7420,7 +7490,7 @@ function cmdWhyList(su){
   const open = list.filter(i=>i.st !== '완료').length;
 
   return '<div class="hud cmd-why" data-no="I-3">' +
-    '<h3>🧾 이 민원들 때문입니다 <span class="cw-n">' + list.length + '건</span></h3>' +
+    '<h3>🧾 이상징후 <span class="cw-sub">동일지역 유사민원 급증</span> <span class="cw-n">' + list.length + '건</span></h3>' +
     '<div class="cw-sum">' +
       '<span><b>' + esc(su.emd) + '</b> 반경 ' + su.radius.toLocaleString() + 'm · 최근 ' + su.hours + '시간</span>' +
       '<span>긴급 <b>' + urg + '</b>건 · 미처리 <b>' + open + '</b>건</span>' +
@@ -7428,7 +7498,7 @@ function cmdWhyList(su){
     '<div class="cw-kinds">' + kinds.map(k=>
       '<span class="cw-k"><b>' + esc(k) + '</b>' + by[k].length + '건</span>').join('') + '</div>' +
     '<div class="cw-rows">' + list.slice(0, 12).map(it=>
-      '<div class="cw-row" onclick="cmdGoItem(' + it.id + ')" title="이 민원을 상황판에서 열기">' +
+      '<div class="cw-row" onclick="cmdItemPop(' + it.id + ')" title="눌러서 민원 내용 보기">' +
         '<span class="t">' + String(it.time).slice(0, 5) + '</span>' +
         (it.urg === '긴급' ? '<span class="u">긴급</span>' : '') +
         '<span class="s">' + esc(it.sub) + '</span>' +
@@ -7439,10 +7509,29 @@ function cmdWhyList(su){
     (list.length > 12 ? '<p class="cw-more">그 밖 ' + (list.length - 12) + '건 — 상황판에서 모두 볼 수 있습니다</p>' : '') +
   '</div>';
 }
-/* 근거 민원을 누르면 상황판에서 그 건을 연다 */
-function cmdGoItem(id){
-  setMode('duty');
-  selectItem(id);
+/* 근거 민원은 팝업으로 본다. 시장이 보는 화면이 바뀌면 다시 돌아와야 한다. */
+function cmdItemPop(id){
+  const it = items.find(i=>i.id === id); if(!it) return;
+  const a = deptOf(it);
+  const rec = (typeof REPORTS !== 'undefined' && REPORTS) ? REPORTS[id] : null;
+  const crew = (it.crews || []).length;
+  showModal('<h2 data-no="I-3a">' + (it.urg === '긴급' ? '🚨 ' : '📋 ') + esc(it.sub) +
+      ' <span class="sub">#' + String(it.id).padStart(3,'0') + ' · ' + esc(it.st) + '</span></h2>' +
+    '<div class="sel-box" style="margin-bottom:12px">' +
+      '<div class="sel-kv"><span>접수</span><b>' + esc(it.time) + ' · ' + esc(it.src || '') + '</b></div>' +
+      '<div class="sel-kv"><span>위치</span><b>' + esc(it.loc) + ' (' + esc(it.gu || '') + ')</b></div>' +
+      '<div class="sel-kv"><span>내용</span><b>' + esc(it.sum || '') + '</b></div>' +
+      (it.req ? '<div class="sel-kv"><span>요청</span><b>' + esc(it.req) + '</b></div>' : '') +
+      '<div class="sel-kv"><span>긴급도</span><b>' + esc(it.urg) + '</b></div>' +
+      '<div class="sel-kv"><span>담당부서</span><b>' + esc(a.actor.org) + '</b></div>' +
+      '<div class="sel-kv"><span>투입 인력</span><b>' + (crew ? crew + '명 출동 중' : '없음') + '</b></div>' +
+      (rec ? '<div class="sel-kv"><span>현장 결과</span><b>' + esc(rec.result) + (rec.memo ? ' — ' + esc(rec.memo) : '') + '</b></div>' : '') +
+    '</div>' +
+    (typeof photoBlock === 'function' ? photoBlock(it) : '') +
+    '<div class="sel-h">처리이력</div>' +
+    '<div class="sel-box"><ol class="sel-log">' + (it.log || []).map(x=>'<li>' + esc(x) + '</li>').join('') + '</ol></div>' +
+    '<div class="row"><button class="btn-g" onclick="closeModal()">닫기</button>' +
+    '<button class="btn-p" onclick="closeModal();setMode(\'duty\');selectItem(' + id + ')">상황판에서 처리</button></div>', true);
 }
 
 function renderCmd(){
@@ -7454,6 +7543,7 @@ function renderCmd(){
   if(!cmdSel && upto.length) cmdSel = upto[0];
   if(cmdSel && !surges.some(x=>x.key === cmdSel.key)) cmdSel = upto[0] || null;
   if(!cmdDepts) cmdDepts = Object.assign({}, ACT_TYPES[cmdType].depts);
+  CMD_SUGGEST = Object.keys(ACT_TYPES[cmdType].depts);   /* 무엇이 추천값이었는지 표시용 */
 
   const head =
     '<div class="rd-head" data-no="I-1"><h2 style="font-size:22px;font-weight:800;color:var(--hs-blue-dark)">🧭 조치지시</h2>' +
@@ -7481,7 +7571,7 @@ function renderCmd(){
 
   host.innerHTML = head +
     /* 탐지 근거 — HUD */
-    '<div class="hud" data-no="I-2"><h3>📡 탐지 근거</h3><div class="kv">' +
+    '<div class="hud" data-no="I-2"><h3>📡 도시이상징후 탐지</h3><div class="kv">' +
     '<div><div class="k">지역</div><div class="v" style="font-size:17px">' + su.emd + '</div></div>' +
     '<div><div class="k">접수 건수</div><div class="v">' + su.cnt + '<em> 건</em></div></div>' +
     '<div><div class="k">시간창</div><div class="v">' + su.hours + '<em> 시간</em></div></div>' +
@@ -7503,9 +7593,12 @@ function renderCmd(){
         '<div class="tot" style="margin-top:12px">' + sum + '<small> 명</small></div>' +
         (i === cmdType
           ? Object.keys(cmdDepts).map(d=>'<div class="cmd-dept"><span class="nm">' + d + '</span>' +
+              (CMD_SUGGEST.indexOf(d) >= 0 ? '<span class="cmd-sug">추천</span>' : '') +
               '<button class="cmd-step" aria-label="' + d + ' 인원 줄이기" onclick="cmdStep(\'' + d + '\',-1)">−</button>' +
               '<span class="n">' + cmdDepts[d] + '</span>' +
-              '<button class="cmd-step" aria-label="' + d + ' 인원 늘리기" onclick="cmdStep(\'' + d + '\',1)">+</button></div>').join('') +
+              '<button class="cmd-step" aria-label="' + d + ' 인원 늘리기" onclick="cmdStep(\'' + d + '\',1)">+</button>' +
+              '<button class="cmd-del" aria-label="' + d + ' 빼기" title="이 부서를 빼기" onclick="cmdDeptDel(\'' + d + '\')">✕</button></div>').join('') +
+            '<button class="cmd-add" onclick="cmdDeptAdd()">＋ 부서 추가·변경</button>' +
             '<div class="cmd-warn ' + band + '">' + bandMsg + '</div>' +
             '<div class="row"><button class="btn-o" onclick="cmdIssue()">📣 조치지시 하달</button></div>' +
             '<div class="row"><button class="btn-g" onclick="holdOpen(\'' + su.key + '\')">보류</button></div>'
@@ -9772,6 +9865,8 @@ function showModal(html, wide){
 function closeModal(){
   document.getElementById("ovl").classList.remove("on");
   document.body.classList.remove("modal-on");
+  /* 부서 고르기 창을 어떻게 닫든 상태를 남기지 않는다 */
+  if(typeof deptPickFor !== 'undefined') deptPickFor = null;
   if(sheetWasOpen){
     sheetWasOpen = false;
     const sh = document.getElementById('citSheet');
