@@ -712,17 +712,7 @@ body.mapfs .cs{height:100vh;}
   .cs-right{position:absolute; right:0; top:var(--hdr); bottom:var(--strip); width:320px; z-index:1300;
     box-shadow:-8px 0 24px rgba(16,32,64,.16);}
 }
-@media(max-width:900px){
-  .cs-body{grid-template-columns:1fr;}
-  .cs-left, .cs-right{position:fixed; left:0; right:0; bottom:56px; top:auto; width:auto; z-index:900;
-    max-height:70vh; border-radius:14px 14px 0 0; border:1px solid var(--sline);
-    box-shadow:0 -6px 24px rgba(16,32,64,.18);
-    padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));
-    transform:translateY(102%); transition:transform .28s ease;}
-  .cs-left.open, .cs-right.open{transform:translateY(0);}
-  .cs-strip{display:none;}
-  #duty .cs-brand, #duty #csSearchBtn, #duty .cs-flabel{display:none;}
-}
+/* 폰 규칙은 아래 "폰 상황판" 블록으로 모았다 */
 @media (prefers-reduced-motion: reduce){
   .cs-live.on i{animation:none;} #duty .item.blink{animation:none;}
   .cs-left, .cs-right, .cs-chip, .ly-row, #duty .item{transition:none;}
@@ -820,6 +810,99 @@ table.roster td.hd{background:#F7FAFD; font-weight:700; text-align:left;}
 
 .lc-click .c.on{background:var(--hs-blue); color:#fff;}
 
+/* ══════════════════════════════════════════════════════════
+   폰 상황판 (≤700px) — 지도 전체 + 하단 시트 + 3버튼 고정 바
+   ══════════════════════════════════════════════════════════ */
+.ph-grip, .ph-tabs{display:none;}
+@media(max-width:900px) and (min-width:701px){
+  /* 태블릿: 좌측만 시트, 우측은 오버레이 유지 */
+  .cs-body{grid-template-columns:280px minmax(0,1fr);}
+  .cs-right{position:absolute; right:0; top:var(--hdr); bottom:0; width:320px; z-index:1300;}
+  .cs-strip{display:none;}
+}
+@media(max-width:700px){
+  /* ① 지도가 화면 전체 */
+  body[data-mode="duty"]{overflow:hidden;}
+  body[data-mode="duty"] .cs{height:100vh;}
+  .cs-body{grid-template-columns:1fr; grid-template-rows:1fr;}
+  .cs-map{grid-column:1; grid-row:1;}
+  /* ⑥ 폰에서는 640px 확장을 쓰지 않는다 */
+  body.sel-open .cs-body{grid-template-columns:1fr;}
+  /* ⑤ 하단 스트립 숨김 */
+  .cs-strip{display:none;}
+
+  /* ③ 헤더는 로고 + 화면 전환 + 소속만. 나머지는 아이콘으로 접는다 */
+  #duty .cs-brand, #duty .cs-flabel, #duty .cs-clock, #duty .cs-duty,
+  #duty #fltUrg, #duty #fltOpen, #duty #rng1, #duty #rng6, #duty #rng24,
+  #duty #fltAll, #duty .cs-sep{display:none;}
+  #duty #csSearchBtn{display:inline-flex; padding:0 8px;}
+  #duty #csSearchBtn kbd{display:none;}
+  #duty .cs-live{padding:0 8px; font-size:0; gap:0;}
+  #duty .cs-live i{width:9px; height:9px;}
+  .cs-cmd{gap:6px; padding:0 10px;}
+  .cs-modes{gap:3px;}
+  .cs-modes .cs-chip{padding:0 8px; font-size:12px;}
+
+  /* ①② 좌·우 패널 → 하단 시트 */
+  .cs-left, .cs-right{position:fixed; left:0; right:0; top:auto; width:auto; z-index:1200;
+    bottom:calc(56px + env(safe-area-inset-bottom,0px));
+    height:70vh; max-height:70vh; border-radius:16px 16px 0 0;
+    border:1px solid var(--sline); border-bottom:none;
+    box-shadow:0 -8px 28px rgba(16,32,64,.22);
+    transform:translateY(102%); transition:transform .26s ease, height .26s ease;}
+  .cs-left.open, .cs-right.open{transform:translateY(0);}
+  .cs-left.full, .cs-right.full{height:calc(100vh - var(--hdr) - 56px - env(safe-area-inset-bottom,0px));
+    max-height:none;}
+  /* 시트 손잡이 */
+  .ph-grip{display:block; flex:0 0 auto; height:18px; cursor:grab; position:relative;}
+  .ph-grip:after{content:""; position:absolute; left:50%; top:7px; transform:translateX(-50%);
+    width:38px; height:4px; border-radius:2px; background:#C9D5E4;}
+  /* ④ 인력·뉴스를 민원 시트 안 탭으로 */
+  .ph-tabs{display:flex; flex:0 0 auto; gap:6px; padding:0 12px 8px;}
+  .ph-tabs button{flex:1; height:32px; border-radius:8px; font-size:13px; font-weight:700;
+    background:#EEF2F7; color:var(--smuted); border:1px solid var(--sline);}
+  .ph-tabs button.on{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+  .cs-blk{flex:1 1 auto; border-bottom:none;}
+  .blk-list, .blk-staff, .blk-feed{flex:1 1 auto;}
+  .cs-blk.ph-hide{display:none;}
+  .cs-blkhead{padding:6px 12px;}
+
+  /* ② 하단 고정 바 3개 — ⑧ 홈 인디케이터에 가리지 않게 */
+  body[data-mode="duty"] #dutyBar{display:flex; position:fixed; left:0; right:0; bottom:0; z-index:1400;
+    background:#fff; border-top:1px solid var(--sline); gap:8px;
+    padding:8px 12px calc(8px + env(safe-area-inset-bottom,0px));}
+  #dutyBar button{flex:1; height:44px; border-radius:12px; font-size:14px; font-weight:700;
+    background:#F1F5FA; color:var(--smuted); border:1px solid var(--sline);}
+  #dutyBar button.on{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+
+  /* ⑦ 지도 도구는 우하단 세로 3개(전체화면·기상·내위치). 나머지는 [전체] 안으로 */
+  #mapBaseBar{right:12px; top:auto; bottom:calc(68px + env(safe-area-inset-bottom,0px)); gap:8px;}
+  #mapBaseBar .lb{width:40px; height:40px; min-height:40px; font-size:17px;}
+  #mapBaseBar #satBtn, #mapBaseBar #nightBtn, #mapBaseBar #panBtn, #mapBaseBar #followBtn{display:none;}
+  #mapLayerBar{left:12px; top:8px; right:12px; max-width:none;}
+  .mlb-quick{overflow-x:auto; padding-bottom:2px; scrollbar-width:none;}
+  .mlb-quick::-webkit-scrollbar{display:none;}
+  #layerPanel{left:12px; right:12px; width:auto; top:52px; max-height:56vh;}
+  #mapWxBadge{bottom:calc(68px + env(safe-area-inset-bottom,0px)); font-size:12px; height:36px;}
+  .cs-map #apiErrBox{bottom:calc(112px + env(safe-area-inset-bottom,0px));}
+
+  /* 우측 상세 — 전체 화면 시트, 2열 쓰지 않음 */
+  .sel-2col, body.sel-open .sel-2col{grid-template-columns:1fr;}
+  .cs-racts{grid-template-columns:1fr 1fr;}
+  .cs-rtabs button{height:36px;}
+
+  /* ⑨ 문서 생성은 PC 안내 */
+  #duty .pc-only{display:none !important;}
+  #duty .phone-note{display:block;}
+
+  /* ① 가로 스크롤 없음 */
+  html, body{max-width:100%; overflow-x:hidden;}
+  .cs-cmd{overflow-x:auto; overflow-y:hidden;}
+}
+@media (prefers-reduced-motion: reduce){
+  .cs-left, .cs-right{transition:none;}
+}
+
 </style>
 </head>
 <body>
@@ -901,6 +984,13 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
     <div class="cs-body">
       <!-- ── 3장 좌측: 세 구획이 세로로 쌓인다(탭 아님) ── -->
       <aside class="cs-left" id="csLeft">
+        <!-- 폰: 시트 손잡이 + 구획 전환 탭 (PC 에서는 숨김) -->
+        <div class="ph-grip" id="phGrip"></div>
+        <div class="ph-tabs" id="phTabs">
+          <button class="on" id="phTabList" onclick="phLeftTab('list')">민원</button>
+          <button id="phTabStaff" onclick="phLeftTab('staff')">인력</button>
+          <button id="phTabFeed" onclick="phLeftTab('feed')">뉴스</button>
+        </div>
         <!-- 3.1 민원 현황 (55%) -->
         <section class="cs-blk blk-list" id="blkList">
           <div class="cs-blkhead">
@@ -995,6 +1085,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 
       <!-- ── 5장 우측: 접이식 섹션, 조치 버튼은 고정 ── -->
       <aside class="cs-right" id="csRight">
+        <div class="ph-grip" id="phGripR"></div>
         <div class="cs-rhead" id="selHead"><span class="cs-rempty">목록이나 지도에서 민원을 고르세요</span></div>
         <div class="cs-racts" id="selActs"></div>
         <div class="cs-rbody" id="selBody">
@@ -1153,11 +1244,11 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
   </div>
   <p class="hint" style="margin-top:10px">⚠️ 화재·구조 등 긴급상황은 즉시 <b>119</b>, 범죄 신고는 <b>112</b>로 전화해 주세요. 이 창구는 생활불편 민원 접수용입니다.</p>
 </div>
-<!-- D-08 폰 전용 하단 이동 바 (상황판) -->
+<!-- 폰 전용 하단 고정 바 — 민원 / 지도 / 상세 -->
 <div id="dutyBar">
-  <button id="dbList" onclick="dutySheet('l')">📋 접수 목록</button>
-  <button id="dbWork" onclick="dutySheet('r')">🧑‍💼 업무 처리</button>
-  <button id="dbMap" onclick="dutySheet(null)">🗺️ 지도</button>
+  <button id="dbList" onclick="dutySheet('l')">📋 민원</button>
+  <button id="dbMap" class="on" onclick="dutySheet(null)">🗺️ 지도</button>
+  <button id="dbWork" onclick="dutySheet('r')">🧑‍💼 상세</button>
 </div>
 <div id="cmd"></div>
 <div id="track"></div>
@@ -1170,7 +1261,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1002';
+const BUILD_VER = 'v0906-1005';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -2161,6 +2252,69 @@ function lineChart(opt){
     bands + ticks + paths + nowLine + hots + '</svg>' + axis + legend + '</div>';
 }
 
+/* ══════════ 폰 상황판 (≤700px) ══════════
+   3열을 그대로 밀어 넣지 않는다. 지도가 화면을 채우고 좌·우 패널은 하단 시트가 된다. */
+function isPhoneUI(){ return window.matchMedia && window.matchMedia('(max-width: 700px)').matches; }
+let phSheet = null;            /* null(지도) | 'l'(민원) | 'r'(상세) */
+function dutySheet(which){
+  const l = document.getElementById('csLeft'), r = document.getElementById('csRight');
+  if(!l || !r) return;
+  phSheet = which || null;
+  l.classList.toggle('open', which === 'l');
+  r.classList.toggle('open', which === 'r');
+  l.classList.remove('full'); r.classList.remove('full');
+  const map3 = {l:'dbList', r:'dbWork'};
+  for(const k of ['dbList','dbWork','dbMap']){
+    const b = document.getElementById(k);
+    if(b) b.classList.toggle('on', k === (map3[which] || 'dbMap'));
+  }
+  document.body.classList.toggle('ph-sheet', !!which);
+  mapResize();
+}
+/* 목록에서 민원을 고르면 상세 시트로 넘어간다 */
+function dutySheetAuto(){ if(isPhoneUI() && curMode === 'duty') dutySheet('r'); }
+/* 민원 시트 안 탭 — 인력·뉴스 */
+function phLeftTab(k){
+  const map = {list:'blkList', staff:'blkStaff', feed:'blkFeed'};
+  const btn = {list:'phTabList', staff:'phTabStaff', feed:'phTabFeed'};
+  for(const x of Object.keys(map)){
+    const el = document.getElementById(map[x]), b = document.getElementById(btn[x]);
+    if(el) el.classList.toggle('ph-hide', x !== k);
+    if(b) b.classList.toggle('on', x === k);
+  }
+}
+/* 손잡이 끌기 — 위로 끌면 전체, 아래로 끌면 닫힘 */
+function phGripBind(gripId, panelId){
+  const g = document.getElementById(gripId), pn = document.getElementById(panelId);
+  if(!g || !pn || g.__bound) return;
+  g.__bound = true;
+  let y0 = null;
+  const start = e => { y0 = (e.touches ? e.touches[0].clientY : e.clientY); };
+  const end = e => {
+    if(y0 == null) return;
+    const y1 = (e.changedTouches ? e.changedTouches[0].clientY : e.clientY);
+    const dy = y1 - y0; y0 = null;
+    if(dy < -40) pn.classList.add('full');           /* 위로 끌기 → 전체 */
+    else if(dy > 40){ pn.classList.remove('full'); dutySheet(null); }   /* 아래로 끌기 → 닫힘 */
+  };
+  g.addEventListener('touchstart', start, {passive:true});
+  g.addEventListener('touchend', end);
+  g.addEventListener('mousedown', start);
+  g.addEventListener('mouseup', end);
+  g.addEventListener('click', ()=>pn.classList.toggle('full'));
+}
+window.addEventListener('DOMContentLoaded', ()=>{
+  phGripBind('phGrip', 'csLeft');
+  phGripBind('phGripR', 'csRight');
+});
+setTimeout(()=>{ phGripBind('phGrip', 'csLeft'); phGripBind('phGripR', 'csRight'); }, 500);
+/* 폰에서는 640px 확장을 쓰지 않는다 — 상세는 전체 화면 시트 */
+function phSyncMode(){
+  if(!isPhoneUI()) return;
+  document.body.classList.remove('sel-open');
+}
+window.addEventListener('resize', phSyncMode);
+
 /* ══════════ D-M1 지도 전체화면 ══════════
    카드를 화면 전체로 펼친다. 레이어 바·배경 바는 이미 지도 위 오버레이라 그대로 따라 커지고,
    범례만 오버레이로 내려붙는다. Windy 기상 오버레이(#map 안 inset:0)도 부모를 따라 확대된다. */
@@ -2452,6 +2606,8 @@ function panelCanExpand(){
   return (w - left - 640) >= PANEL_MIN_MAP;
 }
 function panelExpand(on){
+  /* 폰은 확장 대신 전체 화면 시트를 쓴다 */
+  if(isPhoneUI()){ document.body.classList.remove('sel-open'); mapResize(); return; }
   document.body.classList.toggle('sel-open', !!on && panelCanExpand());
   mapResize();
 }
