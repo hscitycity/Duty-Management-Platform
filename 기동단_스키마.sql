@@ -52,3 +52,9 @@ comment on view road_guide_kpi is '기동단 1시간 안내 준수율 — select
 -- select column_name from information_schema.columns
 --   where table_name='complaints' and (column_name like 'road_%' or column_name like 'guide_%'
 --      or column_name like 'partner_%' or column_name like 'field_check%' or column_name='intake_channel');
+
+-- ── §1-1 담당 주체 배정 (당직 처리 / 교통·도로 기동단) ──────────
+alter table complaints add column if not exists assignee     text;
+alter table complaints add column if not exists assigned_at  timestamptz;
+alter table complaints add column if not exists assigned_why text;
+comment on column complaints.assignee is '당직 처리 / 교통·도로 기동단 — AI 가 유형으로 제안하고 접수자가 확정한다';
