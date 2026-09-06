@@ -1875,6 +1875,43 @@ body.show-no [data-no]:before{content:attr(data-no); position:absolute; left:0; 
   background:#EEF2F7; color:var(--smuted); white-space:nowrap;}
 .it-cr.ok{background:#E3F5EC; color:var(--ok,#127A50);}
 
+/* 부서 여러 곳 고르기 */
+.dp-now{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:0 0 8px;
+  padding:10px 12px; border-radius:8px; background:#F7FAFD; border:1px solid var(--line);}
+.dp-now .k{font-size:12px; font-weight:700; color:var(--muted); margin-right:2px;}
+.dp-none{font-size:12.5px; color:var(--muted);}
+.dp-tag{display:inline-flex; align-items:center; gap:5px; padding:3px 6px 3px 10px;
+  border-radius:999px; font-size:12.5px; background:#EEF3FA; color:var(--hs-blue-dark);
+  border:1px solid var(--hs-blue-line);}
+.dp-tag.main{background:var(--hs-blue); color:#fff; border-color:var(--hs-blue);}
+.dp-tag i{font-style:normal; font-size:10px; font-weight:800; padding:1px 5px;
+  border-radius:4px; background:rgba(255,255,255,.24);}
+.dp-tag button{width:18px; height:18px; border-radius:50%; font-size:10px; border:none;
+  background:rgba(0,0,0,.10); color:inherit; cursor:pointer;}
+.dp-tag button:hover{background:var(--urgent); color:#fff;}
+.dp-why{width:100%; height:34px; font-size:13px; margin-bottom:8px;}
+
+/* G-6 좌상단 — 확대·축소 바로 아래 */
+#mapCornerTL{position:absolute; left:12px; top:96px; z-index:var(--z-maptool);}
+/* G-7 우하단 — 전체화면 */
+#mapCornerBR{position:absolute; right:12px; bottom:12px; z-index:var(--z-maptool);}
+#mapCornerTL .lb, #mapCornerBR .lb{height:32px; padding:0 12px; font-size:12.5px; font-weight:700;
+  display:inline-flex; align-items:center; gap:6px; white-space:nowrap; border-radius:999px;
+  background:rgba(255,255,255,.96); border:1.5px solid var(--hs-blue-line); color:var(--hs-blue-d);
+  box-shadow:0 1px 5px rgba(16,32,64,.18); cursor:pointer;}
+#mapCornerTL .lb:hover, #mapCornerBR .lb:hover{background:var(--hs-blue-bg);}
+#mapCornerBR .lb.on{background:var(--hs-blue); border-color:var(--hs-blue); color:#fff;}
+/* 기상 관제 중 — 레이어를 하나로 묶고 자리를 내린다 */
+.mlb-one{display:none;}
+#mapBox.wx-on #mapLayerBar{top:62px;}
+#mapBox.wx-on .mlb-quick > .lb{display:none;}
+#mapBox.wx-on .mlb-quick > .mlb-one{display:inline-flex;}
+#mapBox.wx-on #layerPanel{top:102px;}
+#mapBox.wx-on #mapBaseBar{top:62px;}
+#mapBox.wx-on #mapCornerTL{top:146px;}
+/* 기상 중에는 지도 위 배지·안내를 내려 Windy 도구 줄과 겹치지 않게 */
+#mapBox.wx-on #mapPickBar{top:62px;}
+
 </style>
 </head>
 <body>
@@ -1966,6 +2003,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
               <button class="lb" id="incBtn" onclick="toggleInc()">⚠️ 돌발상황</button>
               <button class="lb" id="jjBtn" onclick="toggleJijeok()">📐 지적</button>
               <button class="lb mlb-more" id="lbMoreBtn" onclick="layerPanelToggle()" aria-expanded="false" aria-controls="layerPanel" title="레이어 전체 목록">＋ 전체</button>
+              <button class="lb mlb-one" id="lbOneBtn" onclick="layerPanelToggle()" aria-controls="layerPanel"
+                      title="기상 관제 중에는 레이어를 이 버튼 하나로 묶습니다">☰ 레이어</button>
             </div>
             <div class="mlb-more-panel" id="mapLayerMore" hidden style="display:none">
               <button class="lb" id="stnBtn" onclick="toggleStn()">🚓🚒 소방서·경찰서</button>
@@ -1998,6 +2037,15 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
           <div id="mapPickBar" hidden data-no="G-5">📍 <b>지도를 클릭해 민원 위치를 지정하세요</b>
             <span>핀을 끌어 미세 조정할 수 있습니다</span>
             <button class="cs-mini" onclick="rpState('home')">취소</button></div>
+          <!-- G-6 좌상단: 확대·축소 바로 아래 -->
+          <div id="mapCornerTL" data-no="G-6">
+            <button class="lb" id="myLocBtn" onclick="goMyLoc(map)" title="내 위치로 이동">🎯 내위치</button>
+          </div>
+          <!-- G-7 우하단: 전체화면 -->
+          <div id="mapCornerBR" data-no="G-7">
+            <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-pressed="false"
+                    title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶ 전체화면</button>
+          </div>
           <button id="mapWxBadge" data-no="G-4" onclick="openWxDetail()" title="기상·대기 상세">기상 정보 불러오는 중…</button>
           <div id="mapBaseBar" data-no="G-2">
             <!-- §5.1 우상단 세로 6개 · 32px 알약 · 아이콘 + 라벨(§0 ⑤ 라벨 없는 버튼 금지) -->
@@ -2005,8 +2053,8 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
             <button class="lb" id="wxBtn" onclick="toggleWx()" aria-pressed="false" title="기상 관제(Windy) 겹쳐 보기">🌦️ 기상</button>
             <button class="lb" id="nightBtn" onclick="toggleNight()" aria-pressed="false" title="야간 배경으로 전환 (21~02시 자동)">🌙 야간</button>
             <button class="lb" id="panBtn" onclick="togglePan()" aria-pressed="false" title="켜면 지도를 클릭해도 접수 위치가 지정되지 않습니다">✋ 탐색</button>
-            <button class="lb" id="myLocBtn" onclick="goMyLoc(map)" title="내 위치로 이동">🎯 내위치</button>
-            <button class="lb" id="mapFsBtn" onclick="mapFsToggle()" aria-pressed="false" title="지도 전체화면 (Esc 또는 다시 눌러 해제)">⛶ 전체화면</button>
+            <!-- 🎯 내위치는 좌상단 확대·축소 아래(#mapCornerTL)로 옮겼다 -->
+            <!-- ⛶ 전체화면은 우측 하단(#mapCornerBR)으로 옮겼다 -->
             <!-- 🛵 따라가기는 표시 옵션이라 레이어 오버레이 패널로 옮겼다(§5.2) -->
             <button class="lb" id="followBtn" hidden onclick="crewFollowToggle()" aria-pressed="false">🎥 따라가기</button>
           </div>
@@ -2271,7 +2319,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0906-1728';
+const BUILD_VER = 'v0906-1736';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -4072,6 +4120,8 @@ function renderSel(it){
     sec('C-6', '2. 담당부서',
     '<div class="sel-box">' +
       '<div class="sel-kv"><span>배정 부서</span><b>' + a.actor.org + '</b></div>' +
+      ((it.deptList && it.deptList.length > 1)
+        ? '<div class="sel-kv"><span>협조 부서</span><b>' + esc(it.deptList.slice(1).join(' · ')) + '</b></div>' : '') +
       '<div class="sel-kv"><span>담당 주체</span><b>' + assigneeOf(it) + '</b></div>' +
       '<div class="sel-kv"><span>배정 확신</span><b>' + Math.round(a.confidence * 100) + '%</b></div>' +
       '<div class="sel-kv"><span>유사 제보</span><b>' + credOf(it).n + '건' +
@@ -4127,11 +4177,13 @@ function deptOptions(){
 }
 /* 부서를 고르는 곳은 전부 이 화면을 쓴다 — 조직도를 보면서, 검색으로 좁혀서 고른다.
    목록만 늘어놓으면 어느 국 소속인지 모른 채 고르게 된다. */
-let deptPickFor = null, deptPickSel = '';
+let deptPickFor = null, deptPickSel = '', deptPickList = [];
 function deptPick(id){
   const it = items.find(i=>i.id === id); if(!it) return;
   deptPickFor = id;
-  deptPickSel = deptOf(it).actor.org;
+  /* 소관이 여러 곳일 수 있다 — 누르는 대로 쌓인다 */
+  deptPickList = (it.deptList && it.deptList.length) ? it.deptList.slice() : [deptOf(it).actor.org];
+  deptPickSel = deptPickList[0] || '';
   /* 부서를 고르는 화면은 어디서든 같다 — 검색은 위에 붙고, 저장·닫기는 오른쪽 위 */
   showModal('<div class="dp-top">' +
       '<h2 data-no="C-6b">🏢 처리주체 변경</h2>' +
@@ -4140,31 +4192,51 @@ function deptPick(id){
         '<button class="btn-g" onclick="closeModal();deptPickFor=null">닫기</button></div>' +
       '<p class="hint">조직도에서 부서를 누르면 아래 <b>고른 부서</b>에 바로 담깁니다.</p>' +
       '<input id="orgQ2" class="rp-q oc-q" placeholder="부서·기관 검색 (예: 도로, 상하수도, 공원, 봉담)" oninput="orgPopSync()">' +
-      '<div class="dp-bar">고른 부서 <b id="dpNow">' + esc(deptPickSel || '—') + '</b>' +
-        '<input id="dpWhy" placeholder="변경 사유 (선택)"></div>' +
+      '<div class="dp-now" id="dpNow"></div>' +
+      '<input id="dpWhy" class="dp-why" placeholder="변경 사유 (선택)">' +
     '</div>' +
     '<div class="oc-wrap oc-pick" id="orgPop"></div>', true);
   renderOrgPane('orgPop');
+  dpRender();
 }
-/* 조직도의 과 칩을 누르면 그 부서가 선택된다 */
+/* 조직도의 과를 누르면 목록에 쌓인다. 다시 누르면 빠진다 */
 function deptChipPick(nm){
   if(!deptPickFor) return;
-  deptPickSel = nm;
-  const b = document.getElementById('dpNow');
-  if(b) b.textContent = nm;
-  document.querySelectorAll('#orgPop .oc-chip').forEach(c=>c.classList.toggle('sel', c.textContent === nm));
+  const i = deptPickList.indexOf(nm);
+  if(i >= 0) deptPickList.splice(i, 1); else deptPickList.push(nm);
+  deptPickSel = deptPickList[0] || '';
+  dpRender();
+}
+function dpDel(i){ deptPickList.splice(i, 1); deptPickSel = deptPickList[0] || ''; dpRender(); }
+function dpRender(){
+  const el = document.getElementById('dpNow');
+  if(!el) return;
+  el.innerHTML = '<span class="k">고른 부서</span>' + (deptPickList.length
+    ? deptPickList.map(function(x, i){
+        return '<span class="dp-tag' + (i === 0 ? ' main' : '') + '">' +
+          (i === 0 ? '<i>주관</i>' : '') + esc(x) +
+          '<button onclick="dpDel(' + i + ')" aria-label="' + esc(x) + ' 빼기">✕</button></span>';
+      }).join('')
+    : '<span class="dp-none">아직 없습니다 — 아래 조직도에서 부서를 눌러 주세요</span>');
+  document.querySelectorAll('#orgPop .oc-chip').forEach(function(c){
+    c.classList.toggle('sel', deptPickList.indexOf(c.textContent) >= 0);
+  });
 }
 function deptPickSave(id){
   const it = items.find(i=>i.id === id); if(!it) return;
-  const org = deptPickSel || '';
-  if(!org){ toast('조직도에서 부서를 눌러 골라 주세요'); return; }
+  if(!deptPickList.length){ toast('조직도에서 부서를 눌러 골라 주세요'); return; }
+  const org = deptPickList[0];                       /* 첫 번째가 주관 부서 */
+  const co = deptPickList.slice(1);                  /* 나머지는 협조 부서 */
   const why = ((document.getElementById('dpWhy') || {}).value || '').trim();
-  deptOverrideSet(id, {org: org, basis: '담당자 지정' + (why ? ' — ' + why : '')});
-  it.log.push(nowHM() + ' 처리주체 변경 → ' + org + (why ? ' (' + why + ')' : ''));
+  it.deptList = deptPickList.slice();
+  deptOverrideSet(id, {org: org, co: co,
+    basis: '담당자 지정' + (co.length ? ' · 협조 ' + co.join(', ') : '') + (why ? ' — ' + why : '')});
+  it.log.push(nowHM() + ' 처리주체 변경 → ' + org +
+    (co.length ? ' (협조 ' + co.join(', ') + ')' : '') + (why ? ' — ' + why : ''));
   try{ sbPush(it); }catch(e){}
   closeModal(); deptPickFor = null;
   renderSel(it); renderList();
-  toast('처리주체를 ' + org + '(으)로 변경했습니다');
+  toast('처리주체를 ' + org + (co.length ? ' 외 ' + co.length + '곳' : '') + '(으)로 변경했습니다');
 }
 /* §6.2 민원회신 — 신고인에게 알린 내용·시각·방법을 남긴다 */
 /* 회신은 C-4c3 replyOpen2 로 일원화했다 */
@@ -7148,8 +7220,16 @@ function windyURL(overlay){
 function toggleWx(){
   wxOn = !wxOn;
   document.getElementById('wxBtn').classList.toggle('on', wxOn);
+  /* Windy 는 제 도구 줄을 위에 깐다. 우리 레이어 칩을 그대로 두면 겹친다.
+     기상 중에는 칩을 [☰ 레이어] 하나로 묶고 자리도 아래로 내린다. */
+  const box = document.getElementById('mapBox');
+  if(box) box.classList.toggle('wx-on', wxOn);
   const mapEl = document.getElementById('map');
-  if(!wxOn){ if(wxOv){ wxOv.remove(); wxOv = null; } return; }
+  if(!wxOn){
+    if(wxOv){ wxOv.remove(); wxOv = null; }
+    layerPanelToggle(false);
+    return;
+  }
   wxOv = document.createElement('div');
   wxOv.style.cssText = 'position:absolute;inset:0;z-index:1000;/* --z-overlay */background:#0b1220;overflow:hidden;display:flex;flex-direction:column';
   wxOv.innerHTML =
@@ -8077,7 +8157,8 @@ let cmdType = 1;        /* 조치 유형 index */
 let cmdDepts = null;    /* 부서별 인원 (조정 중) */
 let ORDERS = [];        /* 하달 이력 */
 try{ const v = localStorage.getItem('hs_orders'); if(v) ORDERS = JSON.parse(v); }catch(e){}
-function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(-40))); }catch(e){} }
+/* ORDERS 는 새것이 앞(unshift)이다. slice(-40) 으로 자르면 새것부터 버려진다 */
+function ordersSave(){ try{ localStorage.setItem('hs_orders', JSON.stringify(ORDERS.slice(0, 40))); }catch(e){} }
 
 function cmdTotal(){ return Object.values(cmdDepts || {}).reduce((a,b)=>a + b, 0); }
 /* 조치 유형이 제안하는 부서 — 무엇이 추천값인지 표시한다 */
@@ -8310,7 +8391,7 @@ function renderCmd(){
       '<p style="font-size:14px;line-height:1.8;color:#A9C4E8">지금은 상신 기준을 넘은 급증이 없습니다. ' +
       '탐지 ' + th.detect + '건(부서 알림) · 상신 ' + th.report + '건(시장 조치지시) 기준으로 계속 보고 있습니다.' +
       (surges.length ? '<br>현재 탐지된 지역 <b style="color:#38bdf8">' + surges.length + '곳</b> — 부서 알림 단계입니다.' : '') +
-      '</p></div>' + cmdHoldList();
+      '</p></div>' + cmdOrderList() + cmdHoldList();
     return;
   }
   const su = cmdSel;
@@ -8371,7 +8452,7 @@ function cmdIssue(){
     ack: Object.keys(cmdDepts).reduce((a,d)=>{ a[d] = null; return a; }, {}),
     retry: 0
   };
-  ORDERS.unshift(o); ordersSave();
+  ORDERS.unshift(o); ordersSave();   /* 새것이 앞이다 — 저장도 앞에서 자른다 */
   for(const it of cmdSel.list){
     it.log.push(nowHM() + ' 시장 조치지시 하달 (' + o.type + ' · ' + o.total + '명)');
     sbPush(it);
@@ -8403,7 +8484,7 @@ function cmdRetry(id){
 }
 function cmdOrderList(){
   if(!ORDERS.length) return '';
-  return '<div class="cmd-card" style="margin-top:16px"><h4>📣 하달 이력 · 수신확인</h4>' +
+  return '<div class="cmd-card" data-no="I-5" style="margin-top:16px"><h4>📣 하달 이력 · 수신확인</h4>' +
     ORDERS.slice(0, 5).map(o=>
       '<div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--line)">' +
       '<div style="font-size:13px;font-weight:700">' + o.hm + ' · ' + o.type + ' · ' + o.emd + ' (' + o.cnt + '건) · 총원 ' + o.total + '명' +
