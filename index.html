@@ -2579,7 +2579,7 @@ setTimeout(function(){ if(window.spHide) return spHide(); var e=document.getElem
 <script>
 
 /* ── 🩺 전역 오류 진단 배너 ── */
-const BUILD_VER = 'v0907-0025';
+const BUILD_VER = 'v0907-0029';
 /* D-07: 진단 배너는 개발 모드에서만. 평상시(발표·실운영)에는 조용한 안내로 대체한다.
    개발 모드 켜기: 주소에 ?dev=1 (또는 #dev) → localStorage에 기억. 끄기: ?dev=0 */
 const DEV_MODE = (function(){
@@ -8411,6 +8411,8 @@ async function sbInit(){
     setInterval(ordersLoad, 60000);
     /* 탐지 규칙도 한 벌이어야 한다 */
     rulesLoad(); holdsLoad();
+    /* 스키마가 그새 적용됐을 수 있다 — 없던 칸을 다시 배운다 */
+    colSkipRelearn();
     if(bootedDuty) loadFeed();   // DB 연결 후 연합뉴스(재난) 축적분 재렌더 — 당직 경로에서만
   }catch(e){
     cloudOn = false;
@@ -8427,6 +8429,17 @@ let pushWarned = 0;
 let COL_SKIP = new Set();
 try{ const v = JSON.parse(localStorage.getItem('hs_col_skip') || '[]'); if(Array.isArray(v)) COL_SKIP = new Set(v); }catch(e){}
 function colSkipSave(){ try{ localStorage.setItem('hs_col_skip', JSON.stringify([...COL_SKIP])); }catch(e){} }
+/* 스키마를 적용하면 없던 칸이 생긴다. 기억을 그대로 두면 생긴 뒤에도 계속 빼고 저장한다.
+   한 번 켤 때마다 기억을 비워 다시 배우게 한다 — 잘못 배웠으면 그 자리에서 한 번만 더 헛걸음한다. */
+function colSkipRelearn(){
+  let had = [...COL_SKIP];
+  /* 저장소에만 남아 있을 수도 있다 — 기억은 두 곳 다 비운다 */
+  try{ const v = JSON.parse(localStorage.getItem('hs_col_skip') || '[]');
+    if(Array.isArray(v) && v.length) had = had.concat(v.filter(function(x){ return had.indexOf(x) < 0; })); }catch(e){}
+  if(!had.length) return;
+  COL_SKIP.clear(); colSkipSave();
+  console.info('없던 칸 기억을 비웁니다 — 스키마가 적용됐는지 다시 확인합니다:', had.join(', '));
+}
 /* PostgREST 는 없는 칸을 PGRST204 로 알려 준다 — 어느 칸인지 메시지에서 뽑는다 */
 function missingCol(err){
   if(!err) return null;
